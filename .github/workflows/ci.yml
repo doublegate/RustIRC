@@ -64,7 +64,7 @@ jobs:
     - name: Generate coverage
       run: cargo tarpaulin --out Xml --all-features
     - name: Upload coverage
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v5
       with:
         files: ./cobertura.xml
 
