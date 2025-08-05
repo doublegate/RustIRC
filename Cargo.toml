@@ -1,0 +1,76 @@
+[package]
+name = "rustirc"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75.0"
+authors = ["RustIRC Contributors"]
+description = "A powerful, modern IRC client combining the best of mIRC, HexChat, and WeeChat"
+documentation = "https://docs.rs/rustirc"
+homepage = "https://github.com/doublegate/RustIRC"
+repository = "https://github.com/doublegate/RustIRC"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["irc", "chat", "client", "gui", "tui"]
+categories = ["network-programming", "gui", "command-line-utilities"]
+
+[workspace]
+members = [
+    "rustirc-core",
+    "rustirc-protocol", 
+    "rustirc-gui",
+    "rustirc-tui",
+    "rustirc-scripting",
+    "rustirc-plugins",
+    "rustirc-plugin-api",
+]
+
+[dependencies]
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+
+# TLS
+tokio-rustls = "0.25"
+rustls = "0.22"
+webpki-roots = "0.26"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# CLI
+clap = { version = "4.4", features = ["derive", "env"] }
+
+# Platform integration
+directories = "5.0"
+notify-rust = "4.10"
+
+[dev-dependencies]
+# Testing
+mockall = "0.12"
+proptest = "1.4"
+tokio-test = "0.4"
+pretty_assertions = "1.4"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[profile.dev]
+opt-level = 0
+debug = true
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+[profile.bench]
+opt-level = 3
+debug = false

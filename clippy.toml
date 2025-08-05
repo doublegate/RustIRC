@@ -1,0 +1,59 @@
+# RustIRC Clippy Configuration
+
+# Set MSRV for clippy
+msrv = "1.75.0"
+
+# Lint configuration
+avoid-breaking-exported-api = true
+allow-expect-in-tests = true
+allow-unwrap-in-tests = true
+allow-dbg-in-tests = true
+allow-print-in-tests = true
+
+# Cognitive complexity threshold
+cognitive-complexity-threshold = 30
+
+# Function size thresholds
+too-many-arguments-threshold = 7
+too-many-lines-threshold = 100
+type-complexity-threshold = 250
+
+# Documentation
+missing-docs-in-crate-items = true
+
+# Disallowed types/methods for security
+disallowed-types = [
+    "std::process::Command",  # Use controlled execution
+    "std::env::set_var",      # Can cause race conditions
+]
+
+# Cargo configuration
+cargo-ignore-publish = false
+
+# Error message improvements
+verbose-bit-mask-threshold = 1
+verbose-file-reads = true
+enum-variant-name-threshold = 3
+
+# Style preferences
+doc-valid-idents = [
+    "RustIRC",
+    "IRC",
+    "IRCv3",
+    "SASL",
+    "DCC",
+    "CTCP",
+    "TLS",
+    "SSL",
+    "UTF-8",
+    "GUI",
+    "TUI",
+    "PyO3",
+    "mlua",
+]
+
+# Module inception is fine for our architecture
+accept-module-inception = true
+
+# Large errors are ok for our error types
+large-error-threshold = 128
