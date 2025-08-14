@@ -1,0 +1,16 @@
+[package]
+name = "rustirc-gui"
+version = "0.1.0"
+edition = "2021"
+authors = ["RustIRC Contributors"]
+description = "GUI implementation for RustIRC"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+iced = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+tracing = { workspace = true }
+
+rustirc-core = { path = "../rustirc-core" }
+rustirc-protocol = { path = "../rustirc-protocol" }

@@ -1,3 +1,55 @@
+[workspace]
+members = [
+    "crates/rustirc-core",
+    "crates/rustirc-protocol", 
+    "crates/rustirc-gui",
+    "crates/rustirc-tui",
+    "crates/rustirc-scripting",
+    "crates/rustirc-plugins",
+]
+resolver = "2"
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1.41", features = ["full"] }
+tokio-rustls = "0.26"
+
+# TLS
+rustls = "0.23"
+rustls-pemfile = "2.2"
+webpki-roots = "0.26"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "2.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# UI
+iced = { version = "0.13", features = ["tokio", "debug"] }
+ratatui = "0.29"
+crossterm = "0.28"
+
+# Scripting
+mlua = { version = "0.10", features = ["lua54", "vendored", "async", "send"] }
+
+# Testing
+mockall = "0.13"
+proptest = "1.6"
+tokio-test = "0.4"
+pretty_assertions = "1.4"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+# CLI
+clap = { version = "4.5", features = ["derive"] }
+
 [package]
 name = "rustirc"
 version = "0.1.0"
@@ -8,58 +60,25 @@ description = "A powerful, modern IRC client combining the best of mIRC, HexChat
 documentation = "https://docs.rs/rustirc"
 homepage = "https://github.com/doublegate/RustIRC"
 repository = "https://github.com/doublegate/RustIRC"
-license = "MIT OR Apache-2.0"
+license = "MIT"
 readme = "README.md"
 keywords = ["irc", "chat", "client", "gui", "tui"]
 categories = ["network-programming", "gui", "command-line-utilities"]
 
-[workspace]
-members = [
-    "rustirc-core",
-    "rustirc-protocol", 
-    "rustirc-gui",
-    "rustirc-tui",
-    "rustirc-scripting",
-    "rustirc-plugins",
-    "rustirc-plugin-api",
-]
+[[bin]]
+name = "rustirc"
+path = "src/main.rs"
 
 [dependencies]
-# Async runtime
-tokio = { version = "1.35", features = ["full"] }
+anyhow = { workspace = true }
+clap = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tokio = { workspace = true }
 
-# TLS
-tokio-rustls = "0.25"
-rustls = "0.22"
-webpki-roots = "0.26"
-
-# Serialization
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-toml = "0.8"
-
-# Error handling
-anyhow = "1.0"
-thiserror = "1.0"
-
-# Logging
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-
-# CLI
-clap = { version = "4.4", features = ["derive", "env"] }
-
-# Platform integration
-directories = "5.0"
-notify-rust = "4.10"
-
-[dev-dependencies]
-# Testing
-mockall = "0.12"
-proptest = "1.4"
-tokio-test = "0.4"
-pretty_assertions = "1.4"
-criterion = { version = "0.5", features = ["html_reports"] }
+rustirc-core = { path = "crates/rustirc-core" }
+rustirc-gui = { path = "crates/rustirc-gui" }
+rustirc-tui = { path = "crates/rustirc-tui" }
 
 [profile.dev]
 opt-level = 0

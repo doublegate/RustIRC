@@ -1,0 +1,16 @@
+[package]
+name = "rustirc-plugins"
+version = "0.1.0"
+edition = "2021"
+authors = ["RustIRC Contributors"]
+description = "Plugin system for RustIRC"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+serde = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+
+rustirc-core = { path = "../rustirc-core" }
+rustirc-protocol = { path = "../rustirc-protocol" }

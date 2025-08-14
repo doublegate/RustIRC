@@ -3,6 +3,7 @@
 ## Research Tasks
 
 ### IRC Client Analysis
+
 - [ ] **mIRC Deep Dive**
   - [ ] Download and test mIRC scripting capabilities
   - [ ] Document mSL (mIRC Scripting Language) features
@@ -10,7 +11,7 @@
   - [ ] Study customization system
   - [ ] Extract UI/UX patterns
 
-- [ ] **HexChat Analysis** 
+- [ ] **HexChat Analysis**
   - [ ] Review source code architecture
   - [ ] Document plugin API
   - [ ] Study GTK integration
@@ -56,6 +57,7 @@
 ## Project Setup
 
 ### Repository Infrastructure
+
 - [ ] Initialize Git repository
 - [ ] Create GitHub/GitLab project
 - [ ] Set up branch protection rules
@@ -64,6 +66,7 @@
 - [ ] Create initial README.md
 
 ### CI/CD Configuration
+
 - [ ] Create GitHub Actions workflow
   - [ ] Multi-platform builds (Linux, macOS, Windows)
   - [ ] Rust stable and beta testing
@@ -74,6 +77,7 @@
 - [ ] Configure release automation
 
 ### Development Environment
+
 - [ ] Create rustfmt.toml
 - [ ] Configure clippy.toml
 - [ ] Set up pre-commit hooks
@@ -82,6 +86,7 @@
 - [ ] Development container setup
 
 ### Documentation Structure
+
 - [ ] Create docs/ directory structure
 - [ ] Set up mdBook for documentation
 - [ ] Create CONTRIBUTING.md
@@ -92,6 +97,7 @@
 ## Technical Decisions
 
 ### Architecture Decisions
+
 - [ ] Document GUI framework choice (ADR-001)
 - [ ] Document async runtime choice (ADR-002)
 - [ ] Document plugin architecture (ADR-003)
@@ -99,6 +105,7 @@
 - [ ] Document security model (ADR-005)
 
 ### Design Documents
+
 - [ ] Create high-level architecture diagram
 - [ ] Design event bus system
 - [ ] Plan module boundaries
@@ -108,6 +115,7 @@
 ## Project Structure
 
 ### Cargo Workspace Setup
+
 - [ ] Create root Cargo.toml
 - [ ] Set up workspace members
 - [ ] Configure shared dependencies
@@ -120,6 +128,7 @@
   - [ ] rustirc-plugins
 
 ### Initial Code Structure
+
 - [ ] Create lib.rs for each crate
 - [ ] Set up module structure
 - [ ] Create placeholder types
@@ -129,6 +138,7 @@
 ## Risk Assessment
 
 ### Technical Risk Analysis
+
 - [ ] Identify GUI framework risks
 - [ ] Assess cross-platform challenges
 - [ ] Evaluate performance risks
@@ -136,6 +146,7 @@
 - [ ] Plan mitigation strategies
 
 ### Project Risk Analysis
+
 - [ ] Scope creep prevention plan
 - [ ] Timeline risk assessment
 - [ ] Resource availability check
@@ -145,6 +156,7 @@
 ## Team & Community
 
 ### Development Setup
+
 - [ ] Create development guide
 - [ ] Set up communication channels
   - [ ] IRC channel (#rustirc)
@@ -155,6 +167,7 @@
 - [ ] Set up project board
 
 ### Outreach
+
 - [ ] Announce project on r/rust
 - [ ] Post on IRC-related forums
 - [ ] Create project website/blog
@@ -164,21 +177,25 @@
 ## Validation Milestones
 
 ### Week 1 Checkpoint
+
 - [ ] Technology prototypes complete
 - [ ] Initial risk assessment done
 - [ ] Repository structure in place
 
 ### Week 2 Checkpoint  
+
 - [ ] CI/CD pipeline functional
 - [ ] Architecture decisions documented
 - [ ] Core team communication established
 
 ### Week 3 Checkpoint
+
 - [ ] All frameworks validated
 - [ ] Development environment ready
 - [ ] Initial community engagement
 
 ### Phase 1 Complete
+
 - [ ] All technical choices validated
 - [ ] Full project infrastructure ready
 - [ ] Documentation foundation laid

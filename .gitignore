@@ -227,8 +227,7 @@ poetry.lock
 Pipfile.lock
 
 # Misc
-.cargo/config.toml
-!.cargo/config.toml.example
+# .cargo/config.toml - Include our build config for gcc linker
 .rustc_info.json
 rust-project.json
 

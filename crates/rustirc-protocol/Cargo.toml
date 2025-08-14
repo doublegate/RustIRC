@@ -1,0 +1,16 @@
+[package]
+name = "rustirc-protocol"
+version = "0.1.0"
+edition = "2021"
+authors = ["RustIRC Contributors"]
+description = "IRC protocol implementation for RustIRC"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+serde = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }
+proptest = { workspace = true }

@@ -1,26 +1,29 @@
 # RustIRC - Modern IRC Client
 
+<!-- markdownlint-disable MD033 -->
 <div align="center">
 
 ![RustIRC Logo](images/RustIRC_Logo.png)
 
 [![Rust Version](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
-[![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE-MIT)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/doublegate/RustIRC)
 [![IRC Protocol](https://img.shields.io/badge/IRC-RFC1459%2F2812-green.svg)](docs/specs/irc-protocol.md)
 [![IRCv3](https://img.shields.io/badge/IRCv3-Full%20Support-brightgreen.svg)](docs/specs/ircv3-extensions.md)
 
-**A powerful, modern IRC client built in Rust that combines the best features of mIRC, HexChat, and WeeChat**
+A powerful, modern IRC client built in Rust that combines the best features of mIRC, HexChat, and WeeChat
 
-[Features](#features) • [Documentation](#documentation) • [Development Plan](#development-plan) • [Architecture](#architecture) • [Contributing](#contributing)
+[Features](#-features) • [Documentation](#-documentation) • [Development Plan](#-development-plan) • [Architecture](#️-architecture) • [Contributing](#-contributing)
 
 </div>
+<!-- markdownlint-enable MD033 -->
 
 ## 🎯 Vision
 
 RustIRC aims to be the definitive modern IRC client by combining:
+
 - **mIRC's** powerful scripting and customization capabilities
-- **HexChat's** user-friendly GUI and plugin ecosystem  
+- **HexChat's** user-friendly GUI and plugin ecosystem
 - **WeeChat's** efficiency, performance, and professional features
 
 Built with Rust for memory safety, performance, and cross-platform reliability.
@@ -28,6 +31,7 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 ## ✨ Features
 
 ### Core Capabilities
+
 - 🔌 **Multi-Server Support** - Connect to multiple IRC networks simultaneously
 - 🔒 **Modern Security** - TLS/SSL by default, SASL authentication, secure credential storage
 - 🎨 **Dual Interface** - Beautiful GUI (Iced) and efficient TUI (ratatui) modes
@@ -38,6 +42,7 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 - 🌍 **Cross-Platform** - Native support for Windows, macOS, and Linux
 
 ### Advanced Features
+
 - 🎯 Smart tab completion with context awareness
 - 📊 Advanced message filtering and highlighting
 - 🔍 Full-text search across all buffers
@@ -50,24 +55,28 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 ## 📚 Documentation
 
 ### Overview Documents
+
 - [Project Overview](docs/project-overview.md) - Vision, principles, and goals
 - [Architecture Guide](docs/architecture-guide.md) - System design and component structure
 - [Technology Stack](docs/technology-stack.md) - Dependencies and technical choices
 - [Project Status](docs/project-status.md) - Current development state
 
 ### Technical Specifications
+
 - [IRC Protocol Implementation](docs/specs/irc-protocol.md) - RFC 1459/2812 compliance
 - [IRCv3 Extensions](docs/specs/ircv3-extensions.md) - Modern IRC capabilities
 - [DCC Protocol](docs/specs/dcc-protocol.md) - Direct Client-to-Client features
 - [SASL Authentication](docs/specs/sasl-authentication.md) - Secure authentication
 
 ### Development Guides
+
 - [API Reference](docs/api-reference.md) - Core API documentation
 - [Lua Scripting Guide](docs/scripting-guide.md) - Lua script development
 - [Python Scripting Guide](docs/python-scripting-guide.md) - Python script development
 - [Testing Strategy](docs/testing-strategy.md) - Comprehensive testing approach
 
 ### Task Tracking
+
 - [Master Todo List](to-dos/README.md) - Overview of all development tasks
 - Individual phase todos in [to-dos/](to-dos/) directory
 
@@ -76,6 +85,7 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 
 ### Phase 1: Research & Setup (Weeks 1-4)
+
 - Technology validation and prototyping
 - Development environment setup
 - Core architecture design
@@ -83,6 +93,7 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 - **[Detailed Plan](docs/phases/phase1-research-setup.md)** | **[Tasks](to-dos/phase1-todos.md)**
 
 ### Phase 2: Core IRC Engine (Weeks 5-8)
+
 - Async networking with Tokio
 - IRC protocol parser implementation
 - Multi-server connection management
@@ -90,6 +101,7 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 - **[Detailed Plan](docs/phases/phase2-core-engine.md)** | **[Tasks](to-dos/phase2-todos.md)**
 
 ### Phase 3: User Interface (Weeks 9-14)
+
 - GUI implementation with Iced
 - TUI implementation with ratatui
 - Unified UI abstraction layer
@@ -97,6 +109,7 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 - **[Detailed Plan](docs/phases/phase3-user-interface.md)** | **[Tasks](to-dos/phase3-todos.md)**
 
 ### Phase 4: Scripting & Plugins (Weeks 15-18)
+
 - Lua scripting engine integration (mlua)
 - Python scripting engine integration (PyO3)
 - Binary plugin system with stable ABI
@@ -104,6 +117,7 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 - **[Detailed Plan](docs/phases/phase4-scripting-plugins.md)** | **[Tasks](to-dos/phase4-todos.md)**
 
 ### Phase 5: Advanced Features (Weeks 19-22)
+
 - DCC file transfers and chats
 - Complete IRCv3 implementation
 - Advanced security features
@@ -111,6 +125,7 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 - **[Detailed Plan](docs/phases/phase5-advanced-features.md)** | **[Tasks](to-dos/phase5-todos.md)**
 
 ### Phase 6: Testing & Optimization (Weeks 23-24)
+
 - Comprehensive test suite
 - Performance optimization
 - Security audit
@@ -118,6 +133,7 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 - **[Detailed Plan](docs/phases/phase6-testing-optimization.md)** | **[Tasks](to-dos/phase6-todos.md)**
 
 ### Phase 7: Release & Distribution (Weeks 25-26)
+
 - Platform-specific packaging
 - Distribution setup
 - Documentation finalization
@@ -127,40 +143,42 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 ## 🏗️ Architecture
 
 ### High-Level Design
-```
+
+```text
 ┌─────────────────────────────────────────────────────────────┐
-│                      User Interface Layer                    │
+│                      User Interface Layer                   │
 │  ┌─────────────────────┐        ┌────────────────────────┐  │
 │  │   GUI (Iced/GTK)    │        │     TUI (ratatui)      │  │
 │  └─────────────────────┘        └────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
                               │
 ┌─────────────────────────────────────────────────────────────┐
-│                    Scripting & Plugin Layer                  │
-│  ┌──────────┐  ┌──────────┐  ┌─────────┐  ┌────────────┐  │
-│  │   Lua    │  │  Python  │  │ Binary  │  │  Script    │  │
-│  │ (mlua)   │  │  (PyO3)  │  │ Plugins │  │  Manager   │  │
-│  └──────────┘  └──────────┘  └─────────┘  └────────────┘  │
+│                    Scripting & Plugin Layer                 │
+│  ┌──────────┐  ┌──────────┐  ┌─────────┐  ┌────────────┐    │
+│  │   Lua    │  │  Python  │  │ Binary  │  │  Script    │    │
+│  │ (mlua)   │  │  (PyO3)  │  │ Plugins │  │  Manager   │    │
+│  └──────────┘  └──────────┘  └─────────┘  └────────────┘    │
 └─────────────────────────────────────────────────────────────┘
                               │
 ┌─────────────────────────────────────────────────────────────┐
-│                      Core IRC Engine                         │
-│  ┌──────────────┐  ┌─────────────┐  ┌─────────────────┐   │
-│  │   Protocol   │  │    State    │  │   Connection    │   │
-│  │    Parser    │  │  Manager    │  │    Manager      │   │
-│  └──────────────┘  └─────────────┘  └─────────────────┘   │
+│                      Core IRC Engine                        │
+│  ┌──────────────┐  ┌─────────────┐  ┌─────────────────┐     │
+│  │   Protocol   │  │    State    │  │   Connection    │     │
+│  │    Parser    │  │  Manager    │  │    Manager      │     │
+│  └──────────────┘  └─────────────┘  └─────────────────┘     │
 └─────────────────────────────────────────────────────────────┘
                               │
 ┌─────────────────────────────────────────────────────────────┐
-│                    Network & Platform Layer                  │
-│  ┌──────────────┐  ┌─────────────┐  ┌─────────────────┐   │
-│  │    Tokio     │  │   rustls    │  │   Platform      │   │
-│  │    Async     │  │   TLS/SSL   │  │  Integration    │   │
-│  └──────────────┘  └─────────────┘  └─────────────────┘   │
+│                    Network & Platform Layer                 │
+│  ┌──────────────┐  ┌─────────────┐  ┌─────────────────┐     │
+│  │    Tokio     │  │   rustls    │  │   Platform      │     │
+│  │    Async     │  │   TLS/SSL   │  │  Integration    │     │
+│  └──────────────┘  └─────────────┘  └─────────────────┘     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ### Key Architectural Decisions
+
 - **Event-driven architecture** with message passing between components
 - **Actor model** for connection management using Tokio tasks
 - **Plugin isolation** with process boundaries for stability
@@ -171,6 +189,7 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 ## 🛠️ Technology Stack
 
 ### Core Technologies
+
 - **Language**: Rust (Edition 2021, MSRV 1.75.0)
 - **Async Runtime**: Tokio (multi-threaded, work-stealing)
 - **GUI Framework**: Iced (primary) / GTK-rs (fallback)
@@ -178,11 +197,13 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 - **TLS**: rustls (pure Rust, no OpenSSL)
 
 ### Scripting & Extensions
+
 - **Lua Scripting**: mlua (safe bindings, sandboxing)
 - **Python Scripting**: PyO3 (Python 3.8+, GIL management)
 - **Plugin System**: libloading (cross-platform dynamic loading)
 
 ### Development Tools
+
 - **Serialization**: serde with TOML configs
 - **Logging**: tracing with structured logging
 - **Error Handling**: anyhow + thiserror
@@ -190,17 +211,19 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 - **CLI**: clap v4
 
 ### Platform Integration
+
 - **Notifications**: notify-rust
 - **System Paths**: directories (XDG compliance)
 - **Cross-platform**: Full support for Windows 10+, macOS 10.15+, Linux (glibc 2.31+)
 
 ## 🚦 Current Status
 
-**Phase**: Documentation Complete ✅  
-**Next**: Phase 1 - Research & Setup  
+**Phase**: Documentation Complete ✅
+**Next**: Phase 1 - Research & Setup
 **Total Tasks**: 249 across 7 phases
 
 ### Completed
+
 - ✅ Comprehensive documentation structure
 - ✅ Detailed implementation plans for all phases
 - ✅ Technical specifications for all protocols
@@ -209,6 +232,7 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 - ✅ Testing strategy documentation
 
 ### Next Steps
+
 1. Initialize Git repository and GitHub project
 2. Set up development environment and CI/CD
 3. Begin technology validation prototypes
@@ -216,9 +240,10 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 
 ## 🤝 Contributing
 
-While RustIRC is currently in early development, we welcome contributions! 
+While RustIRC is currently in early development, we welcome contributions!
 
 ### Getting Started
+
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
@@ -226,6 +251,7 @@ While RustIRC is currently in early development, we welcome contributions!
 5. Open a Pull Request
 
 ### Development Setup
+
 ```bash
 # Clone the repository
 git clone https://github.com/doublegate/RustIRC.git
@@ -245,6 +271,7 @@ RUST_LOG=debug cargo run
 ```
 
 ### Code Style
+
 - Follow Rust standard formatting (`cargo fmt`)
 - Ensure no clippy warnings (`cargo clippy`)
 - Write tests for new functionality
@@ -273,6 +300,7 @@ at your option.
 
 ---
 
+<!-- markdownlint-disable MD033 -->
 <div align="center">
 
 **[⬆ Back to Top](#rustirc---modern-irc-client)**
@@ -280,3 +308,4 @@ at your option.
 Made with ❤️ and 🦀
 
 </div>
+<!-- markdownlint-enable MD033 -->

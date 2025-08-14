@@ -1,0 +1,23 @@
+[package]
+name = "rustirc-core"
+version = "0.1.0"
+edition = "2021"
+authors = ["RustIRC Contributors"]
+description = "Core functionality for RustIRC client"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+async-trait = "0.1"
+
+rustirc-protocol = { path = "../rustirc-protocol" }
+
+[dev-dependencies]
+tokio-test = { workspace = true }
+pretty_assertions = { workspace = true }

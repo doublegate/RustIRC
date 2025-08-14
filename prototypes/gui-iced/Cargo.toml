@@ -1,0 +1,8 @@
+[package]
+name = "rustirc-iced-prototype"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+iced = { version = "0.13", features = ["tokio", "debug"] }
+tokio = { version = "1.41", features = ["full"] }
