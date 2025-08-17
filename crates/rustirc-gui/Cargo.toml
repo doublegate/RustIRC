@@ -11,6 +11,8 @@ iced = { workspace = true }
 tokio = { workspace = true }
 serde = { workspace = true }
 tracing = { workspace = true }
+anyhow = { workspace = true }
+regex = { workspace = true }
 
 rustirc-core = { path = "../rustirc-core" }
 rustirc-protocol = { path = "../rustirc-protocol" }

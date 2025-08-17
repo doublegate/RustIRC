@@ -7,17 +7,27 @@ use async_trait::async_trait;
 
 #[derive(Debug, Clone)]
 pub enum Event {
-    Connected { server: String },
-    Disconnected { server: String },
-    MessageReceived(Message),
-    MessageSent(Message),
-    ChannelJoined { channel: String },
-    ChannelLeft { channel: String },
-    UserJoined { channel: String, user: String },
-    UserLeft { channel: String, user: String },
-    NickChanged { old: String, new: String },
-    TopicChanged { channel: String, topic: String },
-    Error(String),
+    // Connection events
+    Connected { connection_id: String },
+    Disconnected { connection_id: String, reason: String },
+    StateChanged { connection_id: String, state: crate::connection::ConnectionState },
+    
+    // Message events
+    MessageReceived { connection_id: String, message: Message },
+    MessageSent { connection_id: String, message: Message },
+    
+    // Channel events
+    ChannelJoined { connection_id: String, channel: String },
+    ChannelLeft { connection_id: String, channel: String },
+    UserJoined { connection_id: String, channel: String, user: String },
+    UserLeft { connection_id: String, channel: String, user: String },
+    
+    // User events  
+    NickChanged { connection_id: String, old: String, new: String },
+    TopicChanged { connection_id: String, channel: String, topic: String },
+    
+    // Error events
+    Error { connection_id: Option<String>, error: String },
 }
 
 #[async_trait]

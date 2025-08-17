@@ -13,6 +13,8 @@ tokio = { workspace = true }
 serde = { workspace = true }
 tracing = { workspace = true }
 anyhow = { workspace = true }
+regex = { workspace = true }
+async-trait = { workspace = true }
 
 rustirc-core = { path = "../rustirc-core" }
 rustirc-protocol = { path = "../rustirc-protocol" }

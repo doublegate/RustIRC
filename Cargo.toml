@@ -32,6 +32,10 @@ thiserror = "2.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
+# Text processing
+regex = "1.10"
+async-trait = "0.1"
+
 # UI
 iced = { version = "0.13", features = ["tokio", "debug"] }
 ratatui = "0.29"

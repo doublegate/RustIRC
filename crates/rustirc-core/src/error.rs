@@ -7,6 +7,21 @@ pub enum Error {
     #[error("Connection error: {0}")]
     Connection(String),
     
+    #[error("Connection failed: {0}")]
+    ConnectionFailed(String),
+    
+    #[error("Connection timeout")]
+    ConnectionTimeout,
+    
+    #[error("Connection closed")]
+    ConnectionClosed,
+    
+    #[error("Invalid address: {0}")]
+    InvalidAddress(String),
+    
+    #[error("Invalid TLS name: {0}")]
+    InvalidTlsName(String),
+    
     #[error("Protocol error: {0}")]
     Protocol(String),
     
@@ -20,7 +35,13 @@ pub enum Error {
     Serialization(#[from] serde_json::Error),
     
     #[error("TLS error: {0}")]
-    Tls(String),
+    TlsError(String),
+    
+    #[error("TLS config error: {0}")]
+    TlsConfig(#[from] rustls::Error),
+    
+    #[error("Channel send error")]
+    ChannelSend,
     
     #[error("Scripting error: {0}")]
     Scripting(String),
@@ -30,6 +51,9 @@ pub enum Error {
     
     #[error("State error: {0}")]
     State(String),
+    
+    #[error("Internal error: {0}")]
+    Internal(String),
     
     #[error("Unknown error: {0}")]
     Unknown(String),

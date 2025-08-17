@@ -86,9 +86,121 @@ impl Command {
                 }
                 msg
             }
-            _ => {
-                // Add more conversions as needed
-                crate::Message::new("UNKNOWN")
+            Command::Pass { password } => {
+                crate::Message::new("PASS").add_param(password.clone())
+            }
+            Command::Quit { message } => {
+                let mut msg = crate::Message::new("QUIT");
+                if let Some(message) = message {
+                    msg = msg.add_param(message.clone());
+                }
+                msg
+            }
+            Command::Part { channels, message } => {
+                let mut msg = crate::Message::new("PART")
+                    .add_param(channels.join(","));
+                if let Some(message) = message {
+                    msg = msg.add_param(message.clone());
+                }
+                msg
+            }
+            Command::Topic { channel, topic } => {
+                let mut msg = crate::Message::new("TOPIC")
+                    .add_param(channel.clone());
+                if let Some(topic) = topic {
+                    msg = msg.add_param(topic.clone());
+                }
+                msg
+            }
+            Command::Names { channels } => {
+                crate::Message::new("NAMES")
+                    .add_param(channels.join(","))
+            }
+            Command::List { channels } => {
+                let mut msg = crate::Message::new("LIST");
+                if let Some(channels) = channels {
+                    msg = msg.add_param(channels.join(","));
+                }
+                msg
+            }
+            Command::Notice { target, text } => {
+                crate::Message::new("NOTICE")
+                    .add_param(target.clone())
+                    .add_param(text.clone())
+            }
+            Command::Who { mask } => {
+                crate::Message::new("WHO").add_param(mask.clone())
+            }
+            Command::Whois { targets } => {
+                crate::Message::new("WHOIS")
+                    .add_param(targets.join(","))
+            }
+            Command::Whowas { nicknames, count } => {
+                let mut msg = crate::Message::new("WHOWAS")
+                    .add_param(nicknames.join(","));
+                if let Some(count) = count {
+                    msg = msg.add_param(count.to_string());
+                }
+                msg
+            }
+            Command::Pong { server1, server2 } => {
+                let mut msg = crate::Message::new("PONG").add_param(server1.clone());
+                if let Some(server2) = server2 {
+                    msg = msg.add_param(server2.clone());
+                }
+                msg
+            }
+            Command::Cap { subcommand } => {
+                match subcommand {
+                    CapSubcommand::Ls { version } => {
+                        let mut msg = crate::Message::new("CAP").add_param("LS");
+                        if let Some(version) = version {
+                            msg = msg.add_param(version.clone());
+                        }
+                        msg
+                    }
+                    CapSubcommand::List => {
+                        crate::Message::new("CAP").add_param("LIST")
+                    }
+                    CapSubcommand::Req { capabilities } => {
+                        crate::Message::new("CAP")
+                            .add_param("REQ")
+                            .add_param(capabilities.join(" "))
+                    }
+                    CapSubcommand::Ack { capabilities } => {
+                        crate::Message::new("CAP")
+                            .add_param("ACK")
+                            .add_param(capabilities.join(" "))
+                    }
+                    CapSubcommand::Nak { capabilities } => {
+                        crate::Message::new("CAP")
+                            .add_param("NAK")
+                            .add_param(capabilities.join(" "))
+                    }
+                    CapSubcommand::End => {
+                        crate::Message::new("CAP").add_param("END")
+                    }
+                }
+            }
+            Command::Authenticate { data } => {
+                crate::Message::new("AUTHENTICATE").add_param(data.clone())
+            }
+            Command::Mode { target, modes, params } => {
+                let mut msg = crate::Message::new("MODE").add_param(target.clone());
+                if let Some(modes) = modes {
+                    msg = msg.add_param(modes.clone());
+                }
+                for param in params {
+                    msg = msg.add_param(param.clone());
+                }
+                msg
+            }
+            Command::Raw { command, params } => {
+                let mut msg = crate::Message::new(command.clone());
+                for param in params {
+                    msg = msg.add_param(param.clone());
+                }
+                msg
             }
         }
     }

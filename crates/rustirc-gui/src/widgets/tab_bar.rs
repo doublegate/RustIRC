@@ -1,0 +1,323 @@
+//! Tab bar widget for RustIRC GUI
+//!
+//! Manages open tabs (channels, private messages, server tabs) with activity indicators,
+//! close buttons, and drag-and-drop reordering.
+
+use crate::state::{AppState, Tab, TabType};
+use crate::theme::Theme;
+use iced::{
+    widget::{container, scrollable, text, button, row, Space},
+    Element, Length, Task, Color, Alignment, Background,
+};
+
+/// Messages for tab bar interactions
+#[derive(Debug, Clone)]
+pub enum TabBarMessage {
+    SwitchTab(String),
+    CloseTab(String),
+    MoveTab(String, usize),
+    NewTab,
+    CloseAllTabs,
+    CloseOtherTabs(String),
+    TabContextMenu(String),
+}
+
+/// Tab bar widget state
+#[derive(Debug, Clone)]
+pub struct TabBar {
+    max_tab_width: f32,
+    show_close_buttons: bool,
+    compact_mode: bool,
+    scrollable: bool,
+}
+
+impl TabBar {
+    pub fn new() -> Self {
+        Self {
+            max_tab_width: 150.0,
+            show_close_buttons: true,
+            compact_mode: false,
+            scrollable: true,
+        }
+    }
+
+    /// Update the tab bar state
+    pub fn update(&mut self, message: TabBarMessage, app_state: &mut AppState) -> Task<TabBarMessage> {
+        match message {
+            TabBarMessage::SwitchTab(tab_id) => {
+                app_state.switch_to_tab(&tab_id);
+                
+                // Mark tab as read when switched to
+                if let Some(tab) = app_state.current_tab_mut() {
+                    tab.mark_as_read();
+                }
+                
+                Task::none()
+            }
+            TabBarMessage::CloseTab(tab_id) => {
+                app_state.close_tab(&tab_id);
+                Task::none()
+            }
+            TabBarMessage::MoveTab(tab_id, new_position) => {
+                // TODO: Implement tab reordering
+                Task::none()
+            }
+            TabBarMessage::NewTab => {
+                // TODO: Show new tab dialog or create server tab
+                Task::none()
+            }
+            TabBarMessage::CloseAllTabs => {
+                // Close all tabs except server tabs
+                let tabs_to_close: Vec<String> = app_state.tabs()
+                    .iter()
+                    .filter(|(_, tab)| !matches!(tab.tab_type, TabType::Server))
+                    .map(|(id, _)| id.clone())
+                    .collect();
+                
+                for tab_id in tabs_to_close {
+                    app_state.close_tab(&tab_id);
+                }
+                
+                Task::none()
+            }
+            TabBarMessage::CloseOtherTabs(keep_tab_id) => {
+                // Close all tabs except the specified one and server tabs
+                let tabs_to_close: Vec<String> = app_state.tabs()
+                    .iter()
+                    .filter(|(id, tab)| {
+                        *id != &keep_tab_id && !matches!(tab.tab_type, TabType::Server)
+                    })
+                    .map(|(id, _)| id.clone())
+                    .collect();
+                
+                for tab_id in tabs_to_close {
+                    app_state.close_tab(&tab_id);
+                }
+                
+                Task::none()
+            }
+            TabBarMessage::TabContextMenu(tab_id) => {
+                // TODO: Show tab context menu
+                Task::none()
+            }
+        }
+    }
+
+    /// Render the tab bar
+    pub fn view(&self, app_state: &AppState) -> Element<TabBarMessage> {
+        let tabs = app_state.tabs();
+        let tab_order = app_state.tab_order();
+        let current_tab_id = app_state.current_tab().map(|tab| {
+            // Need to find the tab ID from the tab order
+            tab_order.iter().find(|id| {
+                app_state.tabs().get(*id).map(|t| std::ptr::eq(t, tab)).unwrap_or(false)
+            }).cloned()
+        }).flatten();
+
+        if tabs.is_empty() {
+            return container(
+                text("No tabs open")
+                    .size(12.0)
+                    .color(Color::from_rgb(0.6, 0.6, 0.6))
+            )
+            .padding(8)
+            .width(Length::Fill)
+            .height(Length::Fixed(40.0))
+            .into();
+        }
+
+        let mut tab_row = row![];
+
+        for tab_id in tab_order {
+            if let Some(tab) = tabs.get(tab_id) {
+                let tab_element = self.render_tab(tab_id, tab, current_tab_id.as_ref() == Some(tab_id));
+                tab_row = tab_row.push(tab_element);
+            }
+        }
+
+        // Add new tab button
+        let new_tab_button = button(
+            text("+")
+                .size(16.0)
+                .color(Color::from_rgb(0.8, 0.8, 0.8))
+        )
+        .on_press(TabBarMessage::NewTab)
+        .width(Length::Fixed(30.0))
+        .height(Length::Fixed(30.0))
+        .padding(0);
+
+        tab_row = tab_row.push(Space::with_width(Length::Fixed(4.0)));
+        tab_row = tab_row.push(new_tab_button);
+        tab_row = tab_row.push(Space::with_width(Length::Fill));
+
+        let content: Element<TabBarMessage> = if self.scrollable {
+            scrollable(tab_row)
+                .direction(scrollable::Direction::Horizontal(Default::default()))
+                .height(Length::Fixed(40.0))
+                .into()
+        } else {
+            container(tab_row)
+                .height(Length::Fixed(40.0))
+                .into()
+        };
+
+        container(content)
+            .width(Length::Fill)
+            .into()
+    }
+
+    /// Render a single tab
+    fn render_tab(&self, tab_id: &str, tab: &Tab, is_active: bool) -> Element<TabBarMessage> {
+        // Get tab icon and title
+        let (icon, title) = self.get_tab_display(tab);
+        
+        // Activity indicators
+        let activity_indicator = if tab.has_highlight {
+            Some(Color::from_rgb(1.0, 0.2, 0.2)) // Red for highlights
+        } else if tab.has_activity {
+            Some(Color::from_rgb(0.2, 0.6, 1.0)) // Blue for activity
+        } else {
+            None
+        };
+
+        // Tab background color
+        let background_color = if is_active {
+            Color::from_rgb(0.3, 0.3, 0.4)
+        } else if activity_indicator.is_some() {
+            Color::from_rgb(0.2, 0.2, 0.3)
+        } else {
+            Color::TRANSPARENT
+        };
+
+        // Tab text color
+        let text_color = if is_active {
+            Color::from_rgb(1.0, 1.0, 1.0)
+        } else if activity_indicator.is_some() {
+            Color::from_rgb(0.9, 0.9, 0.9)
+        } else {
+            Color::from_rgb(0.7, 0.7, 0.7)
+        };
+
+        // Build tab content
+        let mut tab_content = row![];
+
+        // Activity indicator
+        if let Some(indicator_color) = activity_indicator {
+            tab_content = tab_content.push(
+                container(Space::with_width(Length::Fixed(4.0)))
+                    .width(Length::Fixed(4.0))
+                    .height(Length::Fixed(20.0))
+            );
+            tab_content = tab_content.push(Space::with_width(Length::Fixed(4.0)));
+        }
+
+        // Tab icon (if not compact)
+        if !self.compact_mode && !icon.is_empty() {
+            tab_content = tab_content.push(
+                text(icon)
+                    .size(12.0)
+                    .color(text_color)
+            );
+            tab_content = tab_content.push(Space::with_width(Length::Fixed(4.0)));
+        }
+
+        // Tab title
+        let title_text = if title.len() > 15 && self.compact_mode {
+            format!("{}...", &title[..12])
+        } else if title.len() > 20 {
+            format!("{}...", &title[..17])
+        } else {
+            title
+        };
+
+        tab_content = tab_content.push(
+            text(title_text)
+                .size(if self.compact_mode { 11.0 } else { 12.0 })
+                .color(text_color)
+        );
+
+        // Close button
+        if self.show_close_buttons && !matches!(tab.tab_type, TabType::Server) {
+            tab_content = tab_content.push(Space::with_width(Length::Fixed(4.0)));
+            tab_content = tab_content.push(
+                button(
+                    text("×")
+                        .size(14.0)
+                        .color(Color::from_rgb(0.8, 0.8, 0.8))
+                )
+                .on_press(TabBarMessage::CloseTab(tab_id.to_string()))
+                .width(Length::Fixed(16.0))
+                .height(Length::Fixed(16.0))
+                .padding(0)
+            );
+        }
+
+        // Wrap in clickable button
+        let tab_button = button(tab_content)
+            .on_press(TabBarMessage::SwitchTab(tab_id.to_string()))
+            .width(Length::Fixed(if self.compact_mode { 
+                self.max_tab_width * 0.7 
+            } else { 
+                self.max_tab_width 
+            }))
+            .height(Length::Fixed(if self.compact_mode { 28.0 } else { 32.0 }))
+            .padding([4, 8]);
+
+        container(tab_button)
+            .into()
+    }
+
+    /// Get display icon and title for a tab
+    fn get_tab_display(&self, tab: &Tab) -> (String, String) {
+        match &tab.tab_type {
+            TabType::Server => {
+                let title = tab.server_id.as_ref().unwrap_or(&"Server".to_string()).clone();
+                ("🖥".to_string(), title)
+            }
+            TabType::Channel { channel } => {
+                ("#".to_string(), channel.clone())
+            }
+            TabType::PrivateMessage { nick } => {
+                ("@".to_string(), nick.clone())
+            }
+        }
+    }
+
+    /// Set maximum tab width
+    pub fn set_max_tab_width(&mut self, width: f32) {
+        self.max_tab_width = width;
+    }
+
+    /// Toggle close buttons
+    pub fn toggle_close_buttons(&mut self) {
+        self.show_close_buttons = !self.show_close_buttons;
+    }
+
+    /// Toggle compact mode
+    pub fn toggle_compact_mode(&mut self) {
+        self.compact_mode = !self.compact_mode;
+    }
+
+    /// Set scrollable behavior
+    pub fn set_scrollable(&mut self, scrollable: bool) {
+        self.scrollable = scrollable;
+    }
+
+    /// Get active tab count
+    pub fn tab_count(&self, app_state: &AppState) -> usize {
+        app_state.tabs().len()
+    }
+
+    /// Get activity count (tabs with activity or highlights)
+    pub fn activity_count(&self, app_state: &AppState) -> usize {
+        app_state.tabs().values()
+            .filter(|tab| tab.has_activity || tab.has_highlight)
+            .count()
+    }
+}
+
+impl Default for TabBar {
+    fn default() -> Self {
+        Self::new()
+    }
+}

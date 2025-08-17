@@ -1,0 +1,774 @@
+//! Dialog system for RustIRC GUI
+//!
+//! Implements modal dialogs for server connections, preferences,
+//! channel joining, and other user interactions.
+
+use iced::{Element, Length, Size, Task};
+use iced::widget::{
+    button, checkbox, column, container, row, text, text_input, 
+    scrollable, vertical_space, horizontal_space, pick_list
+};
+use crate::state::AppState;
+use crate::theme::Theme;
+use rustirc_core::connection::ConnectionConfig;
+
+/// Dialog message types
+#[derive(Debug, Clone)]
+pub enum DialogMessage {
+    // Connection dialog
+    ConnectionServerChanged(String),
+    ConnectionPortChanged(String),
+    ConnectionNickChanged(String),
+    ConnectionUsernameChanged(String),
+    ConnectionRealnameChanged(String),
+    ConnectionPasswordChanged(String),
+    ConnectionUseTlsToggled(bool),
+    ConnectionAutoConnectToggled(bool),
+    ConnectionConnect,
+    ConnectionCancel,
+    
+    // Join channel dialog
+    JoinChannelChanged(String),
+    JoinChannelKeyChanged(String),
+    JoinChannel,
+    JoinCancel,
+    
+    // Preferences dialog
+    PreferencesThemeChanged(String),
+    PreferencesFontSizeChanged(String),
+    PreferencesNotificationSoundToggled(bool),
+    PreferencesNotificationPopupToggled(bool),
+    PreferencesShowTimestampsToggled(bool),
+    PreferencesNickColorsToggled(bool),
+    PreferencesCompactModeToggled(bool),
+    PreferencesApply,
+    PreferencesCancel,
+    
+    // About dialog
+    AboutOk,
+    
+    // Find dialog
+    FindQueryChanged(String),
+    FindNext,
+    FindPrevious,
+    FindCaseSensitiveToggled(bool),
+    FindRegexToggled(bool),
+    FindClose,
+    
+    // Network list dialog
+    NetworkListAdd,
+    NetworkListEdit(usize),
+    NetworkListDelete(usize),
+    NetworkListConnect(usize),
+    NetworkListClose,
+}
+
+/// Available dialog types
+#[derive(Debug, Clone, PartialEq)]
+pub enum DialogType {
+    None,
+    Connection,
+    JoinChannel,
+    Preferences,
+    About,
+    Find,
+    NetworkList,
+}
+
+/// Dialog manager
+pub struct DialogManager {
+    current_dialog: DialogType,
+    connection_dialog: ConnectionDialog,
+    join_channel_dialog: JoinChannelDialog,
+    preferences_dialog: PreferencesDialog,
+    about_dialog: AboutDialog,
+    find_dialog: FindDialog,
+    network_list_dialog: NetworkListDialog,
+}
+
+impl DialogManager {
+    pub fn new() -> Self {
+        Self {
+            current_dialog: DialogType::None,
+            connection_dialog: ConnectionDialog::new(),
+            join_channel_dialog: JoinChannelDialog::new(),
+            preferences_dialog: PreferencesDialog::new(),
+            about_dialog: AboutDialog::new(),
+            find_dialog: FindDialog::new(),
+            network_list_dialog: NetworkListDialog::new(),
+        }
+    }
+    
+    pub fn show_dialog(&mut self, dialog_type: DialogType) {
+        self.current_dialog = dialog_type;
+    }
+    
+    pub fn hide_dialog(&mut self) {
+        self.current_dialog = DialogType::None;
+    }
+    
+    pub fn is_showing(&self) -> bool {
+        self.current_dialog != DialogType::None
+    }
+    
+    pub fn current_dialog(&self) -> &DialogType {
+        &self.current_dialog
+    }
+    
+    pub fn update(&mut self, message: DialogMessage, app_state: &mut AppState) -> Task<DialogMessage> {
+        match message {
+            // Connection dialog messages
+            DialogMessage::ConnectionServerChanged(server) => {
+                self.connection_dialog.server = server;
+                Task::none()
+            }
+            DialogMessage::ConnectionPortChanged(port) => {
+                if let Ok(port_num) = port.parse::<u16>() {
+                    self.connection_dialog.port = port_num;
+                }
+                Task::none()
+            }
+            DialogMessage::ConnectionNickChanged(nick) => {
+                self.connection_dialog.nickname = nick;
+                Task::none()
+            }
+            DialogMessage::ConnectionUsernameChanged(username) => {
+                self.connection_dialog.username = username;
+                Task::none()
+            }
+            DialogMessage::ConnectionRealnameChanged(realname) => {
+                self.connection_dialog.realname = realname;
+                Task::none()
+            }
+            DialogMessage::ConnectionPasswordChanged(password) => {
+                self.connection_dialog.password = password;
+                Task::none()
+            }
+            DialogMessage::ConnectionUseTlsToggled(use_tls) => {
+                self.connection_dialog.use_tls = use_tls;
+                Task::none()
+            }
+            DialogMessage::ConnectionAutoConnectToggled(auto_connect) => {
+                self.connection_dialog.auto_connect = auto_connect;
+                Task::none()
+            }
+            DialogMessage::ConnectionConnect => {
+                // Create connection config and trigger connection
+                let config = self.connection_dialog.to_connection_config();
+                self.hide_dialog();
+                // This would trigger actual connection
+                Task::none()
+            }
+            DialogMessage::ConnectionCancel => {
+                self.hide_dialog();
+                Task::none()
+            }
+            
+            // Join channel dialog messages
+            DialogMessage::JoinChannelChanged(channel) => {
+                self.join_channel_dialog.channel = channel;
+                Task::none()
+            }
+            DialogMessage::JoinChannelKeyChanged(key) => {
+                self.join_channel_dialog.key = key;
+                Task::none()
+            }
+            DialogMessage::JoinChannel => {
+                let channel = self.join_channel_dialog.channel.clone();
+                self.hide_dialog();
+                // This would trigger channel join
+                Task::none()
+            }
+            DialogMessage::JoinCancel => {
+                self.hide_dialog();
+                Task::none()
+            }
+            
+            // Preferences dialog messages
+            DialogMessage::PreferencesThemeChanged(theme) => {
+                self.preferences_dialog.theme = theme;
+                Task::none()
+            }
+            DialogMessage::PreferencesFontSizeChanged(size) => {
+                if let Ok(font_size) = size.parse::<f32>() {
+                    self.preferences_dialog.font_size = font_size;
+                }
+                Task::none()
+            }
+            DialogMessage::PreferencesNotificationSoundToggled(enabled) => {
+                self.preferences_dialog.notification_sound = enabled;
+                Task::none()
+            }
+            DialogMessage::PreferencesNotificationPopupToggled(enabled) => {
+                self.preferences_dialog.notification_popup = enabled;
+                Task::none()
+            }
+            DialogMessage::PreferencesShowTimestampsToggled(enabled) => {
+                self.preferences_dialog.show_timestamps = enabled;
+                Task::none()
+            }
+            DialogMessage::PreferencesNickColorsToggled(enabled) => {
+                self.preferences_dialog.nick_colors = enabled;
+                Task::none()
+            }
+            DialogMessage::PreferencesCompactModeToggled(enabled) => {
+                self.preferences_dialog.compact_mode = enabled;
+                Task::none()
+            }
+            DialogMessage::PreferencesApply => {
+                self.preferences_dialog.apply_to_app_state(app_state);
+                self.hide_dialog();
+                Task::none()
+            }
+            DialogMessage::PreferencesCancel => {
+                self.hide_dialog();
+                Task::none()
+            }
+            
+            // About dialog messages
+            DialogMessage::AboutOk => {
+                self.hide_dialog();
+                Task::none()
+            }
+            
+            // Find dialog messages
+            DialogMessage::FindQueryChanged(query) => {
+                self.find_dialog.query = query;
+                Task::none()
+            }
+            DialogMessage::FindNext => {
+                // Perform search
+                Task::none()
+            }
+            DialogMessage::FindPrevious => {
+                // Perform reverse search
+                Task::none()
+            }
+            DialogMessage::FindCaseSensitiveToggled(case_sensitive) => {
+                self.find_dialog.case_sensitive = case_sensitive;
+                Task::none()
+            }
+            DialogMessage::FindRegexToggled(regex) => {
+                self.find_dialog.regex = regex;
+                Task::none()
+            }
+            DialogMessage::FindClose => {
+                self.hide_dialog();
+                Task::none()
+            }
+            
+            // Network list dialog messages
+            DialogMessage::NetworkListAdd => {
+                // Add new network
+                Task::none()
+            }
+            DialogMessage::NetworkListEdit(index) => {
+                // Edit network at index
+                Task::none()
+            }
+            DialogMessage::NetworkListDelete(index) => {
+                // Delete network at index
+                Task::none()
+            }
+            DialogMessage::NetworkListConnect(index) => {
+                // Connect to network at index
+                self.hide_dialog();
+                Task::none()
+            }
+            DialogMessage::NetworkListClose => {
+                self.hide_dialog();
+                Task::none()
+            }
+        }
+    }
+    
+    pub fn view(&self, app_state: &AppState) -> Option<Element<DialogMessage>> {
+        match self.current_dialog {
+            DialogType::None => None,
+            DialogType::Connection => Some(self.connection_dialog.view()),
+            DialogType::JoinChannel => Some(self.join_channel_dialog.view()),
+            DialogType::Preferences => Some(self.preferences_dialog.view()),
+            DialogType::About => Some(self.about_dialog.view()),
+            DialogType::Find => Some(self.find_dialog.view()),
+            DialogType::NetworkList => Some(self.network_list_dialog.view()),
+        }
+    }
+}
+
+/// Server connection dialog
+#[derive(Debug, Clone)]
+pub struct ConnectionDialog {
+    pub server: String,
+    pub port: u16,
+    pub nickname: String,
+    pub username: String,
+    pub realname: String,
+    pub password: String,
+    pub use_tls: bool,
+    pub auto_connect: bool,
+}
+
+impl ConnectionDialog {
+    pub fn new() -> Self {
+        Self {
+            server: String::new(),
+            port: 6667,
+            nickname: "RustIRC".to_string(),
+            username: "rustirc".to_string(),
+            realname: "RustIRC User".to_string(),
+            password: String::new(),
+            use_tls: false,
+            auto_connect: false,
+        }
+    }
+    
+    pub fn to_connection_config(&self) -> ConnectionConfig {
+        ConnectionConfig {
+            server: self.server.clone(),
+            port: self.port,
+            nickname: self.nickname.clone(),
+            username: self.username.clone(),
+            realname: self.realname.clone(),
+            password: if self.password.is_empty() { None } else { Some(self.password.clone()) },
+            use_tls: self.use_tls,
+            ..Default::default()
+        }
+    }
+    
+    pub fn view(&self) -> Element<DialogMessage> {
+        let content = column![
+            text("Connect to IRC Server").size(20),
+            vertical_space().height(10),
+            
+            row![
+                text("Server:").width(80),
+                text_input("irc.libera.chat", &self.server)
+                    .on_input(DialogMessage::ConnectionServerChanged)
+                    .width(200),
+            ].spacing(10),
+            
+            row![
+                text("Port:").width(80),
+                text_input("6667", &self.port.to_string())
+                    .on_input(DialogMessage::ConnectionPortChanged)
+                    .width(100),
+            ].spacing(10),
+            
+            row![
+                text("Nickname:").width(80),
+                text_input("nickname", &self.nickname)
+                    .on_input(DialogMessage::ConnectionNickChanged)
+                    .width(200),
+            ].spacing(10),
+            
+            row![
+                text("Username:").width(80),
+                text_input("username", &self.username)
+                    .on_input(DialogMessage::ConnectionUsernameChanged)
+                    .width(200),
+            ].spacing(10),
+            
+            row![
+                text("Real name:").width(80),
+                text_input("Real Name", &self.realname)
+                    .on_input(DialogMessage::ConnectionRealnameChanged)
+                    .width(200),
+            ].spacing(10),
+            
+            row![
+                text("Password:").width(80),
+                text_input("", &self.password)
+                    .on_input(DialogMessage::ConnectionPasswordChanged)
+                    .password()
+                    .width(200),
+            ].spacing(10),
+            
+            checkbox("Use TLS/SSL", self.use_tls)
+                .on_toggle(DialogMessage::ConnectionUseTlsToggled),
+            
+            checkbox("Auto-connect on startup", self.auto_connect)
+                .on_toggle(DialogMessage::ConnectionAutoConnectToggled),
+            
+            vertical_space().height(20),
+            
+            row![
+                button(text("Connect"))
+                    .on_press(DialogMessage::ConnectionConnect),
+                horizontal_space().width(10),
+                button(text("Cancel"))
+                    .on_press(DialogMessage::ConnectionCancel),
+            ],
+        ]
+        .spacing(10)
+        .padding(20)
+        .max_width(400);
+        
+        container(content)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .center_x()
+            .center_y()
+            .into()
+    }
+}
+
+/// Join channel dialog
+#[derive(Debug, Clone)]
+pub struct JoinChannelDialog {
+    pub channel: String,
+    pub key: String,
+}
+
+impl JoinChannelDialog {
+    pub fn new() -> Self {
+        Self {
+            channel: String::new(),
+            key: String::new(),
+        }
+    }
+    
+    pub fn view(&self) -> Element<DialogMessage> {
+        let content = column![
+            text("Join Channel").size(20),
+            vertical_space().height(10),
+            
+            row![
+                text("Channel:").width(80),
+                text_input("#channel", &self.channel)
+                    .on_input(DialogMessage::JoinChannelChanged)
+                    .width(200),
+            ].spacing(10),
+            
+            row![
+                text("Key:").width(80),
+                text_input("", &self.key)
+                    .on_input(DialogMessage::JoinChannelKeyChanged)
+                    .width(200),
+            ].spacing(10),
+            
+            vertical_space().height(20),
+            
+            row![
+                button(text("Join"))
+                    .on_press(DialogMessage::JoinChannel),
+                horizontal_space().width(10),
+                button(text("Cancel"))
+                    .on_press(DialogMessage::JoinCancel),
+            ],
+        ]
+        .spacing(10)
+        .padding(20)
+        .max_width(350);
+        
+        container(content)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .center_x()
+            .center_y()
+            .into()
+    }
+}
+
+/// Preferences dialog
+#[derive(Debug, Clone)]
+pub struct PreferencesDialog {
+    pub theme: String,
+    pub font_size: f32,
+    pub notification_sound: bool,
+    pub notification_popup: bool,
+    pub show_timestamps: bool,
+    pub nick_colors: bool,
+    pub compact_mode: bool,
+}
+
+impl PreferencesDialog {
+    pub fn new() -> Self {
+        Self {
+            theme: "Dark".to_string(),
+            font_size: 13.0,
+            notification_sound: true,
+            notification_popup: true,
+            show_timestamps: true,
+            nick_colors: true,
+            compact_mode: false,
+        }
+    }
+    
+    pub fn from_app_state(app_state: &AppState) -> Self {
+        let settings = app_state.settings();
+        Self {
+            theme: "Dark".to_string(), // Would get from theme system
+            font_size: settings.font_size,
+            notification_sound: settings.notification_sound,
+            notification_popup: settings.notification_popup,
+            show_timestamps: settings.show_timestamps,
+            nick_colors: settings.nick_colors,
+            compact_mode: settings.compact_mode,
+        }
+    }
+    
+    pub fn apply_to_app_state(&self, app_state: &mut AppState) {
+        let settings = app_state.settings_mut();
+        settings.font_size = self.font_size;
+        settings.notification_sound = self.notification_sound;
+        settings.notification_popup = self.notification_popup;
+        settings.show_timestamps = self.show_timestamps;
+        settings.nick_colors = self.nick_colors;
+        settings.compact_mode = self.compact_mode;
+    }
+    
+    pub fn view(&self) -> Element<DialogMessage> {
+        let theme_options = vec!["Dark".to_string(), "Light".to_string(), "Solarized Dark".to_string()];
+        
+        let content = column![
+            text("Preferences").size(20),
+            vertical_space().height(10),
+            
+            text("Appearance").size(16),
+            row![
+                text("Theme:").width(120),
+                pick_list(theme_options, Some(self.theme.clone()), DialogMessage::PreferencesThemeChanged)
+                    .width(150),
+            ].spacing(10),
+            
+            row![
+                text("Font size:").width(120),
+                text_input("13", &self.font_size.to_string())
+                    .on_input(DialogMessage::PreferencesFontSizeChanged)
+                    .width(100),
+            ].spacing(10),
+            
+            vertical_space().height(10),
+            
+            text("Notifications").size(16),
+            checkbox("Sound notifications", self.notification_sound)
+                .on_toggle(DialogMessage::PreferencesNotificationSoundToggled),
+            
+            checkbox("Popup notifications", self.notification_popup)
+                .on_toggle(DialogMessage::PreferencesNotificationPopupToggled),
+            
+            vertical_space().height(10),
+            
+            text("Display").size(16),
+            checkbox("Show timestamps", self.show_timestamps)
+                .on_toggle(DialogMessage::PreferencesShowTimestampsToggled),
+            
+            checkbox("Colored nicknames", self.nick_colors)
+                .on_toggle(DialogMessage::PreferencesNickColorsToggled),
+            
+            checkbox("Compact mode", self.compact_mode)
+                .on_toggle(DialogMessage::PreferencesCompactModeToggled),
+            
+            vertical_space().height(20),
+            
+            row![
+                button(text("Apply"))
+                    .on_press(DialogMessage::PreferencesApply),
+                horizontal_space().width(10),
+                button(text("Cancel"))
+                    .on_press(DialogMessage::PreferencesCancel),
+            ],
+        ]
+        .spacing(10)
+        .padding(20)
+        .max_width(400);
+        
+        container(content)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .center_x()
+            .center_y()
+            .into()
+    }
+}
+
+/// About dialog
+#[derive(Debug, Clone)]
+pub struct AboutDialog;
+
+impl AboutDialog {
+    pub fn new() -> Self {
+        Self
+    }
+    
+    pub fn view(&self) -> Element<DialogMessage> {
+        let content = column![
+            text("RustIRC").size(24),
+            text("Modern IRC Client").size(16),
+            vertical_space().height(10),
+            text("Version 1.0.0"),
+            text("Built with Rust and Iced"),
+            vertical_space().height(10),
+            text("A modern IRC client combining the best features"),
+            text("of mIRC, HexChat, and WeeChat."),
+            vertical_space().height(20),
+            text("© 2025 RustIRC Project"),
+            vertical_space().height(20),
+            button(text("OK"))
+                .on_press(DialogMessage::AboutOk),
+        ]
+        .spacing(5)
+        .padding(20)
+        .max_width(350);
+        
+        container(content)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .center_x()
+            .center_y()
+            .into()
+    }
+}
+
+/// Find dialog
+#[derive(Debug, Clone)]
+pub struct FindDialog {
+    pub query: String,
+    pub case_sensitive: bool,
+    pub regex: bool,
+}
+
+impl FindDialog {
+    pub fn new() -> Self {
+        Self {
+            query: String::new(),
+            case_sensitive: false,
+            regex: false,
+        }
+    }
+    
+    pub fn view(&self) -> Element<DialogMessage> {
+        let content = column![
+            text("Find").size(20),
+            vertical_space().height(10),
+            
+            row![
+                text("Find:").width(60),
+                text_input("Search text", &self.query)
+                    .on_input(DialogMessage::FindQueryChanged)
+                    .width(250),
+            ].spacing(10),
+            
+            checkbox("Case sensitive", self.case_sensitive)
+                .on_toggle(DialogMessage::FindCaseSensitiveToggled),
+            
+            checkbox("Regular expression", self.regex)
+                .on_toggle(DialogMessage::FindRegexToggled),
+            
+            vertical_space().height(20),
+            
+            row![
+                button(text("Find Next"))
+                    .on_press(DialogMessage::FindNext),
+                horizontal_space().width(10),
+                button(text("Find Previous"))
+                    .on_press(DialogMessage::FindPrevious),
+                horizontal_space().width(10),
+                button(text("Close"))
+                    .on_press(DialogMessage::FindClose),
+            ],
+        ]
+        .spacing(10)
+        .padding(20)
+        .max_width(400);
+        
+        container(content)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .center_x()
+            .center_y()
+            .into()
+    }
+}
+
+/// Network list dialog
+#[derive(Debug, Clone)]
+pub struct NetworkListDialog {
+    pub networks: Vec<NetworkEntry>,
+}
+
+#[derive(Debug, Clone)]
+pub struct NetworkEntry {
+    pub name: String,
+    pub servers: Vec<String>,
+    pub auto_connect: bool,
+}
+
+impl NetworkListDialog {
+    pub fn new() -> Self {
+        Self {
+            networks: vec![
+                NetworkEntry {
+                    name: "Libera.Chat".to_string(),
+                    servers: vec!["irc.libera.chat:6667".to_string()],
+                    auto_connect: false,
+                },
+                NetworkEntry {
+                    name: "OFTC".to_string(),
+                    servers: vec!["irc.oftc.net:6667".to_string()],
+                    auto_connect: false,
+                },
+            ],
+        }
+    }
+    
+    pub fn view(&self) -> Element<DialogMessage> {
+        let network_list = scrollable(
+            column(
+                self.networks.iter().enumerate().map(|(i, network)| {
+                    row![
+                        text(&network.name).width(150),
+                        text(network.servers.join(", ")).width(200),
+                        button(text("Connect"))
+                            .on_press(DialogMessage::NetworkListConnect(i)),
+                        button(text("Edit"))
+                            .on_press(DialogMessage::NetworkListEdit(i)),
+                        button(text("Delete"))
+                            .on_press(DialogMessage::NetworkListDelete(i)),
+                    ]
+                    .spacing(10)
+                    .into()
+                }).collect()
+            )
+        );
+        
+        let content = column![
+            text("Network List").size(20),
+            vertical_space().height(10),
+            
+            row![
+                text("Network").width(150),
+                text("Servers").width(200),
+                text("Actions"),
+            ],
+            
+            network_list.height(300),
+            
+            vertical_space().height(10),
+            
+            row![
+                button(text("Add Network"))
+                    .on_press(DialogMessage::NetworkListAdd),
+                horizontal_space().width(Length::Fill),
+                button(text("Close"))
+                    .on_press(DialogMessage::NetworkListClose),
+            ],
+        ]
+        .spacing(10)
+        .padding(20)
+        .max_width(600);
+        
+        container(content)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .center_x()
+            .center_y()
+            .into()
+    }
+}
+
+impl Default for DialogManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}

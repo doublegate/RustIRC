@@ -12,15 +12,23 @@ use tokio::sync::RwLock;
 
 pub mod client;
 pub mod config;
+pub mod connection;
 pub mod error;
 pub mod events;
+pub mod recovery;
+pub mod router;
 pub mod state;
+pub mod ui;
 
 pub use client::IrcClient;
 pub use config::Config;
+pub use connection::{ConnectionManager, IrcConnection, ConnectionConfig, ConnectionState};
 pub use error::{Error, Result};
 pub use events::{Event, EventHandler};
-pub use state::{ClientState, ServerState, ChannelState};
+pub use recovery::{RecoveryManager, ReconnectConfig, RecoveryStats};
+pub use router::{MessageRouter, MessageHandler, MessageContext, CommandProcessor};
+pub use state::{ClientState, ServerState, ChannelState, StateManager, User, ChannelUser, TopicInfo};
+pub use ui::{UserInterface, UiEvent, StateChange, ViewManager, View, ViewId, ViewType};
 
 /// Global client instance manager
 pub struct ClientManager {
