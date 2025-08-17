@@ -21,7 +21,7 @@ use crate::widgets::{
 };
 use iced::{
     widget::{pane_grid, container, row, column, text, button, text_input, scrollable},
-    Element, Length, Task,
+    Element, Length, Task, Color, Background,
 };
 use rustirc_core::IrcClient;
 use std::sync::Arc;
@@ -810,12 +810,27 @@ impl RustIrcGui {
         })
         .width(Length::Fill)
         .height(Length::Fill)
-        .spacing(1)
+        .spacing(4) // Increase spacing to make dividers more visible
+        .style(|_theme| pane_grid::Style {
+            hovered_region: pane_grid::Highlight {
+                background: Background::Color(Color::from_rgb(0.25, 0.47, 0.85)), // Blue hover effect
+                border: iced::Border::default(),
+            },
+            hovered_split: pane_grid::Line {
+                color: Color::from_rgb(0.25, 0.47, 0.85), // Blue divider color
+                width: 2.0,
+            },
+            picked_split: pane_grid::Line {
+                color: Color::from_rgb(0.35, 0.57, 0.95), // Lighter blue when picked
+                width: 3.0,
+            },
+        })
         .on_click(Message::PaneClicked)
         .on_drag(Message::PaneDragged)
         .on_resize(10, Message::PaneResized);
 
         let content = column![
+            self.render_menu_bar(),
             self.render_tab_bar(),
             pane_grid,
         ]
@@ -897,6 +912,39 @@ impl RustIrcGui {
             ThemeType::Nightfly => iced::Theme::Nightfly,
             ThemeType::Oxocarbon => iced::Theme::Oxocarbon,
         }
+    }
+
+    fn render_menu_bar(&self) -> Element<Message> {
+        // Create menu bar with File, Edit, View, Tools, Help menus
+        let file_menu = button(text("File").size(14)).padding([4, 12]);
+        let edit_menu = button(text("Edit").size(14)).padding([4, 12]);
+        let view_menu = button(text("View").size(14)).padding([4, 12]);
+        let tools_menu = button(text("Tools").size(14)).padding([4, 12]);
+        let help_menu = button(text("Help").size(14)).padding([4, 12]);
+        
+        let menu_row = row![
+            file_menu,
+            edit_menu,
+            view_menu,
+            tools_menu,
+            help_menu,
+        ]
+        .spacing(4)
+        .padding([4, 8]);
+        
+        container(menu_row)
+            .width(Length::Fill)
+            .height(Length::Fixed(32.0))
+            .style(|_theme| container::Style {
+                background: Some(Background::Color(Color::from_rgb(0.15, 0.15, 0.15))), // Dark gray background
+                border: iced::Border {
+                    radius: iced::border::Radius::from(0.0),
+                    width: 1.0,
+                    color: Color::from_rgb(0.3, 0.3, 0.3), // Subtle border
+                },
+                ..Default::default()
+            })
+            .into()
     }
 
     fn render_tab_bar(&self) -> Element<Message> {
