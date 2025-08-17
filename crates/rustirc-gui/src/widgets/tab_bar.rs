@@ -223,11 +223,13 @@ impl TabBar {
 
         tab_row = tab_row.push(Space::with_width(Length::Fixed(4.0)));
         tab_row = tab_row.push(new_tab_button);
-        tab_row = tab_row.push(Space::with_width(Length::Fill));
+        // Remove Length::Fill space to prevent horizontal scrollable issue
+        tab_row = tab_row.push(Space::with_width(Length::Fixed(10.0)));
 
         let content: Element<TabBarMessage> = if self.scrollable {
             scrollable(tab_row)
                 .direction(scrollable::Direction::Horizontal(Default::default()))
+                .width(Length::Shrink) // Fix: Use Shrink instead of Fill for horizontal scrollable
                 .height(Length::Fixed(40.0))
                 .into()
         } else {

@@ -142,9 +142,35 @@ impl Default for RustIrcGui {
             PaneType::InputArea,
         ).unwrap();
 
+        let mut app_state = AppState::new();
+        
+        // Add a default server and channel for demonstration
+        app_state.add_server("libera.chat".to_string(), "Libera Chat".to_string());
+        app_state.add_channel_tab("libera.chat".to_string(), "#rust".to_string());
+        app_state.add_channel_tab("libera.chat".to_string(), "#general".to_string());
+        
+        // Add some sample messages for demonstration
+        app_state.add_message("libera.chat", "#rust", "Welcome to #rust! This is a demo message.", "system");
+        app_state.add_message("libera.chat", "#rust", "Hello everyone!", "user123");
+        app_state.add_message("libera.chat", "#rust", "How's the Rust learning going?", "rustacean");
+        
+        // Add sample users to the channel
+        if let Some(server) = app_state.servers.get_mut("libera.chat") {
+            if let Some(channel) = server.channels.get_mut("#rust") {
+                channel.users = vec![
+                    "@operator".to_string(),
+                    "+voice".to_string(),
+                    "regular_user".to_string(),
+                    "another_user".to_string(),
+                    "user123".to_string(),
+                    "rustacean".to_string(),
+                ];
+            }
+        }
+
         Self {
             irc_client: Arc::new(RwLock::new(None)),
-            app_state: AppState::new(),
+            app_state,
             current_theme: Theme::default(),
             panes,
             user_list_visible: true, // Initialize user list as visible, user_pane created above
