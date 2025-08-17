@@ -62,6 +62,16 @@ impl Theme {
     pub fn get_irc_color(&self, code: u8) -> Color {
         self.palette.get_irc_color(code)
     }
+    
+    /// Get primary color
+    pub fn get_primary_color(&self) -> Color {
+        self.palette.primary
+    }
+    
+    /// Get text color
+    pub fn get_text_color(&self) -> Color {
+        self.palette.text_primary
+    }
 }
 
 impl Default for Theme {

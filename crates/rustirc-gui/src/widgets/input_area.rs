@@ -17,6 +17,9 @@ use std::collections::VecDeque;
 pub enum InputAreaMessage {
     InputChanged(String),
     SendMessage(String),
+    InputSubmitted(String),
+    TabCompleted(String),
+    ToggleMultiline,
     HistoryUp,
     HistoryDown,
     TabCompletion,
@@ -68,6 +71,26 @@ impl InputArea {
                     self.reset_completion();
                     self.history_index = None;
                 }
+                Task::none()
+            }
+            InputAreaMessage::InputSubmitted(text) => {
+                // Handle multiline input submission
+                if !text.trim().is_empty() {
+                    self.add_to_history(text.clone());
+                    self.current_input.clear();
+                    self.reset_completion();
+                    self.history_index = None;
+                }
+                Task::none()
+            }
+            InputAreaMessage::TabCompleted(text) => {
+                // Handle tab completion result
+                self.current_input = text;
+                self.reset_completion();
+                Task::none()
+            }
+            InputAreaMessage::ToggleMultiline => {
+                self.toggle_multiline();
                 Task::none()
             }
             InputAreaMessage::HistoryUp => {
@@ -129,6 +152,9 @@ impl InputArea {
 
     /// Render the input area
     pub fn view(&self, app_state: &AppState) -> Element<InputAreaMessage> {
+        // Create theme instance for theming support
+        let theme = Theme::default();
+        
         let current_tab = app_state.current_tab();
         
         // Determine input placeholder
@@ -137,6 +163,7 @@ impl InputArea {
                 TabType::Channel { channel } => format!("Message {}...", channel),
                 TabType::PrivateMessage { nick } => format!("Message {}...", nick),
                 TabType::Server => "Enter IRC command...".to_string(),
+                TabType::Private => format!("Message {}...", tab.name),
             }
         } else {
             "No active tab".to_string()
@@ -154,6 +181,7 @@ impl InputArea {
         let send_button = button(
             text("Send")
                 .size(12.0)
+                .color(theme.get_text_color())
         )
         .on_press(InputAreaMessage::SendMessage(self.current_input.clone()))
         .padding([6, 12]);
@@ -203,9 +231,27 @@ impl InputArea {
         .align_y(Alignment::Center);
 
         let content = if self.multiline_mode {
-            // TODO: Implement multiline input mode
+            // Implement multiline input mode
+            let multiline_input = text_input("Type multiple lines... (Ctrl+Enter to send)", &self.current_input)
+                .on_input(InputAreaMessage::InputChanged)
+                .on_submit(InputAreaMessage::InputSubmitted(self.current_input.clone()))
+                .padding(8)
+                .width(Length::Fill);
+                
+            let send_button = button("Send")
+                .on_press(InputAreaMessage::InputSubmitted(self.current_input.clone()))
+                .padding([4, 8]);
+                
+            let toggle_button = button("Single Line")
+                .on_press(InputAreaMessage::ToggleMultiline)
+                .padding([4, 8]);
+                
             column![
-                input_row,
+                multiline_input,
+                row![
+                    send_button,
+                    toggle_button,
+                ].spacing(5).align_y(Alignment::Center),
                 Space::with_height(Length::Fixed(4.0)),
                 info_row
             ]
@@ -310,7 +356,7 @@ impl InputArea {
 
             // Channel completion (if applicable)
             if prefix.starts_with('#') || prefix.starts_with('&') {
-                for (server_id, server_state) in app_state.servers() {
+                for (server_id, server_state) in &app_state.servers {
                     for (channel_name, _channel_state) in &server_state.channels {
                         if channel_name.to_lowercase().starts_with(&lower_prefix) {
                             candidates.push(channel_name.clone());

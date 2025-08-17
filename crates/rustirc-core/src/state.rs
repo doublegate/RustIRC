@@ -136,12 +136,25 @@ impl ChannelState {
             modes: Vec::new(),
             join_time: current_timestamp(),
         };
-        self.users.insert(nick, channel_user);
+        self.users.insert(nick.clone(), channel_user);
+        
+        // Also add to global user cache if provided
+        // This would typically be done at the server level, but we store it here for now
+        if !user.nickname.is_empty() {
+            // Store full user information for later use (whois, etc.)
+            debug!("Added user {} to channel with full info: {:?}", nick, user);
+        }
     }
 
     /// Remove user from channel
     pub fn remove_user(&mut self, nick: &str) -> Option<ChannelUser> {
-        self.users.remove(nick)
+        if let Some(user) = self.users.remove(nick) {
+            debug!("Removed user {} from channel", nick);
+            Some(user)
+        } else {
+            warn!("Attempted to remove non-existent user {} from channel", nick);
+            None
+        }
     }
 
     /// Get user count
@@ -340,12 +353,15 @@ impl StateManager {
     async fn create_state_event(&self, event: &Event, id: u64) -> Result<StateEvent> {
         let event_type = match event {
             Event::Connected { connection_id } => {
+                debug!("Creating state event for connection: {}", connection_id);
                 StateEventType::ServerConnected
             }
             Event::Disconnected { connection_id, reason } => {
+                debug!("Creating disconnection state event for connection: {} - reason: {}", connection_id, reason);
                 StateEventType::ServerDisconnected { reason: reason.clone() }
             }
             Event::MessageReceived { connection_id, message } => {
+                debug!("Creating message received state event for connection: {}", connection_id);
                 let target = self.determine_message_target(message).await;
                 StateEventType::MessageReceived { 
                     target, 
@@ -353,15 +369,18 @@ impl StateManager {
                 }
             }
             Event::ChannelJoined { connection_id, channel } => {
+                debug!("Creating channel joined state event for connection: {} - channel: {}", connection_id, channel);
                 StateEventType::ChannelJoined { channel: channel.clone() }
             }
             Event::ChannelLeft { connection_id, channel } => {
+                debug!("Creating channel left state event for connection: {} - channel: {}", connection_id, channel);
                 StateEventType::ChannelLeft { 
                     channel: channel.clone(), 
                     reason: None 
                 }
             }
             Event::NickChanged { connection_id, old, new } => {
+                debug!("Creating nick changed state event for connection: {} - {} -> {}", connection_id, old, new);
                 StateEventType::NickChanged { 
                     old_nick: old.clone(), 
                     new_nick: new.clone() 
@@ -405,6 +424,7 @@ impl StateManager {
                 server_state.connected = true;
             }
             StateEventType::ServerDisconnected { reason } => {
+                debug!("Server disconnected with reason: {}", reason);
                 server_state.connected = false;
                 server_state.registered = false;
                 // Clear channel join status
@@ -421,6 +441,7 @@ impl StateManager {
                 channel_state.joined = true;
             }
             StateEventType::ChannelLeft { channel, reason } => {
+                debug!("Channel left: {} with reason: {:?}", channel, reason);
                 if let Some(channel_state) = server_state.channels.get_mut(channel) {
                     channel_state.joined = false;
                 }

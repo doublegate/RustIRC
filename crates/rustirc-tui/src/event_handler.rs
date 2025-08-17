@@ -150,6 +150,7 @@ impl EventHandler for TuiEventHandler {
                     }
                     _ => {
                         debug!("TUI: Unhandled IRC message command: {}", message.command);
+                        warn!("TUI: Received unhandled IRC command '{}' - may need implementation", message.command);
                     }
                 }
             }
@@ -204,6 +205,11 @@ impl EventHandler for TuiEventHandler {
             Event::MessageSent { connection_id, message } => {
                 debug!("TUI: Message sent to {}: {:?}", connection_id, message);
                 // Sent messages are typically already handled by the input system
+            }
+            
+            Event::PongRequired { connection_id, server } => {
+                debug!("TUI: PONG required for connection {} to server {}", connection_id, server);
+                // PONG responses are handled by the core connection manager
             }
         }
     }

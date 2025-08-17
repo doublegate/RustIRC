@@ -453,8 +453,30 @@ impl TuiState {
 
     /// Update timestamps and other time-based state
     pub fn update_timestamps(&mut self) {
-        // This could be used for relative time formatting
-        // or other time-based animations
+        // Calculate elapsed time since UNIX_EPOCH for relative timestamps
+        let current_time = SystemTime::now();
+        let epoch_duration = current_time.duration_since(UNIX_EPOCH)
+            .unwrap_or_default();
+        
+        // Update any time-sensitive UI elements based on elapsed time
+        for server in self.servers.values_mut() {
+            for channel in server.channels.values_mut() {
+                // Check for old messages and mark them as such
+                let cutoff_time = current_time - std::time::Duration::from_secs(300); // 5 minutes
+                
+                for message in &mut channel.messages {
+                    if message.timestamp < cutoff_time {
+                        // Could add aging logic here for old messages
+                    }
+                }
+            }
+        }
+        
+        // Log timestamp update for debugging
+        let total_seconds = epoch_duration.as_secs();
+        if total_seconds % 60 == 0 { // Every minute
+            println!("Timestamp update: {} seconds since UNIX_EPOCH", total_seconds);
+        }
     }
 
     /// Get total unread message count

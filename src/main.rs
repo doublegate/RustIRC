@@ -4,7 +4,7 @@
 
 use anyhow::Result;
 use clap::Parser;
-use tracing::{info, warn};
+use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Parser, Debug)]
@@ -38,6 +38,10 @@ struct Args {
     /// Run in CLI mode for testing
     #[arg(long)]
     cli: bool,
+
+    /// Use simplified GUI instead of full-featured GUI
+    #[arg(long)]
+    simple: bool,
 }
 
 fn main() -> Result<()> {
@@ -78,14 +82,25 @@ fn init_logging(debug: bool) -> Result<()> {
 }
 
 fn run_gui(args: Args) -> Result<()> {
-    info!("Starting GUI mode with Iced");
-    
-    // Use simplified GUI for now while complex widgets are being updated
-    use rustirc_gui::SimpleRustIrcGui;
-    
-    // Run Iced GUI application - it uses its own static method
-    SimpleRustIrcGui::run()
-        .map_err(|e| anyhow::anyhow!("GUI error: {}", e))?;
+    if args.simple {
+        info!("Starting simplified GUI mode with Iced (basic interface)");
+        
+        // Use simplified GUI as fallback option
+        use rustirc_gui::SimpleRustIrcGui;
+        
+        // Run simplified Iced GUI application
+        SimpleRustIrcGui::run()
+            .map_err(|e| anyhow::anyhow!("Simple GUI error: {}", e))?;
+    } else {
+        info!("Starting full-featured GUI mode with Iced (widgets, themes, resizable panes)");
+        
+        // Use full-featured GUI as default - complete with all widgets and themes
+        use rustirc_gui::RustIrcGui;
+        
+        // Run the full-featured GUI application with all advanced features
+        RustIrcGui::run()
+            .map_err(|e| anyhow::anyhow!("GUI error: {}", e))?;
+    }
     
     Ok(())
 }

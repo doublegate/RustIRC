@@ -83,16 +83,6 @@ impl AppState {
         }
     }
 
-    /// Add a private message tab
-    pub fn add_private_tab(&mut self, server_id: String, nick: String) {
-        let tab = Tab::private(server_id.clone(), nick.clone());
-        let tab_id = format!("{}:@{}", server_id, nick);
-        self.tabs.insert(tab_id.clone(), tab);
-        self.tab_order.push(tab_id.clone());
-        
-        // Set as current tab
-        self.current_tab_id = Some(tab_id);
-    }
 
     /// Remove a tab
     pub fn remove_tab(&mut self, tab_id: &str) {
@@ -146,6 +136,83 @@ impl AppState {
     pub fn ui_state_mut(&mut self) -> &mut UiState {
         &mut self.ui_state
     }
+
+    /// Add a private message tab
+    pub fn add_private_tab(&mut self, server_id: &str, nick: String) {
+        let tab = Tab::private_message(server_id.to_string(), nick.clone());
+        let tab_id = format!("{}:pm:{}", server_id, nick);
+        self.tabs.insert(tab_id.clone(), tab);
+        self.tab_order.push(tab_id.clone());
+        
+        // Set as current tab
+        self.current_tab_id = Some(tab_id);
+    }
+    
+    /// Add a message to a tab
+    pub fn add_message(&mut self, server_id: &str, target: &str, message: &str, sender: &str) {
+        let tab_id = if target.starts_with('#') || target.starts_with('&') {
+            // Channel message
+            format!("{}:channel:{}", server_id, target)
+        } else {
+            // Private message
+            format!("{}:pm:{}", server_id, if sender == "self" { target } else { sender })
+        };
+        
+        // Get message ID before mutable borrow
+        let message_id = self.next_message_id();
+        
+        if let Some(tab) = self.tabs.get_mut(&tab_id) {
+            let display_msg = DisplayMessage {
+                id: message_id,
+                timestamp: SystemTime::now(),
+                sender: sender.to_string(),
+                content: message.to_string(),
+                message_type: MessageType::Regular,
+                formatted_spans: Vec::new(),
+                is_highlight: false,
+                is_own_message: sender == "self",
+            };
+            
+            tab.messages.push_back(display_msg);
+            tab.has_activity = true;
+            
+            // Limit message history
+            if tab.messages.len() > 1000 {
+                tab.messages.pop_front();
+            }
+        }
+    }
+    
+    /// Remove a server and all associated tabs
+    pub fn remove_server(&mut self, server_id: &str) {
+        // Remove server from servers map
+        self.servers.remove(server_id);
+        
+        // Remove all tabs for this server
+        let tabs_to_remove: Vec<String> = self.tabs
+            .iter()
+            .filter(|(_, tab)| tab.server_id.as_ref() == Some(&server_id.to_string()))
+            .map(|(id, _)| id.clone())
+            .collect();
+        
+        for tab_id in tabs_to_remove {
+            self.tabs.remove(&tab_id);
+            self.tab_order.retain(|id| id != &tab_id);
+        }
+        
+        // If current tab was removed, switch to another tab
+        if let Some(current_id) = &self.current_tab_id {
+            if !self.tabs.contains_key(current_id) {
+                self.current_tab_id = self.tab_order.first().cloned();
+            }
+        }
+    }
+    
+    /// Generate next message ID
+    fn next_message_id(&mut self) -> usize {
+        self.settings.last_message_id += 1;
+        self.settings.last_message_id
+    }
 }
 
 /// Tab information
@@ -158,6 +225,10 @@ pub struct Tab {
     pub activity: ActivityLevel,
     pub last_read_time: Option<SystemTime>,
     pub users: std::collections::HashMap<String, UserInfo>,
+    /// Whether tab has highlight activity (mentions, alerts)
+    pub has_highlight: bool,
+    /// Whether tab has general activity (new messages)
+    pub has_activity: bool,
 }
 
 impl Tab {
@@ -170,18 +241,36 @@ impl Tab {
             activity: ActivityLevel::None,
             last_read_time: None,
             users: HashMap::new(),
+            has_highlight: false,
+            has_activity: false,
         }
     }
 
     pub fn channel(server_id: String, channel: String) -> Self {
         Self {
-            name: channel,
-            tab_type: TabType::Channel,
+            name: channel.clone(),
+            tab_type: TabType::Channel { channel },
             server_id: Some(server_id),
             messages: VecDeque::new(),
             activity: ActivityLevel::None,
             last_read_time: None,
             users: HashMap::new(),
+            has_highlight: false,
+            has_activity: false,
+        }
+    }
+
+    pub fn private_message(server_id: String, nick: String) -> Self {
+        Self {
+            name: nick.clone(),
+            tab_type: TabType::PrivateMessage { nick },
+            server_id: Some(server_id),
+            messages: VecDeque::new(),
+            activity: ActivityLevel::None,
+            last_read_time: None,
+            users: HashMap::new(),
+            has_highlight: false,
+            has_activity: false,
         }
     }
 
@@ -194,7 +283,17 @@ impl Tab {
             activity: ActivityLevel::None,
             last_read_time: None,
             users: HashMap::new(),
+            has_highlight: false,
+            has_activity: false,
         }
+    }
+
+    /// Mark the tab as read
+    pub fn mark_as_read(&mut self) {
+        self.last_read_time = Some(SystemTime::now());
+        self.activity = ActivityLevel::None;
+        self.has_highlight = false;
+        self.has_activity = false;
     }
 }
 
@@ -202,8 +301,9 @@ impl Tab {
 #[derive(Debug, Clone, PartialEq)]
 pub enum TabType {
     Server,
-    Channel,
-    Private,
+    Channel { channel: String },
+    PrivateMessage { nick: String },
+    Private,  // For backwards compatibility
 }
 
 /// Activity level indicators
@@ -223,6 +323,10 @@ pub struct ServerInfo {
     pub nickname: String,
     pub channels: HashMap<String, ChannelInfo>,
     pub users: HashMap<String, UserInfo>,
+    /// Server modes
+    pub modes: Vec<String>,
+    /// Last ping time
+    pub last_ping: Option<SystemTime>,
 }
 
 impl ServerInfo {
@@ -233,6 +337,8 @@ impl ServerInfo {
             nickname: String::new(),
             channels: HashMap::new(),
             users: HashMap::new(),
+            modes: Vec::new(),
+            last_ping: None,
         }
     }
 }
@@ -270,6 +376,8 @@ pub struct UserInfo {
     pub away_message: Option<String>,
     pub modes: Vec<char>,
     pub away: bool,
+    pub is_op: bool,
+    pub is_voice: bool,
 }
 
 impl UserInfo {
@@ -283,12 +391,22 @@ impl UserInfo {
             away_message: None,
             modes: Vec::new(),
             away: false,
+            is_op: false,
+            is_voice: false,
         }
     }
 
     /// Check if user has a specific mode
     pub fn has_mode(&self, mode: char) -> bool {
         self.modes.contains(&mode)
+    }
+
+    /// Get user privilege level (for sorting)
+    pub fn privilege_level(&self) -> u8 {
+        if self.has_mode('o') { 4 }  // Op
+        else if self.has_mode('h') { 3 }  // Half-op
+        else if self.has_mode('v') { 2 }  // Voice
+        else { 1 }  // Regular user
     }
 }
 
@@ -304,6 +422,7 @@ pub struct AppSettings {
     pub auto_reconnect: bool,
     pub nick_colors: bool,
     pub timestamp_format: String,
+    pub last_message_id: usize,
 }
 
 impl Default for AppSettings {
@@ -318,6 +437,7 @@ impl Default for AppSettings {
             auto_reconnect: true,
             nick_colors: true,
             timestamp_format: "%H:%M:%S".to_string(),
+            last_message_id: 0,
         }
     }
 }
@@ -355,12 +475,14 @@ impl Default for UiState {
 /// Display message for GUI rendering
 #[derive(Debug, Clone)]
 pub struct DisplayMessage {
+    pub id: usize,
     pub content: String,
-    pub sender: Option<String>,
+    pub sender: String,
     pub timestamp: SystemTime,
     pub message_type: MessageType,
     pub is_highlight: bool,
     pub is_own_message: bool,
+    pub formatted_spans: Vec<FormattedText>,
 }
 
 /// Message types for display
@@ -376,6 +498,7 @@ pub enum MessageType {
     Topic,
     Mode,
     System,
+    Regular, // Regular text message without special formatting
 }
 
 /// Formatted text for IRC messages

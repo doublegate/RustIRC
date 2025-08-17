@@ -4,8 +4,25 @@
 //! can use for consistent behavior and state management.
 
 use crate::events::Event as CoreEvent;
+use rustirc_protocol::Message;
 use std::collections::HashMap;
 use anyhow::Result;
+
+/// Extract the target (channel or user) from an IRC message
+fn extract_message_target(message: &Message) -> String {
+    match message.command.as_str() {
+        "PRIVMSG" | "NOTICE" => {
+            message.params.first().unwrap_or(&"unknown".to_string()).clone()
+        }
+        "JOIN" => {
+            message.params.first().unwrap_or(&"unknown".to_string()).clone()
+        }
+        "PART" => {
+            message.params.first().unwrap_or(&"unknown".to_string()).clone()
+        }
+        _ => "server".to_string(),
+    }
+}
 
 /// Common interface for all user interface implementations
 pub trait UserInterface: Send + Sync {
@@ -25,6 +42,46 @@ pub trait UserInterface: Send + Sync {
     
     /// Set UI state from deserialization
     fn set_state(&mut self, state: UiState);
+}
+
+/// Convert core IRC events to UI events
+pub fn core_event_to_ui_event(core_event: &CoreEvent) -> Option<UiEvent> {
+    match core_event {
+        CoreEvent::Connected { connection_id } => {
+            Some(UiEvent::StateChange(StateChange::ConnectionStateChanged {
+                server_id: connection_id.clone(),
+                state: crate::connection::ConnectionState::Connected,
+            }))
+        }
+        CoreEvent::Disconnected { connection_id, reason } => {
+            Some(UiEvent::StateChange(StateChange::ConnectionStateChanged {
+                server_id: connection_id.clone(),
+                state: crate::connection::ConnectionState::Failed(reason.clone()),
+            }))
+        }
+        CoreEvent::MessageReceived { connection_id, message } => {
+            // Extract message details for UI display
+            let message_target = extract_message_target(message);
+            Some(UiEvent::StateChange(StateChange::MessageReceived {
+                server_id: connection_id.clone(),
+                target: message_target,
+                message: core_event.clone(),
+            }))
+        }
+        CoreEvent::ChannelJoined { connection_id, channel } => {
+            Some(UiEvent::StateChange(StateChange::ChannelJoined {
+                server_id: connection_id.clone(),
+                channel: channel.clone(),
+            }))
+        }
+        CoreEvent::ChannelLeft { connection_id, channel } => {
+            Some(UiEvent::StateChange(StateChange::ChannelLeft {
+                server_id: connection_id.clone(),
+                channel: channel.clone(),
+            }))
+        }
+        _ => None, // Some core events may not have UI equivalents
+    }
 }
 
 /// Events that can be sent to any UI implementation
@@ -53,6 +110,9 @@ pub enum UiEvent {
     
     /// Settings update
     SettingsUpdate(SettingsUpdate),
+    
+    /// State change from IRC core
+    StateChange(StateChange),
 }
 
 /// State changes from the IRC core

@@ -10,6 +10,7 @@ pub struct Config {
     pub ui: UiConfig,
     pub logging: LoggingConfig,
     pub scripting: ScriptingConfig,
+    pub custom_settings: HashMap<String, String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -126,6 +127,7 @@ impl Default for Config {
                 sandbox_memory_limit: 100 * 1024 * 1024, // 100MB
                 sandbox_timeout_ms: 5000,
             },
+            custom_settings: HashMap::new(),
         }
     }
 }

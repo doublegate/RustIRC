@@ -28,6 +28,9 @@ pub enum Event {
     
     // Error events
     Error { connection_id: Option<String>, error: String },
+    
+    // Protocol events
+    PongRequired { connection_id: String, server: String },
 }
 
 #[async_trait]
@@ -58,6 +61,10 @@ impl EventBus {
         for handler in handlers.iter() {
             handler.handle(&event).await;
         }
+    }
+    
+    pub async fn publish(&self, event: Event) {
+        self.emit(event).await;
     }
 }
 

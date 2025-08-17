@@ -70,6 +70,48 @@ impl MessageContext {
         self.is_own_message = true;
         self
     }
+    
+    /// Extract user information from message prefix
+    pub fn from_message_prefix(connection_id: String, prefix: &Option<Prefix>) -> Self {
+        let mut context = Self::new(connection_id);
+        
+        if let Some(prefix) = prefix {
+            match prefix {
+                Prefix::User { nick, user, host } => {
+                    context.source_user = Some(User {
+                        nickname: nick.clone(),
+                        username: user.clone(),
+                        hostname: host.clone(),
+                        realname: None,
+                        server: None,
+                        away: false,
+                        away_message: None,
+                        idle_time: None,
+                        signon_time: None,
+                        oper: false,
+                        account: None,
+                    });
+                }
+                Prefix::Server(server) => {
+                    context.source_user = Some(User {
+                        nickname: server.clone(),
+                        username: None,
+                        hostname: None,
+                        realname: None,
+                        server: Some(server.clone()),
+                        away: false,
+                        away_message: None,
+                        idle_time: None,
+                        signon_time: None,
+                        oper: false,
+                        account: None,
+                    });
+                }
+            }
+        }
+        
+        context
+    }
 }
 
 /// Rate limiting configuration
@@ -226,6 +268,54 @@ impl MessageRouter {
 
         Ok(())
     }
+    
+    /// Handle numeric responses from IRC server
+    pub async fn handle_numeric_response(&self, connection_id: String, numeric: Numeric, params: Vec<String>) -> Result<()> {
+        info!("Handling numeric response {} for connection {}", numeric as u16, connection_id);
+        
+        // Process common numeric responses
+        match numeric {
+            Numeric::RplWelcome => {
+                info!("Successfully registered with IRC server");
+                // Connection registration complete
+            }
+            Numeric::RplYourHost => {
+                info!("Server host information: {}", params.join(" "));
+            }
+            Numeric::RplCreated => {
+                info!("Server creation time: {}", params.join(" "));
+            }
+            Numeric::RplMyInfo => {
+                info!("Server info: {}", params.join(" "));
+            }
+            Numeric::RplISupport => {
+                info!("Server capabilities: {}", params.join(" "));
+            }
+            Numeric::RplMotdStart => {
+                info!("MOTD start");
+            }
+            Numeric::RplMotd => {
+                info!("MOTD: {}", params.join(" "));
+            }
+            Numeric::RplEndOfMotd => {
+                info!("MOTD complete");
+            }
+            Numeric::ErrNicknameInUse => {
+                warn!("Nickname in use: {}", params.join(" "));
+            }
+            Numeric::ErrNoNicknameGiven => {
+                error!("No nickname given");
+            }
+            Numeric::ErrErroneousNickname => {
+                error!("Erroneous nickname: {}", params.join(" "));
+            }
+            _ => {
+                debug!("Unhandled numeric response: {} - {}", numeric as u16, params.join(" "));
+            }
+        }
+        
+        Ok(())
+    }
 
     /// Send a command to a specific connection
     pub async fn send_command(&self, connection_id: String, command: Command) -> Result<()> {
@@ -255,6 +345,21 @@ impl MessageRouter {
     /// Register built-in message handlers
     fn register_builtin_handlers(&mut self) {
         // Will be implemented with specific handlers
+    }
+    
+    /// Get current client state via state manager
+    pub async fn get_client_state(&self) -> crate::state::ClientState {
+        self.state_manager.get_state().await
+    }
+    
+    /// Get server state for a connection
+    pub async fn get_server_state(&self, connection_id: &str) -> Option<crate::state::ServerState> {
+        self.state_manager.get_server_state(connection_id).await
+    }
+    
+    /// Apply events to state management
+    pub async fn process_state_event(&self, event: &crate::events::Event) -> Result<()> {
+        self.state_manager.apply_event(event).await
     }
 }
 

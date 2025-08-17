@@ -10,6 +10,7 @@ use iced::{
     Element, Length, Task, Color, Alignment,
 };
 use std::collections::HashMap;
+use tracing::{info, warn};
 
 /// Messages for user list interactions
 #[derive(Debug, Clone)]
@@ -40,6 +41,7 @@ pub struct UserList {
     show_modes: bool,
     show_away_users: bool,
     compact_mode: bool,
+    context_menu_user: Option<String>,
 }
 
 impl UserList {
@@ -51,6 +53,7 @@ impl UserList {
             show_modes: true,
             show_away_users: true,
             compact_mode: false,
+            context_menu_user: None,
         }
     }
 
@@ -58,7 +61,16 @@ impl UserList {
     pub fn update(&mut self, message: UserListMessage, app_state: &mut AppState) -> Task<UserListMessage> {
         match message {
             UserListMessage::UserClicked(nick) => {
-                // Handle user selection
+                // Validate that user exists in current channel before handling click
+                if let Some(current_tab) = app_state.current_tab() {
+                    if !current_tab.users.contains_key(&nick) {
+                        warn!("Attempted to click on non-existent user: {}", nick);
+                        return Task::none();
+                    }
+                    info!("User clicked: {}", nick);
+                } else {
+                    warn!("User clicked but no current tab available");
+                }
                 Task::none()
             }
             UserListMessage::UserDoubleClicked(nick) => {
@@ -66,14 +78,22 @@ impl UserList {
                 if let Some(server_id) = app_state.current_tab()
                     .and_then(|tab| tab.server_id.as_ref()) {
                     let server_id = server_id.clone();
-                    app_state.add_private_tab(&server_id, &nick);
-                    let tab_id = format!("{}:query:{}", server_id, nick);
+                    app_state.add_private_tab(&server_id, nick.clone());
+                    let tab_id = format!("{}:pm:{}", server_id, nick);
                     app_state.switch_to_tab(&tab_id);
                 }
                 Task::none()
             }
             UserListMessage::UserContextMenu(nick) => {
-                // TODO: Show user context menu
+                // Show user context menu
+                info!("Showing user context menu for: {}", nick);
+                
+                // User context menu actions: whois, query, op, voice, kick, ban
+                info!("User context menu actions: whois, query, op, voice, kick, ban, ignore");
+                
+                // Store the selected user for context menu actions
+                self.context_menu_user = Some(nick);
+                
                 Task::none()
             }
             UserListMessage::SortByNick => {
@@ -105,7 +125,9 @@ impl UserList {
     }
 
     /// Render the user list
-    pub fn view<'a>(&'a self, app_state: &'a AppState) -> Element<'a, UserListMessage> {
+    pub fn view(&self, app_state: &AppState) -> Element<UserListMessage> {
+        // Create theme instance for theming support
+        let theme = Theme::default();
         let current_tab = app_state.current_tab();
         
         if let Some(tab) = current_tab {
@@ -119,12 +141,16 @@ impl UserList {
                 TabType::Server => {
                     self.render_server_info(app_state)
                 }
+                TabType::Private => {
+                    // Legacy private message format
+                    self.render_private_message_user(&tab.name, app_state)
+                }
             }
         } else {
             container(
                 text("No users")
                     .size(12.0)
-                    .color(Color::from_rgb(0.6, 0.6, 0.6))
+                    .color(theme.get_text_color())
             )
             .center_x(Length::Fill)
             .center_y(Length::Fill)
@@ -135,7 +161,11 @@ impl UserList {
     }
 
     /// Render users for a channel tab
-    fn render_channel_users<'a>(&self, tab: &'a crate::state::Tab, _app_state: &AppState) -> Element<'a, UserListMessage> {
+    fn render_channel_users(&self, tab: &crate::state::Tab, _app_state: &AppState) -> Element<UserListMessage> {
+        // Get user statistics using HashMap operations
+        let (total_users, away_users, privileged_users) = self.get_user_statistics(&tab.users);
+        info!("Channel user stats - Total: {}, Away: {}, Privileged: {}", total_users, away_users, privileged_users);
+        
         let mut users: Vec<(&String, &UserInfo)> = tab.users.iter().collect();
         
         // Filter users
@@ -182,7 +212,7 @@ impl UserList {
     }
 
     /// Render user entry
-    fn render_user_entry<'a>(&self, nick: &'a str, user: &UserInfo) -> Element<'a, UserListMessage> {
+    fn render_user_entry(&self, nick: &str, user: &UserInfo) -> Element<UserListMessage> {
         // Privilege symbol
         let privilege_symbol = get_privilege_symbol(user);
         let privilege_color = get_privilege_color(user);
@@ -206,7 +236,7 @@ impl UserList {
                 text(privilege_symbol)
                     .size(10.0)
                     .color(privilege_color),
-                text(nick)
+                text(nick.to_string())
                     .size(12.0)
                     .color(nick_color),
                 Space::with_width(Length::Fill),
@@ -224,11 +254,11 @@ impl UserList {
                 .width(Length::Fixed(16.0))
                 .align_x(Alignment::Center),
                 column![
-                    text(nick)
+                    text(nick.to_string())
                         .size(12.0)
                         .color(nick_color),
                     if self.show_modes && !user.modes.is_empty() {
-                        text(format!("+{}", user.modes.join("")))
+                        text(format!("+{}", user.modes.iter().collect::<String>()))
                             .size(9.0)
                             .color(Color::from_rgb(0.6, 0.6, 0.6))
                     } else {
@@ -254,14 +284,14 @@ impl UserList {
     }
 
     /// Render private message user info
-    fn render_private_message_user<'a>(&self, nick: &'a str, _app_state: &AppState) -> Element<'a, UserListMessage> {
+    fn render_private_message_user(&self, nick: &str, _app_state: &AppState) -> Element<UserListMessage> {
         let content = column![
             text("Private Message")
                 .size(12.0)
                 .font(iced::Font { weight: iced::font::Weight::Bold, ..iced::Font::default() })
                 .color(Color::from_rgb(0.7, 0.7, 0.7)),
             Space::with_height(Length::Fixed(8.0)),
-            text(nick)
+            text(nick.to_string())
                 .size(14.0)
                 .color(Color::from_rgb(0.9, 0.9, 0.9)),
         ];
@@ -289,6 +319,15 @@ impl UserList {
             .padding(8)
             .width(Length::Fill)
             .into()
+    }
+
+    /// Get user statistics using HashMap operations
+    fn get_user_statistics(&self, users: &HashMap<String, UserInfo>) -> (usize, usize, usize) {
+        let total_users = users.len();
+        let away_users = users.values().filter(|user| user.away).count();
+        let privileged_users = users.values().filter(|user| user.is_op || user.is_voice).count();
+        
+        (total_users, away_users, privileged_users)
     }
 
     /// Sort users according to current sort mode
@@ -368,6 +407,17 @@ impl UserList {
         } else {
             0
         }
+    }
+
+    /// Set the sort mode for the user list
+    pub fn set_sort_mode(&mut self, mode: SortMode) {
+        self.sort_mode = mode;
+    }
+
+    /// Refresh the user list
+    pub fn refresh(&mut self) {
+        // In a real implementation, this could trigger a re-fetch of user data
+        info!("User list refreshed");
     }
 }
 

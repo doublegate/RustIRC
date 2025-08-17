@@ -364,7 +364,7 @@ pub fn strip_formatting(text: &str) -> String {
 
 /// Get plain text from formatted spans
 pub fn spans_to_plain_text(spans: &[TextSpan]) -> String {
-    spans.iter().map(|span| &span.text).collect::<Vec<_>>().join("")
+    spans.iter().map(|span| span.text.as_str()).collect::<Vec<_>>().join("")
 }
 
 /// Emoji replacement map for common emoticons

@@ -1,0 +1,143 @@
+[2m2025-08-17T05:14:30.017147Z[0m [32m INFO[0m [2mrustirc[0m[2m:[0m Starting RustIRC v0.1.0
+[2m2025-08-17T05:14:30.017204Z[0m [32m INFO[0m [2mrustirc[0m[2m:[0m Starting GUI mode with Iced (simplified interface)
+[2m2025-08-17T05:14:30.078185Z[0m [33m WARN[0m [2mwgpu_hal::vulkan::instance[0m[2m:[0m InstanceFlags::VALIDATION requested, but unable to find layer: VK_LAYER_KHRONOS_validation    
+[2m2025-08-17T05:14:30.087528Z[0m [32m INFO[0m [2mwgpu_hal::vulkan::instance[0m[2m:[0m Debug utils not enabled: debug_utils_user_data not passed to Instance::from_raw    
+[2m2025-08-17T05:14:30.096044Z[0m [32m INFO[0m [2mwgpu_hal::gles::egl[0m[2m:[0m Using Wayland platform    
+[2m2025-08-17T05:14:30.099879Z[0m [31mERROR[0m [2mwgpu_hal::gles::egl[0m[2m:[0m EGL 'eglCreateSyncKHR' code 0x3004: EGL_BAD_ATTRIBUTE error: In eglCreateSyncKHR: EGL_SYNC_NATIVE_FENCE_FD_ANDROID specified valid fd butEGL_SYNC_STATUS is also being set
+    
+[2m2025-08-17T05:14:30.100084Z[0m [33m WARN[0m [2mwgpu_hal::gles::egl[0m[2m:[0m No config found!    
+[2m2025-08-17T05:14:30.100103Z[0m [33m WARN[0m [2mwgpu_hal::gles::egl[0m[2m:[0m EGL says it can present to the window but not natively    
+[2m2025-08-17T05:14:30.109168Z[0m [32m INFO[0m [2miced_wgpu::window::compositor[0m[2m:[0m Settings {
+    present_mode: AutoVsync,
+    backends: Backends(
+        VULKAN | GL | METAL | DX12 | BROWSER_WEBGPU,
+    ),
+    default_font: Font {
+        family: SansSerif,
+        weight: Normal,
+        stretch: Normal,
+        style: Normal,
+    },
+    default_text_size: Pixels(
+        16.0,
+    ),
+    antialiasing: None,
+}    
+[2m2025-08-17T05:14:30.118363Z[0m [32m INFO[0m [2mwgpu_core::instance[0m[2m:[0m Adapter Vulkan AdapterInfo { name: "NVIDIA GeForce RTX 5080", vendor: 4318, device: 11266, device_type: DiscreteGpu, driver: "NVIDIA", driver_info: "575.64.05", backend: Vulkan }    
+[2m2025-08-17T05:14:30.118436Z[0m [32m INFO[0m [2mwgpu_core::instance[0m[2m:[0m Adapter Vulkan AdapterInfo { name: "llvmpipe (LLVM 20.1.8, 256 bits)", vendor: 65541, device: 0, device_type: Cpu, driver: "llvmpipe", driver_info: "Mesa 25.2.0 (LLVM 20.1.8)", backend: Vulkan }    
+[2m2025-08-17T05:14:30.160242Z[0m [32m INFO[0m [2mwgpu_core::instance[0m[2m:[0m Adapter Gl AdapterInfo { name: "NVIDIA GeForce RTX 5080/PCIe/SSE2", vendor: 4318, device: 0, device_type: Other, driver: "", driver_info: "", backend: Gl }    
+[2m2025-08-17T05:14:30.160443Z[0m [32m INFO[0m [2miced_wgpu::window::compositor[0m[2m:[0m Available adapters: [
+    AdapterInfo {
+        name: "NVIDIA GeForce RTX 5080",
+        vendor: 4318,
+        device: 11266,
+        device_type: DiscreteGpu,
+        driver: "NVIDIA",
+        driver_info: "575.64.05",
+        backend: Vulkan,
+    },
+    AdapterInfo {
+        name: "llvmpipe (LLVM 20.1.8, 256 bits)",
+        vendor: 65541,
+        device: 0,
+        device_type: Cpu,
+        driver: "llvmpipe",
+        driver_info: "Mesa 25.2.0 (LLVM 20.1.8)",
+        backend: Vulkan,
+    },
+    AdapterInfo {
+        name: "NVIDIA GeForce RTX 5080/PCIe/SSE2",
+        vendor: 4318,
+        device: 0,
+        device_type: Other,
+        driver: "",
+        driver_info: "",
+        backend: Gl,
+    },
+]    
+[2m2025-08-17T05:14:30.168865Z[0m [33m WARN[0m [2mwgpu_hal::vulkan::conv[0m[2m:[0m Unrecognized present mode 1000361000    
+[2m2025-08-17T05:14:30.169963Z[0m [32m INFO[0m [2mwgpu_core::instance[0m[2m:[0m Adapter Vulkan AdapterInfo { name: "NVIDIA GeForce RTX 5080", vendor: 4318, device: 11266, device_type: DiscreteGpu, driver: "NVIDIA", driver_info: "575.64.05", backend: Vulkan }    
+[2m2025-08-17T05:14:30.170027Z[0m [32m INFO[0m [2miced_wgpu::window::compositor[0m[2m:[0m Selected: AdapterInfo {
+    name: "NVIDIA GeForce RTX 5080",
+    vendor: 4318,
+    device: 11266,
+    device_type: DiscreteGpu,
+    driver: "NVIDIA",
+    driver_info: "575.64.05",
+    backend: Vulkan,
+}    
+[2m2025-08-17T05:14:30.170590Z[0m [33m WARN[0m [2mwgpu_hal::vulkan::conv[0m[2m:[0m Unrecognized present mode 1000361000    
+[2m2025-08-17T05:14:30.170624Z[0m [32m INFO[0m [2miced_wgpu::window::compositor[0m[2m:[0m Available formats: Copied {
+    it: Iter(
+        [
+            Bgra8UnormSrgb,
+            Rgba8UnormSrgb,
+            Bgra8Unorm,
+            Rgba8Unorm,
+        ],
+    ),
+}    
+[2m2025-08-17T05:14:30.170647Z[0m [32m INFO[0m [2miced_wgpu::window::compositor[0m[2m:[0m Available alpha modes: [
+    Opaque,
+    PreMultiplied,
+]    
+[2m2025-08-17T05:14:30.170662Z[0m [32m INFO[0m [2miced_wgpu::window::compositor[0m[2m:[0m Selected format: Bgra8UnormSrgb with alpha mode: PreMultiplied    
+[2m2025-08-17T05:14:30.254736Z[0m [32m INFO[0m [2miced_winit::program[0m[2m:[0m Window attributes for id `Id(
+    1,
+)`: WindowAttributes {
+    inner_size: Some(
+        Logical(
+            LogicalSize {
+                width: 1024.0,
+                height: 768.0,
+            },
+        ),
+    ),
+    min_inner_size: None,
+    max_inner_size: None,
+    position: None,
+    resizable: true,
+    enabled_buttons: WindowButtons(
+        CLOSE | MINIMIZE | MAXIMIZE,
+    ),
+    title: "RustIRC - Modern IRC Client",
+    maximized: false,
+    visible: false,
+    transparent: false,
+    blur: false,
+    decorations: true,
+    window_icon: None,
+    preferred_theme: None,
+    resize_increments: None,
+    content_protected: false,
+    window_level: Normal,
+    active: true,
+    cursor: Icon(
+        Default,
+    ),
+    parent_window: None,
+    fullscreen: None,
+    platform_specific: PlatformSpecificWindowAttributes {
+        name: Some(
+            ApplicationName {
+                general: "",
+                instance: "",
+            },
+        ),
+        activation_token: None,
+        x11: X11WindowAttributes {
+            visual_id: None,
+            screen_id: None,
+            base_size: None,
+            override_redirect: false,
+            x11_window_types: [
+                Normal,
+            ],
+            embed_window: None,
+        },
+    },
+}    
+[2m2025-08-17T05:14:30.256516Z[0m [33m WARN[0m [2mwgpu_hal::vulkan::conv[0m[2m:[0m Unrecognized present mode 1000361000    
+[2m2025-08-17T05:14:30.395301Z[0m [33m WARN[0m [2mwgpu_hal::vulkan::conv[0m[2m:[0m Unrecognized present mode 1000361000    
+[2m2025-08-17T05:14:33.973343Z[0m [32m INFO[0m [2mrustirc_gui::simple_gui[0m[2m:[0m Connecting to server...
+[2m2025-08-17T05:14:35.081277Z[0m [32m INFO[0m [2mrustirc_gui::simple_gui[0m[2m:[0m Joining channel: #rust

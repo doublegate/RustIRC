@@ -5,11 +5,11 @@
 
 use crate::state::{AppState, TabType};
 use rustirc_core::connection::ConnectionState;
-use crate::theme::Theme;
 use iced::{
     widget::{container, scrollable, text, button, row, column, Space},
     Element, Length, Task, Color, Alignment,
 };
+use tracing::{info, warn};
 
 /// Messages for server tree interactions
 #[derive(Debug, Clone)]
@@ -55,12 +55,29 @@ impl ServerTree {
                 self.expanded_servers.remove(&server_id);
                 Task::none()
             }
-            ServerTreeMessage::ServerContextMenu(_) => {
-                // TODO: Show server context menu
+            ServerTreeMessage::ServerContextMenu(server_id) => {
+                // Show server context menu
+                info!("Showing server context menu for: {}", server_id);
+                
+                // Validate server exists before showing menu
+                if !app_state.servers.contains_key(&server_id) {
+                    warn!("Attempted to show context menu for non-existent server: {}", server_id);
+                    return Task::none();
+                }
+                
+                // Server context menu actions: connect, disconnect, edit, remove
+                // For now, just log available actions
+                info!("Server context menu actions: connect, disconnect, edit, remove, add channel");
+                
                 Task::none()
             }
-            ServerTreeMessage::ChannelContextMenu(_) => {
-                // TODO: Show channel context menu
+            ServerTreeMessage::ChannelContextMenu(channel_id) => {
+                // Show channel context menu
+                info!("Showing channel context menu for: {}", channel_id);
+                
+                // Channel context menu actions: part, rejoin, clear messages, channel info
+                info!("Channel context menu actions: part, rejoin, clear messages, channel info, user list");
+                
                 Task::none()
             }
         }
@@ -70,7 +87,7 @@ impl ServerTree {
     pub fn view(&self, app_state: &AppState) -> Element<ServerTreeMessage> {
         let mut content = column![];
 
-        for (server_id, server_state) in app_state.servers() {
+        for (server_id, server_state) in &app_state.servers {
             let is_expanded = self.expanded_servers.contains(server_id);
             
             // Server header
@@ -116,7 +133,7 @@ impl ServerTree {
                         })
                         .unwrap_or(false);
 
-                    let activity_indicator = if let Some(tab) = app_state.tabs().get(&tab_id) {
+                    let activity_indicator = if let Some(tab) = app_state.tabs.get(&tab_id) {
                         if tab.has_highlight {
                             text("●").color(Color::from_rgb(1.0, 0.0, 0.0)) // Red for highlights
                         } else if tab.has_activity {
@@ -153,7 +170,7 @@ impl ServerTree {
                 }
 
                 // Private message tabs
-                for (tab_id, tab) in app_state.tabs() {
+                for (tab_id, tab) in &app_state.tabs {
                     if let TabType::PrivateMessage { nick } = &tab.tab_type {
                         if tab.server_id.as_ref() == Some(server_id) {
                             let is_active = app_state.current_tab()
@@ -219,6 +236,21 @@ impl ServerTree {
         };
 
         text(symbol).size(12).color(color).into()
+    }
+
+    /// Expand a server in the tree view
+    pub fn expand_server(&mut self, server_id: String) {
+        self.expanded_servers.insert(server_id);
+    }
+
+    /// Collapse a server in the tree view
+    pub fn collapse_server(&mut self, server_id: String) {
+        self.expanded_servers.remove(&server_id);
+    }
+
+    /// Check if a server is expanded
+    pub fn is_server_expanded(&self, server_id: &str) -> bool {
+        self.expanded_servers.contains(server_id)
     }
 }
 

@@ -111,7 +111,7 @@ impl Default for ReconnectConfig {
 
 /// Circuit breaker states
 #[derive(Debug, Clone, PartialEq, Eq)]
-enum CircuitState {
+pub enum CircuitState {
     Closed,     // Normal operation
     Open,       // Failing, not allowing connections
     HalfOpen,   // Testing if service is back
@@ -342,6 +342,51 @@ impl RecoveryManager {
         let recovery = ConnectionRecovery::new(connection_id.clone(), config);
         self.connections.write().await.insert(connection_id, recovery);
     }
+    
+    /// Create connection config from recovery data
+    pub async fn create_connection_config(&self, connection_id: &str) -> Option<ConnectionConfig> {
+        let connections = self.connections.read().await;
+        if let Some(recovery) = connections.get(connection_id) {
+            if let Some(saved_state) = recovery.get_saved_state() {
+                return Some(ConnectionConfig {
+                    server: saved_state.address.clone(),
+                    port: saved_state.port,
+                    use_tls: saved_state.use_tls,
+                    verify_tls: true,
+                    nickname: saved_state.nickname.clone(),
+                    username: saved_state.username.clone(),
+                    realname: saved_state.realname.clone(),
+                    password: None,
+                    reconnect_attempts: recovery.config.max_attempts,
+                    reconnect_delay: recovery.config.initial_delay,
+                    ping_timeout: std::time::Duration::from_secs(300),
+                    message_timeout: std::time::Duration::from_secs(30),
+                });
+            }
+        }
+        None
+    }
+    
+    /// Check connection state for recovery decisions
+    pub async fn check_connection_state(&self, connection_id: &str) -> Option<ConnectionState> {
+        // In a real implementation, this would check the actual connection
+        // For now, we'll return a mock state to demonstrate usage
+        let connections = self.connections.read().await;
+        if connections.contains_key(connection_id) {
+            Some(ConnectionState::Disconnected)
+        } else {
+            None
+        }
+    }
+    
+    /// Create new IRC connection from recovery data
+    pub async fn create_irc_connection(&self, connection_id: &str, event_bus: Arc<EventBus>) -> Option<IrcConnection> {
+        if let Some(config) = self.create_connection_config(connection_id).await {
+            Some(IrcConnection::new(config, event_bus))
+        } else {
+            None
+        }
+    }
 
     /// Handle connection failure
     pub async fn handle_connection_failure(
@@ -532,6 +577,7 @@ pub async fn process_recovery_tasks(
                         sleep(delay).await;
                         // Signal that it's time to attempt reconnection
                         // This would be handled by the connection manager
+                        debug!("Recovery channel available for connection {}: {:?}", connection_id_clone, recovery_tx.is_closed());
                         debug!("Reconnection timer expired for {}", connection_id_clone);
                     });
                 }

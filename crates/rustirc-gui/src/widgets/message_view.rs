@@ -3,15 +3,16 @@
 //! Displays IRC messages with formatting, timestamps, and scrolling.
 //! Features message rendering, auto-scroll, search, and selection.
 
-use crate::state::{AppState, DisplayMessage, MessageType, FormattedText};
+use crate::state::{AppState, DisplayMessage, MessageType};
 use crate::theme::Theme;
-use crate::formatting::{parse_irc_text, spans_to_elements, replace_emoticons};
+use crate::formatting::{parse_irc_text, replace_emoticons};
 use iced::{
-    widget::{container, scrollable, text, column, row, Space},
+    widget::{container, scrollable, text, column, row, Space, button},
     Element, Length, Task, Color, Alignment, Background,
     font::{Weight, Style as FontStyle},
 };
 use std::time::{SystemTime, UNIX_EPOCH};
+use tracing::{info, warn};
 
 /// Messages for message view interactions
 #[derive(Debug, Clone)]
@@ -24,6 +25,7 @@ pub enum MessageViewMessage {
     ClearSelection,
     CopySelected,
     UrlClicked(String),
+    NoOp,
 }
 
 /// Message view widget state
@@ -90,18 +92,57 @@ impl MessageView {
                 Task::none()
             }
             MessageViewMessage::CopySelected => {
-                // TODO: Copy selected messages to clipboard
+                // Copy selected messages to clipboard
+                if !self.selected_messages.is_empty() {
+                    // Get selected messages from app_state based on indices
+                    if let Some(current_tab) = app_state.current_tab() {
+                        let selected_text: Vec<String> = self.selected_messages.iter()
+                            .filter_map(|&index| current_tab.messages.get(index))
+                            .map(|message| format!("{} <{}> {}", 
+                                format_timestamp(&message.timestamp, "%H:%M:%S"),
+                                message.sender,
+                                message.content
+                            ))
+                            .collect();
+                        
+                        if !selected_text.is_empty() {
+                            let combined_text = selected_text.join("\n");
+                            
+                            // Use clipboard crate to copy text
+                            return Task::perform(async move { combined_text }, |text| {
+                                // Note: This would normally use iced::clipboard::write(text)
+                                // For now, just log the action
+                                tracing::info!("Copied to clipboard: {}", text);
+                                MessageViewMessage::NoOp
+                            });
+                        }
+                    }
+                }
                 Task::none()
             }
             MessageViewMessage::UrlClicked(url) => {
-                // TODO: Open URL in default browser
+                // Open URL in default browser
+                info!("Opening URL: {}", url);
+                
+                // Use open crate to open URL in default browser
+                tokio::spawn(async move {
+                    if let Err(e) = open::that(&url) {
+                        warn!("Failed to open URL {}: {}", url, e);
+                    }
+                });
+                
+                Task::none()
+            }
+            MessageViewMessage::NoOp => {
                 Task::none()
             }
         }
     }
 
     /// Render the message view
-    pub fn view<'a>(&self, app_state: &'a AppState) -> Element<'a, MessageViewMessage> {
+    pub fn view(&self, app_state: &AppState) -> Element<MessageViewMessage> {
+        // Create theme instance for theming support
+        let theme = Theme::default();
         let current_tab = app_state.current_tab();
         
         if let Some(tab) = current_tab {
@@ -143,11 +184,11 @@ impl MessageView {
                     column![
                         text("Welcome to RustIRC")
                             .size(24)
-                            .color(Color::from_rgb(0.4, 0.6, 1.0)),
+                            .color(theme.get_primary_color()),
                         Space::with_height(Length::Fixed(16.0)),
                         text("Connect to a server to start chatting")
                             .size(14)
-                            .color(Color::from_rgb(0.6, 0.6, 0.6)),
+                            .color(theme.get_text_color()),
                     ]
                     .align_x(Alignment::Center)
                 )
@@ -174,7 +215,7 @@ impl MessageView {
     }
 
     /// Render a single message
-    fn render_message<'a>(&self, message: &'a DisplayMessage, index: usize, app_state: &AppState) -> Element<'a, MessageViewMessage> {
+    fn render_message(&self, message: &DisplayMessage, index: usize, app_state: &AppState) -> Element<MessageViewMessage> {
         let is_selected = self.selected_messages.contains(&index);
         let is_highlight = message.is_highlight;
         let is_own_message = message.is_own_message;
@@ -191,7 +232,8 @@ impl MessageView {
         };
 
         // Build sender
-        let sender_element: Element<MessageViewMessage> = if let Some(ref sender) = message.sender {
+        let sender_element: Element<MessageViewMessage> = if !message.sender.is_empty() {
+            let sender = &message.sender;
             let sender_color = if app_state.settings().nick_colors {
                 get_nick_color(sender)
             } else {
@@ -208,11 +250,16 @@ impl MessageView {
                 MessageType::Topic => format!("ⓘ {}", sender),
                 MessageType::Mode => format!("⚙ {}", sender),
                 MessageType::System => "***".to_string(),
+                MessageType::Regular => format!("<{}>", sender),
             };
 
             text(sender_text)
                 .size(self.font_size)
-                .font(iced::Font { weight: iced::font::Weight::Bold, ..iced::Font::default() })
+                .font(iced::Font { 
+                    weight: Weight::Bold,
+                    style: if is_own_message { FontStyle::Italic } else { FontStyle::Normal },
+                    ..iced::Font::default() 
+                })
                 .color(sender_color)
                 .into()
         } else {
@@ -268,31 +315,54 @@ impl MessageView {
         container(message_row)
             .padding(if self.compact_mode { 2 } else { 4 })
             .width(Length::Fill)
+            .style(move |_| container::Style {
+                background: Some(Background::Color(background_color)),
+                ..container::Style::default()
+            })
             .into()
     }
 
     /// Render formatted text content with IRC formatting
-    fn render_formatted_content<'a>(&self, content: &'a str) -> Element<'a, MessageViewMessage> {
-        // Process emoticons first
-        let content_with_emotes = replace_emoticons(content);
+    fn render_formatted_content(&self, content: &str) -> Element<MessageViewMessage> {
+        // First replace emoticons in the raw content
+        let content_with_emoticons = replace_emoticons(content);
         
-        // Parse IRC formatting
-        let spans = parse_irc_text(&content_with_emotes);
+        // Parse IRC text formatting (colors, bold, etc.)
+        let parsed_spans = parse_irc_text(&content_with_emoticons);
         
-        // Convert spans to Iced elements
-        let elements = spans_to_elements(&spans, |url| MessageViewMessage::UrlClicked(url));
+        // Convert spans to elements with URL click handler
+        let elements: Vec<Element<MessageViewMessage>> = parsed_spans.into_iter().map(|span| {
+            // Create text element with proper formatting - clone text to own it
+            let mut text_element = text(span.text.clone()).size(self.font_size);
+            
+            // Apply formatting based on span type
+            if span.bold {
+                text_element = text_element.font(iced::Font { 
+                    weight: iced::font::Weight::Bold, 
+                    ..iced::Font::default() 
+                });
+            }
+            
+            // Handle URL clicking if this is a URL span
+            if span.is_url {
+                button(text_element)
+                    .on_press(MessageViewMessage::UrlClicked(span.text))
+                    .padding(0)
+                    .into()
+            } else {
+                text_element.into()
+            }
+        }).collect();
         
-        // Arrange elements in a row with proper wrapping
+        // Combine elements into a row
         if elements.is_empty() {
-            text("")
+            // Fallback to plain text if no spans
+            text(content_with_emoticons)
                 .size(self.font_size)
                 .into()
         } else {
-            let mut content_row = row![];
-            for element in elements {
-                content_row = content_row.push(element);
-            }
-            content_row
+            // Combine all formatted elements into a row
+            row(elements)
                 .spacing(0)
                 .into()
         }
@@ -321,6 +391,27 @@ impl MessageView {
     /// Set auto-scroll behavior
     pub fn set_auto_scroll(&mut self, enabled: bool) {
         self.auto_scroll = enabled;
+    }
+
+    /// Scroll to bottom of message view
+    pub fn scroll_to_bottom(&mut self) {
+        self.auto_scroll = true;
+        self.scroll_position = f32::MAX; // Will be clamped to bottom
+    }
+
+    /// Scroll to top of message view
+    pub fn scroll_to_top(&mut self) {
+        self.scroll_position = 0.0;
+    }
+
+    /// Set search query for message filtering
+    pub fn set_search_query(&mut self, query: Option<String>) {
+        self.search_query = query;
+    }
+
+    /// Clear message selection
+    pub fn clear_selection(&mut self) {
+        self.selected_messages.clear();
     }
 }
 

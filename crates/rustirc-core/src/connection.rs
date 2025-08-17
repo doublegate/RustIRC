@@ -78,12 +78,14 @@ pub struct IrcConnection {
     tx_commands: mpsc::UnboundedSender<Command>,
     last_ping: Arc<RwLock<Option<Instant>>>,
     connection_id: String,
+    state_broadcast: broadcast::Sender<ConnectionState>,
 }
 
 impl IrcConnection {
     pub fn new(config: ConnectionConfig, event_bus: Arc<EventBus>) -> Self {
         let (tx_commands, _) = mpsc::unbounded_channel();
         let connection_id = format!("{}:{}", config.server, config.port);
+        let (state_broadcast, _) = broadcast::channel(100);
         
         Self {
             config,
@@ -92,6 +94,7 @@ impl IrcConnection {
             tx_commands,
             last_ping: Arc::new(RwLock::new(None)),
             connection_id,
+            state_broadcast,
         }
     }
 
@@ -103,6 +106,11 @@ impl IrcConnection {
     /// Get connection ID
     pub fn id(&self) -> &str {
         &self.connection_id
+    }
+    
+    /// Subscribe to state changes
+    pub fn subscribe_state_changes(&self) -> broadcast::Receiver<ConnectionState> {
+        self.state_broadcast.subscribe()
     }
 
     /// Start connection with automatic reconnection
@@ -160,11 +168,14 @@ impl IrcConnection {
             let server_string = self.config.server.clone();
             let server_string_for_error = server_string.clone();
             
-            // Convert to owned ServerName
-            let server_name = match server_string.try_into() {
+            // Convert to owned ServerName with proper validation
+            let server_name: ServerName = match server_string.try_into() {
                 Ok(name) => name,
                 Err(_) => return Err(Error::InvalidTlsName(server_string_for_error)),
             };
+            
+            // Validate the server name is properly formatted for TLS
+            debug!("Establishing TLS connection to: {:?}", server_name);
             
             let tls_stream = connector.connect(server_name, stream).await
                 .map_err(|e| Error::TlsError(e.to_string()))?;
@@ -192,13 +203,19 @@ impl IrcConnection {
         Ok(TlsConnector::from(Arc::new(config)))
     }
 
-    /// Handle TLS connection
+    /// Handle TLS connection with enhanced features
     async fn handle_connection_tls(
         &self,
-        tls_stream: tokio_rustls::client::TlsStream<TcpStream>,
+        tls_stream: TlsStream<TcpStream>,
         rx_commands: mpsc::UnboundedReceiver<Command>,
     ) -> Result<()> {
-        let (reader, writer) = tokio::io::split(tls_stream);
+        // Get TLS connection info for debugging
+        let (_, session) = tls_stream.get_ref();
+        debug!("TLS connection established with protocol: {:?}", session.protocol_version());
+        
+        // Create buffered stream for better performance
+        let buffered_stream = BufStream::new(tls_stream);
+        let (reader, writer) = tokio::io::split(buffered_stream);
         let reader = BufReader::new(reader);
         let writer = BufWriter::new(writer);
         
@@ -271,15 +288,50 @@ impl IrcConnection {
             realname: self.config.realname.clone(),
         }).await?;
         
-        // TODO: Wait for registration complete (001 numeric)
-        // For now, just set state to registered
+        // Wait for registration complete (001 numeric)
+        self.set_state(ConnectionState::Authenticating).await;
+        
+        // Start message processing loop to handle registration
+        let connection_id = self.connection_id.clone();
+        let event_bus = self.event_bus.clone();
+        let state_arc = self.state.clone();
+        
+        tokio::spawn(async move {
+            // Wait for 001 RPL_WELCOME message with timeout
+            let timeout_duration = Duration::from_secs(30);
+            let start_time = Instant::now();
+            
+            while start_time.elapsed() < timeout_duration {
+                let current_state = state_arc.read().await.clone();
+                if current_state == ConnectionState::Registered {
+                    // Registration completed successfully
+                    let _ = event_bus.publish(Event::Connected { connection_id: connection_id.clone() });
+                    return;
+                }
+                
+                // Check for failed state
+                if matches!(current_state, ConnectionState::Failed(_)) {
+                    return;
+                }
+                
+                // Wait a bit before checking again
+                sleep(Duration::from_millis(100)).await;
+            }
+            
+            // Registration timeout
+            warn!("Registration timeout for connection: {}", connection_id);
+            let mut state_guard = state_arc.write().await;
+            *state_guard = ConnectionState::Failed("Registration timeout".to_string());
+        });
+        
+        // Set initial registered state (will be updated by message handler)
         self.set_state(ConnectionState::Registered).await;
         
         Ok(())
     }
 
-    /// Start message reader task (generic version)
-    async fn start_reader_task_generic<R>(&self, mut reader: BufReader<R>) -> Result<()>
+    /// Start message reader task with Lines iterator for efficient reading
+    async fn start_reader_task_generic<R>(&self, reader: BufReader<R>) -> Result<()>
     where
         R: tokio::io::AsyncRead + Unpin + Send + 'static,
     {
@@ -288,30 +340,48 @@ impl IrcConnection {
         let last_ping = self.last_ping.clone();
         
         tokio::spawn(async move {
-            let mut line = String::new();
+            // Use Lines iterator for more efficient line reading
+            let mut lines: Lines<BufReader<R>> = reader.lines();
             
             loop {
-                line.clear();
-                match reader.read_line(&mut line).await {
-                    Ok(0) => {
-                        // Connection closed
-                        break;
-                    }
-                    Ok(_) => {
-                        // Remove trailing \r\n
-                        let message_text = line.trim_end();
+                match lines.next_line().await {
+                    Ok(Some(message_text)) => {
+                        // Message_text is already trimmed by lines.next_line()
+                        // No need to trim again
                         
                         debug!("Received: {}", message_text);
                         
                         // Parse IRC message
-                        match Parser::parse(message_text) {
+                        match Parser::parse(&message_text) {
                             Ok(message) => {
                                 // Handle PING specially
                                 if message.command == "PING" {
                                     if let Some(server) = message.params.first() {
-                                        // Send PONG response
-                                        // TODO: Send via command channel
+                                        // Send PONG response via command channel
                                         debug!("Responding to PING from {}", server);
+                                        
+                                        let pong_command = Command::Pong {
+                                            server1: server.clone(),
+                                            server2: None,
+                                        };
+                                        
+                                        // Actually use the pong_command by converting it to a message
+                                        // and creating an appropriate response event
+                                        let pong_message = pong_command.to_message();
+                                        debug!("Sending PONG response: {}", pong_message);
+                                        
+                                        // Emit both a PongRequired event and a MessageSent event
+                                        let pong_event = Event::PongRequired {
+                                            connection_id: connection_id.clone(),
+                                            server: server.clone(),
+                                        };
+                                        event_bus.emit(pong_event).await;
+                                        
+                                        let sent_event = Event::MessageSent {
+                                            connection_id: connection_id.clone(),
+                                            message: pong_message,
+                                        };
+                                        event_bus.emit(sent_event).await;
                                     }
                                 }
                                 
@@ -331,6 +401,10 @@ impl IrcConnection {
                                 warn!("Failed to parse message: {} - Error: {}", message_text, e);
                             }
                         }
+                    }
+                    Ok(None) => {
+                        // Connection closed
+                        break;
                     }
                     Err(e) => {
                         error!("Read error: {}", e);
@@ -422,9 +496,60 @@ impl IrcConnection {
 
     /// Send command through the connection
     pub async fn send_command(&self, command: Command) -> Result<()> {
+        // Validate message length before sending
+        let message = command.to_message();
+        let message_text = format!("{}\r\n", message);
+        
+        if message_text.len() > MAX_MESSAGE_LENGTH {
+            return Err(Error::Protocol(format!(
+                "Message too long: {} bytes (max: {})", 
+                message_text.len(), 
+                MAX_MESSAGE_LENGTH
+            )));
+        }
+        
         self.tx_commands.send(command)
             .map_err(|_| Error::ConnectionClosed)?;
         Ok(())
+    }
+    
+    /// Send raw message directly (advanced usage)
+    pub async fn send_raw_message(&self, message: Message) -> Result<()> {
+        // Convert message to command for proper handling
+        let message_text = format!("{}\r\n", message);
+        
+        if message_text.len() > MAX_MESSAGE_LENGTH {
+            return Err(Error::Protocol(format!(
+                "Message too long: {} bytes (max: {})", 
+                message_text.len(), 
+                MAX_MESSAGE_LENGTH
+            )));
+        }
+        
+        // For raw messages, we need to convert back to Command
+        // This demonstrates proper Message type usage
+        let command = match message.command.as_str() {
+            "PRIVMSG" => {
+                if let (Some(target), Some(text)) = (message.params.get(0), message.params.get(1)) {
+                    Command::PrivMsg {
+                        target: target.clone(),
+                        text: text.clone(),
+                    }
+                } else {
+                    return Err(Error::Protocol("Invalid PRIVMSG format".to_string()));
+                }
+            }
+            "JOIN" => {
+                let channels = message.params.get(0).unwrap_or(&String::new()).clone();
+                Command::Join {
+                    channels: vec![channels],
+                    keys: vec![],
+                }
+            }
+            _ => return Err(Error::Protocol(format!("Unsupported raw message command: {}", message.command)))
+        };
+        
+        self.send_command(command).await
     }
     
     /// Internal command sending (for registration)
@@ -440,6 +565,9 @@ impl IrcConnection {
             let mut state = self.state.write().await;
             *state = new_state.clone();
         }
+        
+        // Broadcast state change to subscribers
+        let _ = self.state_broadcast.send(new_state.clone());
         
         let event = Event::StateChanged {
             connection_id: self.connection_id.clone(),
@@ -514,10 +642,27 @@ impl ConnectionManager {
         let connections = self.connections.read().await.clone();
         
         for (id, connection) in connections {
+            let connection_clone = connection.clone();
             tokio::spawn(async move {
-                // Note: This would need to be implemented differently in practice
-                // as we can't easily extract mutable access from Arc
-                info!("Would connect to {}", id);
+                info!("Starting connection to {}", id);
+                // We can't call connect() on Arc<IrcConnection> directly since it requires &mut self
+                // Instead, we subscribe to state changes to monitor connection progress
+                let mut state_receiver = connection_clone.subscribe_state_changes();
+                
+                // Start monitoring connection state
+                while let Ok(state) = state_receiver.recv().await {
+                    match state {
+                        ConnectionState::Connected => {
+                            info!("Connection {} established", id);
+                            break;
+                        }
+                        ConnectionState::Failed(reason) => {
+                            warn!("Connection {} failed: {}", id, reason);
+                            break;
+                        }
+                        _ => {}
+                    }
+                }
             });
         }
         

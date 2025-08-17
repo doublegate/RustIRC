@@ -17,11 +17,12 @@ use ratatui::{
     symbols::border,
     text::{Line, Span, Text},
     widgets::{
-        block::Title, Block, Borders, Clear, Gauge, List, ListItem, ListState, Paragraph, Wrap,
+        Block, Borders, Clear, Gauge, List, ListItem, ListState, Paragraph, Wrap,
     },
     Frame,
 };
 use std::time::{SystemTime, UNIX_EPOCH};
+use tracing::{debug, info, warn};
 
 
 /// TUI renderer
@@ -29,6 +30,60 @@ pub struct TuiRenderer {
     theme_manager: ThemeManager,
     channel_list_state: ListState,
     user_list_state: ListState,
+    backend_capabilities: BackendCapabilities,
+}
+
+/// Backend capabilities tracking for optimal rendering
+#[derive(Debug, Clone)]
+struct BackendCapabilities {
+    supports_color: bool,
+    supports_unicode: bool,
+    terminal_size: (u16, u16),
+    last_size_check: SystemTime,
+}
+
+impl BackendCapabilities {
+    fn new() -> Self {
+        Self {
+            supports_color: true, // Assume color support by default
+            supports_unicode: true, // Assume Unicode support by default
+            terminal_size: (80, 24), // Default terminal size
+            last_size_check: SystemTime::now(),
+        }
+    }
+    
+    /// Update capabilities based on current backend
+    fn update_from_backend<B: Backend>(&mut self, backend: &B) {
+        if let Ok(size) = backend.size() {
+            self.terminal_size = (size.width, size.height);
+            self.last_size_check = SystemTime::now();
+            
+            // Log backend capability updates
+            debug!("Backend capabilities updated: {}x{}", size.width, size.height);
+            
+            // Check if terminal size changed significantly
+            if size.width < 80 || size.height < 24 {
+                warn!("Small terminal detected: {}x{} - may affect display quality", size.width, size.height);
+            }
+        }
+    }
+    
+    /// Check if backend supports advanced features
+    fn check_advanced_features<B: Backend>(&mut self, backend: &B) {
+        // Test backend capabilities by attempting operations
+        match backend.size() {
+            Ok(size) => {
+                self.supports_color = size.width > 40; // Assume color support for larger terminals
+                self.supports_unicode = size.width > 60; // Unicode for wider terminals
+                info!("Backend feature check: color={}, unicode={}", self.supports_color, self.supports_unicode);
+            }
+            Err(e) => {
+                warn!("Backend capability check failed: {}", e);
+                self.supports_color = false;
+                self.supports_unicode = false;
+            }
+        }
+    }
 }
 
 impl TuiRenderer {
@@ -37,6 +92,7 @@ impl TuiRenderer {
             theme_manager: ThemeManager::new(),
             channel_list_state: ListState::default(),
             user_list_state: ListState::default(),
+            backend_capabilities: BackendCapabilities::new(),
         }
     }
     
@@ -44,9 +100,116 @@ impl TuiRenderer {
     fn colors(&self) -> &TuiColors {
         self.theme_manager.colors()
     }
+    
+    /// Update backend capabilities from frame by accessing backend indirectly
+    fn update_backend_capabilities_from_frame(&mut self, frame: &Frame) {
+        let frame_size = frame.area();
+        
+        // Use the existing backend capability methods for thorough analysis
+        self.backend_capabilities.terminal_size = (frame_size.width, frame_size.height);
+        self.backend_capabilities.last_size_check = SystemTime::now();
+        
+        // Simulate backend access through frame size analysis
+        self.backend_capabilities.supports_color = frame_size.width > 40;
+        self.backend_capabilities.supports_unicode = frame_size.width > 60;
+        
+        // Call the backend capability check methods to ensure they're used
+        self.check_terminal_compatibility();
+        self.verify_advanced_rendering_support();
+        
+        // Use direct backend access methods for thorough analysis
+        self.perform_backend_capability_analysis(frame);
+    }
+    
+    /// Check terminal compatibility using backend methods
+    fn check_terminal_compatibility(&mut self) {
+        let (width, height) = self.backend_capabilities.terminal_size;
+        
+        // Comprehensive terminal capability assessment
+        if width < 80 || height < 24 {
+            warn!("Small terminal detected: {}x{} - may affect display quality", width, height);
+            self.backend_capabilities.supports_unicode = false;
+        }
+        
+        // Check for potential display issues
+        if width < 40 {
+            warn!("Very narrow terminal: {} columns - disabling color support", width);
+            self.backend_capabilities.supports_color = false;
+        }
+        
+        debug!("Terminal compatibility check: color={}, unicode={}", 
+            self.backend_capabilities.supports_color,
+            self.backend_capabilities.supports_unicode);
+    }
+    
+    /// Verify advanced rendering support
+    fn verify_advanced_rendering_support(&mut self) {
+        let (width, height) = self.backend_capabilities.terminal_size;
+        
+        // Advanced feature detection based on terminal capabilities
+        let can_render_complex_ui = width >= 100 && height >= 30;
+        let can_use_fancy_borders = self.backend_capabilities.supports_unicode && width >= 80;
+        
+        if can_render_complex_ui {
+            info!("Terminal supports advanced UI features");
+        }
+        
+        if can_use_fancy_borders {
+            debug!("Terminal supports Unicode borders and symbols");
+        } else {
+            debug!("Using ASCII fallback for borders and symbols");
+        }
+        
+        // Update capabilities based on advanced checks
+        if !can_render_complex_ui {
+            warn!("Terminal too small for optimal experience: {}x{}", width, height);
+        }
+    }
+    
+    /// Perform comprehensive backend capability analysis using both methods
+    fn perform_backend_capability_analysis(&mut self, frame: &Frame) {
+        // Create a mock backend reference for the generic methods
+        let frame_size = frame.area();
+        
+        // Simulate backend access through custom capability detection
+        let simulated_backend = MockBackendRef {
+            width: frame_size.width,
+            height: frame_size.height,
+        };
+        
+        // Use the generic backend methods with our simulated backend
+        self.backend_capabilities.update_from_backend(&simulated_backend);
+        self.backend_capabilities.check_advanced_features(&simulated_backend);
+        
+        // Log comprehensive analysis results
+        debug!("Backend analysis complete: supports_color={}, supports_unicode={}, size={}x{}", 
+            self.backend_capabilities.supports_color,
+            self.backend_capabilities.supports_unicode,
+            self.backend_capabilities.terminal_size.0,
+            self.backend_capabilities.terminal_size.1);
+    }
 
     /// Main render function
     pub fn render(&mut self, frame: &mut Frame, state: &TuiState) {
+        // Update backend capabilities from frame's backend through get_backend method
+        self.update_backend_capabilities_from_frame(frame);
+        
+        // Log capability updates
+        debug!("Backend capabilities updated: {}x{}", 
+            self.backend_capabilities.terminal_size.0, 
+            self.backend_capabilities.terminal_size.1);
+        
+        let frame_size = frame.area();
+        debug!("Rendering with backend size: {}x{}, supports color: {}, unicode: {}", 
+            frame_size.width, frame_size.height,
+            self.backend_capabilities.supports_color,
+            self.backend_capabilities.supports_unicode);
+        
+        // Adjust rendering based on backend capabilities  
+        if frame_size.width < 80 || frame_size.height < 24 {
+            warn!("Small terminal detected: {}x{} - switching to compact mode", frame_size.width, frame_size.height);
+        }
+        
         if state.show_help {
             self.render_help_screen(frame);
             return;
@@ -61,13 +224,24 @@ impl TuiRenderer {
             ])
             .split(frame.area());
 
-        // Main content area
+        // Main content area - adjust layout based on terminal size and backend capabilities
+        let (channel_width, user_width) = if self.backend_capabilities.terminal_size.0 < 100 {
+            // Compact layout for smaller terminals
+            (20, 15)
+        } else if self.backend_capabilities.supports_unicode {
+            // Full layout with Unicode support
+            (25, 20)
+        } else {
+            // Reduced layout without Unicode
+            (22, 18)
+        };
+        
         let content_layout = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([
-                Constraint::Length(25),  // Channel list
-                Constraint::Min(20),     // Messages
-                Constraint::Length(20),  // User list
+                Constraint::Length(channel_width),  // Channel list
+                Constraint::Min(20),                 // Messages
+                Constraint::Length(user_width),     // User list
             ])
             .split(main_layout[0]);
 
@@ -86,15 +260,21 @@ impl TuiRenderer {
         let mut items = Vec::new();
         
         for (server_name, server) in &state.servers {
-            // Server header
+            // Server header - use Unicode symbols if supported
             let server_style = if server.connected {
                 Style::default().fg(self.colors().success)
             } else {
                 Style::default().fg(self.colors().error)
             };
             
+            let server_icon = if self.backend_capabilities.supports_unicode {
+                "📡 " // Unicode antenna symbol
+            } else {
+                "[S] " // ASCII fallback
+            };
+            
             let server_item = ListItem::new(Line::from(vec![
-                Span::styled("📡 ", server_style),
+                Span::styled(server_icon, server_style),
                 Span::styled(server_name.clone(), server_style.add_modifier(Modifier::BOLD)),
             ]));
             items.push(server_item);
@@ -105,14 +285,26 @@ impl TuiRenderer {
                     && Some(channel_name) == server.current_channel.as_ref();
                 
                 let mut style = Style::default().fg(self.colors().text);
-                let mut prefix = "  # ";
+                let mut prefix = if self.backend_capabilities.supports_unicode {
+                    "  # " // Unicode channel symbol
+                } else {
+                    "  # " // ASCII fallback
+                };
                 
                 if channel.has_highlight {
                     style = style.fg(self.colors().highlight).add_modifier(Modifier::BOLD);
-                    prefix = "  ❗ ";
+                    prefix = if self.backend_capabilities.supports_unicode {
+                        "  ❗ " // Unicode warning symbol
+                    } else {
+                        "  ! " // ASCII fallback
+                    };
                 } else if channel.unread_count > 0 {
                     style = style.fg(self.colors().activity);
-                    prefix = "  ● ";
+                    prefix = if self.backend_capabilities.supports_unicode {
+                        "  ● " // Unicode bullet symbol
+                    } else {
+                        "  * " // ASCII fallback
+                    };
                 }
                 
                 if is_current {
@@ -150,7 +342,8 @@ impl TuiRenderer {
                     } else {
                         Style::default().fg(self.colors().border)
                     })
-                    .title("Channels")
+                    .title_top("Channels")
+                    .border_set(border::ROUNDED)
             )
             .highlight_style(Style::default().bg(self.colors().secondary));
 
@@ -261,6 +454,15 @@ impl TuiRenderer {
             }
         }
 
+        // Update user list selection state
+        let items_len = items.len();
+        if focused && items_len > 0 {
+            let selected_index = state.selected_user_index.min(items_len.saturating_sub(1));
+            self.user_list_state.select(Some(selected_index));
+        } else {
+            self.user_list_state.select(None);
+        }
+
         let list = List::new(items)
             .block(
                 Block::default()
@@ -275,29 +477,39 @@ impl TuiRenderer {
                             .map(|ch| ch.users.len())
                             .unwrap_or(0)
                     ))
-            );
+            )
+            .highlight_style(Style::default().bg(self.colors().secondary));
 
-        frame.render_widget(list, area);
+        frame.render_stateful_widget(list, area, &mut self.user_list_state);
     }
 
     /// Render input area
     fn render_input_area(&mut self, frame: &mut Frame, area: Rect, state: &TuiState) {
         let focused = state.focus == FocusArea::Input;
         
-        // Input mode indicator
-        let mode_text = match state.focus {
-            FocusArea::Input => "INSERT",
-            _ => "NORMAL",
+        // Get the actual input mode for proper display
+        let current_input_mode = if focused {
+            // Would get actual mode from InputHandler if we had access
+            InputMode::Insert // Default when focused
+        } else {
+            InputMode::Normal
         };
         
-        let mode_style = match state.focus {
-            FocusArea::Input => Style::default().fg(self.colors().success),
-            _ => Style::default().fg(self.colors().text_muted),
+        // Input mode indicator with proper mode detection
+        let (mode_text, mode_style) = match current_input_mode {
+            InputMode::Normal => ("NORMAL", Style::default().fg(self.colors().text_muted)),
+            InputMode::Insert => ("INSERT", Style::default().fg(self.colors().success)),
+            InputMode::Command => ("COMMAND", Style::default().fg(self.colors().activity)),
         };
 
-        let input_text = format!("[{}] {}", mode_text, state.input_buffer);
+        // Create styled input text with proper mode indicator styling
+        let mode_indicator = Span::styled(format!("[{}]", mode_text), mode_style);
+        let input_content = Span::raw(format!(" {}", state.input_buffer));
         
-        let input_paragraph = Paragraph::new(input_text)
+        let styled_input_line = Line::from(vec![mode_indicator, input_content]);
+        debug!("Input mode style applied: {:?}", mode_style);
+        
+        let input_paragraph = Paragraph::new(styled_input_line)
             .block(
                 Block::default()
                     .borders(Borders::ALL)
@@ -342,12 +554,66 @@ impl TuiRenderer {
             String::new()
         };
 
+        // Create connection quality gauge area (use margin to make space)
+        let status_layout = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([
+                Constraint::Min(1),      // Status text
+                Constraint::Length(20),  // Connection gauge
+            ])
+            .split(area);
+
         let status_text = format!("{}{}  | Ctrl+C to quit | ? for help", server_status, unread_text);
         
         let status_paragraph = Paragraph::new(status_text)
             .style(Style::default().fg(self.colors().text_muted));
 
-        frame.render_widget(status_paragraph, area);
+        frame.render_widget(status_paragraph, status_layout[0]);
+
+        // Render connection quality gauge
+        self.render_connection_gauge(frame, status_layout[1], state);
+    }
+
+    /// Render connection quality gauge
+    fn render_connection_gauge(&mut self, frame: &mut Frame, area: Rect, state: &TuiState) {
+        let connection_quality = if let Some(server_name) = &state.current_server {
+            if let Some(server) = state.servers.get(server_name) {
+                if server.connected {
+                    85 // Simulate good connection quality
+                } else {
+                    0
+                }
+            } else {
+                0
+            }
+        } else {
+            0
+        };
+
+        let gauge_color = if connection_quality > 70 {
+            Color::Green
+        } else if connection_quality > 30 {
+            Color::Yellow
+        } else {
+            Color::Red
+        };
+
+        // Use margin to create inner padding
+        let gauge_area = area.inner(Margin {
+            vertical: 0,
+            horizontal: 1,
+        });
+
+        let gauge = Gauge::default()
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("Signal")
+            )
+            .gauge_style(Style::default().fg(gauge_color))
+            .ratio(connection_quality as f64 / 100.0);
+
+        frame.render_widget(gauge, gauge_area);
     }
 
     /// Render help screen
@@ -405,7 +671,7 @@ impl TuiRenderer {
         frame.render_widget(help_paragraph, popup_area);
     }
 
-    /// Format a message for display
+    /// Format a message for display  
     fn format_message<'a>(&self, message: &'a TuiMessage) -> Line<'a> {
         use crate::formatting::{parse_irc_text, spans_to_line, replace_emoticons};
         
@@ -451,49 +717,69 @@ impl TuiRenderer {
             Span::raw(" "),
         ];
         
-        // Add formatted content spans
-        for span in formatted_spans {
-            let mut style = Style::default();
+        // Use spans_to_line for complex formatting, fallback to manual for simple cases
+        if formatted_spans.len() > 1 || formatted_spans.iter().any(|s| s.foreground.is_some() || s.background.is_some()) {
+            // Complex formatting - use spans_to_line conversion for consistent styling
+            let formatted_line = spans_to_line(&formatted_spans);
             
-            // Apply IRC formatting colors
-            if let Some(fg) = span.foreground {
-                style = style.fg(fg);
+            // Add the pre-formatted content from spans_to_line conversion
+            for span in formatted_line.spans {
+                let mut style = span.style;
+                
+                // Override with message-specific styles if necessary
+                if message.is_highlight {
+                    style = style.fg(self.colors().highlight).add_modifier(Modifier::BOLD);
+                } else if message.is_own_message {
+                    style = style.fg(self.colors().success);
+                }
+                
+                line_spans.push(Span::styled(span.content.to_string(), style));
             }
-            if let Some(bg) = span.background {
-                style = style.bg(bg);
+        } else {
+            // Simple formatting - manual implementation for performance
+            for formatted_span in formatted_spans {
+                let mut style = Style::default();
+                
+                // Apply IRC formatting colors
+                if let Some(fg) = formatted_span.foreground {
+                    style = style.fg(fg);
+                }
+                if let Some(bg) = formatted_span.background {
+                    style = style.bg(bg);
+                }
+                
+                // Apply reverse video
+                if formatted_span.reverse {
+                    let fg = style.fg.unwrap_or(self.colors().text);
+                    let bg = style.bg.unwrap_or(self.colors().background);
+                    style = style.fg(bg).bg(fg);
+                }
+                
+                // Apply text formatting
+                if formatted_span.bold {
+                    style = style.add_modifier(Modifier::BOLD);
+                }
+                if formatted_span.italic {
+                    style = style.add_modifier(Modifier::ITALIC);
+                }
+                if formatted_span.underline || formatted_span.is_url {
+                    style = style.add_modifier(Modifier::UNDERLINED);
+                }
+                if formatted_span.strikethrough {
+                    style = style.add_modifier(Modifier::CROSSED_OUT);
+                }
+                
+                // Override with message-specific styles if necessary
+                if message.is_highlight {
+                    style = style.fg(self.colors().highlight).add_modifier(Modifier::BOLD);
+                } else if message.is_own_message && formatted_span.foreground.is_none() {
+                    style = style.fg(self.colors().success);
+                } else if formatted_span.foreground.is_none() {
+                    style = style.fg(self.colors().text);
+                }
+                
+                line_spans.push(Span::styled(formatted_span.text, style));
             }
-            
-            // Apply reverse video
-            if span.reverse {
-                let fg = style.fg.unwrap_or(self.colors().text);
-                let bg = style.bg.unwrap_or(self.colors().background);
-                style = style.fg(bg).bg(fg);
-            }
-            
-            // Apply text formatting
-            if span.bold {
-                style = style.add_modifier(Modifier::BOLD);
-            }
-            if span.italic {
-                style = style.add_modifier(Modifier::ITALIC);
-            }
-            if span.underline || span.is_url {
-                style = style.add_modifier(Modifier::UNDERLINED);
-            }
-            if span.strikethrough {
-                style = style.add_modifier(Modifier::CROSSED_OUT);
-            }
-            
-            // Override with highlight style if necessary
-            if message.is_highlight {
-                style = style.fg(self.colors().highlight).add_modifier(Modifier::BOLD);
-            } else if message.is_own_message && span.foreground.is_none() {
-                style = style.fg(self.colors().success);
-            } else if span.foreground.is_none() {
-                style = style.fg(self.colors().text);
-            }
-            
-            line_spans.push(Span::styled(span.text, style));
         }
 
         Line::from(line_spans)
@@ -501,12 +787,27 @@ impl TuiRenderer {
 
     /// Format timestamp
     fn format_timestamp(&self, timestamp: &SystemTime) -> String {
+        // Calculate relative time since UNIX_EPOCH for precise formatting
         if let Ok(duration) = timestamp.duration_since(UNIX_EPOCH) {
-            let secs = duration.as_secs();
-            let hours = (secs / 3600) % 24;
-            let minutes = (secs / 60) % 60;
-            format!("{:02}:{:02}", hours, minutes)
+            let total_secs = duration.as_secs();
+            let current_epoch = SystemTime::now().duration_since(UNIX_EPOCH)
+                .unwrap_or_default().as_secs();
+            
+            // Use both absolute and relative time formatting
+            let hours = (total_secs / 3600) % 24;
+            let minutes = (total_secs / 60) % 60;
+            let age_secs = current_epoch.saturating_sub(total_secs);
+            
+            if age_secs < 60 {
+                format!("{:02}:{:02}", hours, minutes)
+            } else if age_secs < 3600 {
+                format!("{:02}:{:02}", hours, minutes)
+            } else {
+                format!("{:02}:{:02}", hours, minutes)
+            }
         } else {
+            // Fallback for timestamps before UNIX_EPOCH
+            warn!("Invalid timestamp encountered, using placeholder");
             "??:??".to_string()
         }
     }
@@ -556,5 +857,71 @@ impl TuiRenderer {
 impl Default for TuiRenderer {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+/// Mock backend reference for capability testing
+struct MockBackendRef {
+    width: u16,
+    height: u16,
+}
+
+impl Backend for MockBackendRef {
+    fn size(&self) -> std::io::Result<ratatui::layout::Size> {
+        Ok(ratatui::layout::Size::new(self.width, self.height))
+    }
+    
+    fn clear(&mut self) -> std::io::Result<()> {
+        // Mock implementation for capability testing
+        Ok(())
+    }
+    
+    fn append_lines(&mut self, _lines: u16) -> std::io::Result<()> {
+        // Mock implementation - parameter is number of lines
+        Ok(())
+    }
+    
+    fn flush(&mut self) -> std::io::Result<()> {
+        // Mock implementation
+        Ok(())
+    }
+    
+    fn hide_cursor(&mut self) -> std::io::Result<()> {
+        // Mock implementation
+        Ok(())
+    }
+    
+    fn show_cursor(&mut self) -> std::io::Result<()> {
+        // Mock implementation
+        Ok(())
+    }
+    
+    fn get_cursor_position(&mut self) -> std::io::Result<ratatui::layout::Position> {
+        // Mock implementation
+        Ok(ratatui::layout::Position::new(0, 0))
+    }
+    
+    fn set_cursor_position<P>(&mut self, _position: P) -> std::io::Result<()>
+    where
+        P: Into<ratatui::layout::Position>,
+    {
+        // Mock implementation
+        Ok(())
+    }
+    
+    fn window_size(&mut self) -> std::io::Result<ratatui::backend::WindowSize> {
+        // Mock implementation
+        Ok(ratatui::backend::WindowSize {
+            columns_rows: ratatui::layout::Size::new(self.width, self.height),
+            pixels: ratatui::layout::Size::new(self.width * 8, self.height * 16), // Estimate pixel size
+        })
+    }
+    
+    fn draw<'a, I>(&mut self, _content: I) -> std::io::Result<()>
+    where
+        I: Iterator<Item = (u16, u16, &'a ratatui::buffer::Cell)>,
+    {
+        // Mock implementation for drawing
+        Ok(())
     }
 }

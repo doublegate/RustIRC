@@ -26,6 +26,9 @@ pub enum Command {
     Whois { targets: Vec<String> },
     Whowas { nicknames: Vec<String>, count: Option<u32> },
     
+    // Channel management
+    Kick { channel: String, nick: String, comment: Option<String> },
+    
     // Server commands
     Ping { server1: String, server2: Option<String> },
     Pong { server1: String, server2: Option<String> },
@@ -140,6 +143,15 @@ impl Command {
                     .add_param(nicknames.join(","));
                 if let Some(count) = count {
                     msg = msg.add_param(count.to_string());
+                }
+                msg
+            }
+            Command::Kick { channel, nick, comment } => {
+                let mut msg = crate::Message::new("KICK")
+                    .add_param(channel.clone())
+                    .add_param(nick.clone());
+                if let Some(comment) = comment {
+                    msg = msg.add_param(comment.clone());
                 }
                 msg
             }

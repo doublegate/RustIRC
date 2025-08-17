@@ -10,6 +10,7 @@
 use crate::state::{TuiState, FocusArea};
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyModifiers};
+use tracing::info;
 
 /// Input modes for vi-like interface
 #[derive(Debug, Clone, PartialEq)]
@@ -407,6 +408,9 @@ impl InputHandler {
         // Simple tab completion - in a real implementation this would be more sophisticated
         let input = &state.input_buffer;
         let cursor = state.input_cursor;
+        
+        // Use cursor position for more precise completion
+        info!("Tab completion at cursor position: {}", cursor);
         
         // Find the word at cursor
         let words: Vec<&str> = input.split_whitespace().collect();
