@@ -70,10 +70,41 @@ impl SimpleRustIrcGui {
             SimpleMessage::ConnectToServer => {
                 info!("Connecting to server...");
                 self.app_state.add_server("libera".to_string(), "Libera.Chat".to_string());
+                
+                // Actually connect using IRC client
+                let irc_client_clone = self.irc_client.clone();
+                tokio::spawn(async move {
+                    let config = rustirc_core::Config::default();
+                    let client = Arc::new(rustirc_core::IrcClient::new(config));
+                    
+                    if let Ok(()) = client.connect("irc.libera.chat", 6697).await {
+                        let mut client_guard = irc_client_clone.write().await;
+                        *client_guard = Some(client);
+                        info!("Successfully connected to Libera.Chat");
+                    } else {
+                        info!("Failed to connect to Libera.Chat");
+                    }
+                });
             }
             SimpleMessage::JoinChannel(channel) => {
                 info!("Joining channel: {}", channel);
-                self.app_state.add_channel_tab("libera".to_string(), channel);
+                self.app_state.add_channel_tab("libera".to_string(), channel.clone());
+                
+                // Actually join the channel using IRC client
+                let irc_client_clone = self.irc_client.clone();
+                let channel_clone = channel.clone();
+                tokio::spawn(async move {
+                    let client_guard = irc_client_clone.read().await;
+                    if let Some(client) = client_guard.as_ref() {
+                        if let Ok(()) = client.join_channel(&channel_clone).await {
+                            info!("Successfully joined channel: {}", channel_clone);
+                        } else {
+                            info!("Failed to join channel: {}", channel_clone);
+                        }
+                    } else {
+                        info!("No IRC client available to join channel: {}", channel_clone);
+                    }
+                });
             }
             SimpleMessage::ThemeChanged(theme_type) => {
                 self.current_theme = Theme::from_type(theme_type);

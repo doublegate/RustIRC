@@ -131,13 +131,43 @@ impl TabBar {
                 Task::none()
             }
             TabBarMessage::TabContextMenu(tab_id) => {
-                // Show tab context menu
-                info!("Showing context menu for tab: {}", tab_id);
+                // Show tab context menu with tab-specific actions
+                info!("Processing context menu for tab: {}", tab_id);
                 
-                // Mark context menu state for this tab
-                if let Some(tab) = app_state.tabs.get_mut(&tab_id) {
-                    // Add context menu state to tab if needed
-                    info!("Tab context menu actions available: close, rename, move");
+                // Get tab context for action validation
+                if let Some(tab) = app_state.tabs.get(&tab_id) {
+                    match &tab.tab_type {
+                        TabType::Channel { channel } => {
+                            info!("Context menu for channel {}: close, leave, notifications", channel);
+                            // Channel tabs support: close tab, leave channel, toggle notifications
+                        }
+                        TabType::PrivateMessage { nick } => {
+                            info!("Context menu for PM with {}: close, clear history", nick);
+                            // PM tabs support: close tab, clear history
+                        }
+                        TabType::Server => {
+                            info!("Context menu for server tab: disconnect, reconnect");
+                            // Server tabs support: disconnect, reconnect (cannot close)
+                        }
+                        TabType::Private => {
+                            info!("Context menu for private tab: close");
+                            // Generic private tabs support: close only
+                        }
+                    }
+                    
+                    // Tab-specific menu actions based on context
+                    match tab.tab_type {
+                        TabType::Server => {
+                            // Server tabs have different actions - cannot be closed
+                            info!("Server tab context menu - disconnect/reconnect options");
+                        }
+                        _ => {
+                            // Regular tabs can be closed, moved, etc.
+                            info!("Regular tab context menu - close/move options available");
+                        }
+                    }
+                } else {
+                    warn!("Context menu requested for non-existent tab: {}", tab_id);
                 }
                 
                 Task::none()
@@ -235,13 +265,23 @@ impl TabBar {
         // Build tab content
         let mut tab_content = row![];
 
-        // Activity indicator
+        // Activity indicator with visual feedback
         if let Some(indicator_color) = activity_indicator {
-            tab_content = tab_content.push(
-                container(Space::with_width(Length::Fixed(4.0)))
-                    .width(Length::Fixed(4.0))
-                    .height(Length::Fixed(20.0))
-            );
+            // Create activity indicator with proper color
+            let indicator = container(Space::with_width(Length::Fixed(4.0)))
+                .width(Length::Fixed(4.0))
+                .height(Length::Fixed(20.0))
+                .style(move |_theme| container::Style {
+                    background: Some(Background::Color(indicator_color)),
+                    border: iced::Border {
+                        radius: iced::border::Radius::from(2.0),
+                        width: 0.0,
+                        color: Color::TRANSPARENT,
+                    },
+                    ..Default::default()
+                });
+            
+            tab_content = tab_content.push(indicator);
             tab_content = tab_content.push(Space::with_width(Length::Fixed(4.0)));
         }
 

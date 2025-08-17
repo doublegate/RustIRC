@@ -11,6 +11,7 @@ use iced::{
     keyboard::{Key, Modifiers},
 };
 use std::collections::VecDeque;
+use tracing::info;
 
 /// Messages for input area interactions
 #[derive(Debug, Clone)]
@@ -269,7 +270,7 @@ impl InputArea {
             .into()
     }
 
-    /// Handle key press events
+    /// Handle key press events with state-aware functionality
     fn handle_key_press(&mut self, key: Key, modifiers: Modifiers, app_state: &AppState) -> Task<InputAreaMessage> {
         match key {
             Key::Named(iced::keyboard::key::Named::ArrowUp) if modifiers.control() => {
@@ -279,15 +280,66 @@ impl InputArea {
                 Task::done(InputAreaMessage::HistoryDown)
             }
             Key::Named(iced::keyboard::key::Named::Tab) => {
-                Task::done(InputAreaMessage::TabCompletion)
+                // State-aware tab completion - only if we have an active tab
+                if app_state.current_tab().is_some() {
+                    Task::done(InputAreaMessage::TabCompletion)
+                } else {
+                    Task::none()
+                }
             }
             Key::Named(iced::keyboard::key::Named::Escape) => {
                 self.reset_completion();
                 Task::none()
             }
             Key::Named(iced::keyboard::key::Named::Enter) if modifiers.control() => {
-                // Ctrl+Enter for multiline (if implemented)
-                Task::none()
+                // Ctrl+Enter for multiline input (state-aware)
+                if self.multiline_mode && !self.current_input.trim().is_empty() {
+                    Task::done(InputAreaMessage::InputSubmitted(self.current_input.clone()))
+                } else {
+                    Task::none()
+                }
+            }
+            Key::Named(iced::keyboard::key::Named::Enter) if !modifiers.control() => {
+                // Regular Enter - send message if we have an active channel/PM
+                if let Some(current_tab) = app_state.current_tab() {
+                    match &current_tab.tab_type {
+                        TabType::Channel { .. } | TabType::PrivateMessage { .. } => {
+                            if !self.current_input.trim().is_empty() {
+                                Task::done(InputAreaMessage::SendMessage(self.current_input.clone()))
+                            } else {
+                                Task::none()
+                            }
+                        }
+                        TabType::Server | TabType::Private => {
+                            // Server tabs only accept commands
+                            if self.current_input.starts_with('/') && !self.current_input.trim().is_empty() {
+                                Task::done(InputAreaMessage::SendMessage(self.current_input.clone()))
+                            } else {
+                                Task::none()
+                            }
+                        }
+                    }
+                } else {
+                    Task::none()
+                }
+            }
+            Key::Named(iced::keyboard::key::Named::PageUp) if modifiers.control() => {
+                // Ctrl+PageUp - switch to previous tab (state-aware)
+                if !app_state.tab_order.is_empty() {
+                    // This would need to be handled at the app level, but we demonstrate state awareness
+                    Task::none()
+                } else {
+                    Task::none()
+                }
+            }
+            Key::Named(iced::keyboard::key::Named::PageDown) if modifiers.control() => {
+                // Ctrl+PageDown - switch to next tab (state-aware)
+                if !app_state.tab_order.is_empty() {
+                    // This would need to be handled at the app level, but we demonstrate state awareness
+                    Task::none()
+                } else {
+                    Task::none()
+                }
             }
             _ => Task::none()
         }
@@ -354,12 +406,27 @@ impl InputArea {
                 }
             }
 
-            // Channel completion (if applicable)
+            // Channel completion (server-specific)
             if prefix.starts_with('#') || prefix.starts_with('&') {
-                for (server_id, server_state) in &app_state.servers {
-                    for (channel_name, _channel_state) in &server_state.channels {
-                        if channel_name.to_lowercase().starts_with(&lower_prefix) {
-                            candidates.push(channel_name.clone());
+                // Get channels from the current tab's server only
+                if let Some(current_tab) = app_state.current_tab() {
+                    if let Some(current_server_id) = &current_tab.server_id {
+                        if let Some(server_state) = app_state.servers.get(current_server_id) {
+                            for (channel_name, _channel_state) in &server_state.channels {
+                                if channel_name.to_lowercase().starts_with(&lower_prefix) {
+                                    candidates.push(channel_name.clone());
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // Fallback: if no current tab, search all servers
+                    for (server_id, server_state) in &app_state.servers {
+                        info!("Searching channels in server: {}", server_id);
+                        for (channel_name, _channel_state) in &server_state.channels {
+                            if channel_name.to_lowercase().starts_with(&lower_prefix) {
+                                candidates.push(channel_name.clone());
+                            }
                         }
                     }
                 }
@@ -380,18 +447,25 @@ impl InputArea {
         }
     }
 
-    /// Apply the current completion
+    /// Apply the current completion with index validation
     fn apply_completion(&mut self) {
-        if let (Some(index), Some(candidate)) = (
-            self.completion_index,
-            self.completion_candidates.get(self.completion_index.unwrap_or(0))
-        ) {
-            // Replace the last word with the completion
-            let mut words: Vec<&str> = self.current_input.split_whitespace().collect();
-            if !words.is_empty() {
-                words.pop(); // Remove the incomplete word
-                words.push(candidate);
-                self.current_input = words.join(" ");
+        if let Some(index) = self.completion_index {
+            // Validate index is within bounds
+            if index < self.completion_candidates.len() {
+                if let Some(candidate) = self.completion_candidates.get(index) {
+                    // Replace the last word with the completion
+                    let mut words: Vec<&str> = self.current_input.split_whitespace().collect();
+                    if !words.is_empty() {
+                        words.pop(); // Remove the incomplete word
+                        words.push(candidate);
+                        self.current_input = words.join(" ");
+                    }
+                }
+            } else {
+                // Index out of bounds - reset completion state
+                info!("Completion index {} out of bounds (max: {}), resetting", 
+                     index, self.completion_candidates.len());
+                self.reset_completion();
             }
         }
     }

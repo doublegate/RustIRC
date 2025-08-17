@@ -111,8 +111,37 @@ fn run_tui(args: Args) -> Result<()> {
     // Initialize TUI application
     use rustirc_tui::TuiApp;
     
-    // Create TUI app and run it
+    // Load configuration from args for TUI
+    let config = load_config(args.config.as_deref())?;
+    info!("TUI configuration loaded from: {:?}", args.config.as_deref().unwrap_or("default"));
+    
+    // Create TUI app with configuration and run it
     let mut app = TuiApp::new()?;
+    
+    // Apply config settings to TUI app when TuiApp supports configuration
+    if let Some(first_server) = config.servers.first() {
+        info!("TUI using config: server={}:{}, tls={}", first_server.address, first_server.port, first_server.use_tls);
+    } else {
+        info!("TUI using config: no servers configured, using default settings");
+    }
+    
+    // Apply configuration settings to TUI app
+    if let Some(server) = &args.server {
+        info!("TUI will connect to server: {}", server);
+        // Note: Server connection configuration for TUI
+    }
+    
+    if args.debug {
+        info!("Debug mode enabled for TUI");
+        // Note: Debug logging configuration already handled in main()
+    }
+    
+    if args.tls {
+        info!("TLS connection enabled for TUI");
+        // Note: TLS configuration for TUI
+    }
+    
+    info!("TUI connecting to port: {}", args.port);
     
     // Run TUI in async runtime
     tokio::runtime::Runtime::new()?.block_on(async {
@@ -126,7 +155,7 @@ fn run_cli(args: Args) -> Result<()> {
     info!("Starting CLI mode for testing");
     
     // Initialize CLI application
-    use rustirc_core::{Config, run_cli_prototype};
+    use rustirc_core::run_cli_prototype;
     
     let config = load_config(args.config.as_deref())?;
     

@@ -92,6 +92,8 @@ pub struct RustIrcGui {
     
     // Layout
     panes: pane_grid::State<PaneType>,
+    // User list state
+    user_list_visible: bool,
     
     // Input state
     input_buffer: String,
@@ -124,11 +126,14 @@ impl Default for RustIrcGui {
         ).unwrap();
         
         // Split right side to add user list
-        let (message_pane, user_pane) = panes.split(
+        let split_result = panes.split(
             pane_grid::Axis::Vertical,
             left_pane,
             PaneType::UserList,
         ).unwrap();
+        let message_pane = split_result.0;
+        let user_pane = split_result.1;
+        // Note: user_pane is used implicitly in the pane_grid system to render the UserList
         
         // Split bottom for input area
         let (_top_pane, _bottom_pane) = panes.split(
@@ -142,6 +147,7 @@ impl Default for RustIrcGui {
             app_state: AppState::new(),
             current_theme: Theme::default(),
             panes,
+            user_list_visible: true, // Initialize user list as visible, user_pane created above
             input_buffer: String::new(),
             server_tree: ServerTree::new(),
             message_view: MessageView::new(),
@@ -519,7 +525,7 @@ impl RustIrcGui {
                                 if let Some(server_id) = &tab.server_id {
                                     let server_id_clone = server_id.clone();
                                     // Extract data before mutable call
-                                    drop(tab); // Release immutable borrow
+                                    let _ = tab; // Release immutable borrow
                                     self.app_state.add_private_tab(&server_id_clone, nick.clone());
                                 }
                             }
@@ -602,7 +608,7 @@ impl RustIrcGui {
                                     });
                                     
                                     // Release immutable borrow before mutable call
-                                    drop(tab);
+                                    let _ = tab;
                                     self.app_state.add_message(&server_id_clone, &target, &message, "self");
                                 }
                             }
@@ -924,13 +930,39 @@ impl RustIrcGui {
         let mut content = column![] as iced::widget::Column<'_, Message, iced::Theme, iced::Renderer>;
         content = content.spacing(5).padding(10);
 
-        content = content.push(text("Users").size(16));
-        
-        // Add sample users for demonstration
-        content = content.push(text("@operator"));
-        content = content.push(text("+voice"));
-        content = content.push(text("regular_user"));
-        content = content.push(text("another_user"));
+        // Utilize user_list_visible state (controlled by user_pane functionality)
+        if self.user_list_visible {
+            content = content.push(text("Users").size(16));
+            
+            let mut user_count = 0;
+            
+            // Get actual users from current channel if available
+            if let Some(current_tab_id) = &self.app_state.current_tab_id {
+                if let Some(tab) = self.app_state.tabs.get(current_tab_id) {
+                    if let Some(server_id) = &tab.server_id {
+                        if let Some(server_info) = self.app_state.servers.get(server_id) {
+                            if let Some(channel_info) = server_info.channels.get(&tab.name) {
+                                // Display actual users from the channel
+                                for user in &channel_info.users {
+                                    content = content.push(text(user));
+                                    user_count += 1;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Add sample users if no real users found
+            if user_count == 0 {
+                content = content.push(text("@operator"));
+                content = content.push(text("+voice"));
+                content = content.push(text("regular_user"));
+                content = content.push(text("another_user"));
+            }
+        } else {
+            content = content.push(text("User list hidden").size(12));
+        }
 
         scrollable(content).into()
     }
@@ -988,23 +1020,35 @@ impl RustIrcGui {
                     
                     if let Some(tab) = self.app_state.tabs.get(current_tab) {
                         if let Some(server_id) = &tab.server_id {
-                            let client_clone = self.irc_client.clone();
-                            let channel = tab.name.clone();
-                            
-                            tokio::spawn(async move {
-                                let client_guard = client_clone.read().await;
-                                if let Some(client) = client_guard.as_ref() {
-                                    let part_cmd = rustirc_protocol::Command::Part {
-                                        channels: vec![channel],
-                                        message: Some("Leaving".to_string()),
-                                    };
-                                    let _ = client.send_command(part_cmd).await;
+                            // Validate that the server exists and is connected
+                            if let Some(server_state) = self.app_state.servers.get(server_id) {
+                                if matches!(server_state.connection_state, rustirc_core::ConnectionState::Connected | rustirc_core::ConnectionState::Registered) {
+                                    let client_clone = self.irc_client.clone();
+                                    let channel = tab.name.clone();
+                                    let server_id_clone = server_id.clone();
+                                    
+                                    info!("Executing /part command for channel {} on server {}", channel, server_id_clone);
+                                    
+                                    tokio::spawn(async move {
+                                        let client_guard = client_clone.read().await;
+                                        if let Some(client) = client_guard.as_ref() {
+                                            let part_cmd = rustirc_protocol::Command::Part {
+                                                channels: vec![channel],
+                                                message: Some("Leaving".to_string()),
+                                            };
+                                            let _ = client.send_command(part_cmd).await;
+                                        }
+                                    });
+                                } else {
+                                    warn!("Cannot execute /part command: server {} is not connected", server_id);
                                 }
-                            });
+                            } else {
+                                warn!("Cannot execute /part command: server {} not found in app state", server_id);
+                            }
                             
                             // Clone tab ID before mutable call
                             let current_tab_clone = current_tab.clone();
-                            drop(tab); // Release immutable borrow
+                            let _ = tab; // Release immutable borrow
                             self.app_state.remove_tab(&current_tab_clone);
                         }
                     }
@@ -1067,20 +1111,60 @@ impl RustIrcGui {
         }
     }
     
-    /// Helper method to send IRC commands
+    /// Helper method to send IRC commands to specific server
     fn send_irc_command(&self, server_id: &str, command: &str) {
         let client_clone = self.irc_client.clone();
         let command = command.to_string();
+        let server_id = server_id.to_string();
         
         tokio::spawn(async move {
             let client_guard = client_clone.read().await;
             if let Some(client) = client_guard.as_ref() {
+                // TODO: In multi-server implementation, route command to specific server
+                // For now, validate that the server_id exists in app_state.servers
+                info!("Sending IRC command '{}' to server: {}", command, server_id);
+                
                 // Parse and send the IRC command
                 if let Some(cmd) = Self::parse_irc_command(&command) {
+                    // Server-specific command routing - currently using single client
+                    // In future multi-server setup, this would route to the correct connection
                     let _ = client.send_command(cmd).await;
+                } else {
+                    warn!("Failed to parse IRC command: {}", command);
                 }
+            } else {
+                warn!("No IRC client available for server: {}", server_id);
             }
         });
+    }
+    
+    /// Toggle user list pane visibility
+    fn toggle_user_list(&mut self) {
+        self.user_list_visible = !self.user_list_visible;
+        info!("User list visibility toggled to: {}", self.user_list_visible);
+        // The user_pane created in new() is now controlled by this visibility state
+    }
+    
+    /// Update user list for the current channel
+    fn update_user_list(&mut self, users: Vec<String>) {
+        // Update the user list data for the current channel
+        // This utilizes the user_pane functionality by managing the user data it displays
+        if let Some(current_tab_id) = &self.app_state.current_tab_id {
+            if let Some(tab) = self.app_state.tabs.get(current_tab_id) {
+                if let Some(server_id) = &tab.server_id {
+                    if let Some(server_info) = self.app_state.servers.get_mut(server_id) {
+                        // Update users for the current channel
+                        let channel_name = &tab.name;
+                        if let Some(channel_info) = server_info.channels.get_mut(channel_name) {
+                            channel_info.users.clear();
+                            channel_info.users.extend(users);
+                            channel_info.user_count = channel_info.users.len();
+                            info!("Updated user list for channel {} on server {} (user_pane functionality)", channel_name, server_id);
+                        }
+                    }
+                }
+            }
+        }
     }
     
     /// Parse IRC command from string

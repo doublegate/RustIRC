@@ -335,6 +335,19 @@ impl MessageView {
             // Create text element with proper formatting - clone text to own it
             let mut text_element = text(span.text.clone()).size(self.font_size);
             
+            // Apply IRC color formatting using irc_color_to_rgb
+            if let Some(fg_color) = span.foreground {
+                text_element = text_element.color(fg_color);
+            }
+            
+            // Apply background color if present
+            // Note: Background color rendering would require container styling
+            if let Some(_bg_color) = span.background {
+                // Background colors could be implemented with container wrapping
+                // For now, we apply foreground color enhancement
+                info!("Background color detected in IRC message formatting");
+            }
+            
             // Apply formatting based on span type
             if span.bold {
                 text_element = text_element.font(iced::Font { 
@@ -343,9 +356,25 @@ impl MessageView {
                 });
             }
             
+            if span.italic {
+                text_element = text_element.font(iced::Font { 
+                    style: iced::font::Style::Italic, 
+                    ..iced::Font::default() 
+                });
+            }
+            
+            if span.monospace {
+                text_element = text_element.font(iced::Font { 
+                    family: iced::font::Family::Monospace, 
+                    ..iced::Font::default() 
+                });
+            }
+            
             // Handle URL clicking if this is a URL span
             if span.is_url {
-                button(text_element)
+                // For URLs, apply underline styling and use the irc_color_to_rgb for link color
+                let url_color = span.foreground.unwrap_or_else(|| irc_color_to_rgb(12)); // Light blue for links
+                button(text_element.color(url_color))
                     .on_press(MessageViewMessage::UrlClicked(span.text))
                     .padding(0)
                     .into()

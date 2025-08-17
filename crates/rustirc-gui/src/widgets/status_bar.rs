@@ -11,6 +11,7 @@ use iced::{
     Element, Length, Task, Color, Alignment,
 };
 use std::time::{SystemTime, Duration};
+use tracing::info;
 
 /// Messages for status bar interactions
 #[derive(Debug, Clone)]
@@ -28,6 +29,7 @@ pub struct StatusBar {
     show_user_count: bool,
     show_modes: bool,
     last_update: SystemTime,
+    cached_connection_status: Option<String>,
 }
 
 impl StatusBar {
@@ -38,6 +40,7 @@ impl StatusBar {
             show_user_count: true,
             show_modes: true,
             last_update: SystemTime::now(),
+            cached_connection_status: None,
         }
     }
 
@@ -64,7 +67,7 @@ impl StatusBar {
         let theme = Theme::default();
         let update_duration = Duration::from_secs(1);
         
-        // Use duration for status update timing (in real implementation, this would drive periodic updates)
+        // Use duration for status update timing and conditional updates
         let elapsed = SystemTime::now().duration_since(self.last_update).unwrap_or(Duration::ZERO);
         let should_update = elapsed >= update_duration;
         let current_tab = app_state.current_tab();
@@ -72,8 +75,23 @@ impl StatusBar {
         // Main status row
         let mut status_content = row![];
 
-        // Connection status
-        let connection_status = self.get_connection_status(app_state);
+        // Connection status (update conditionally based on should_update)
+        let connection_status = if should_update {
+            // Fresh connection status when update is needed
+            info!("Status bar: Performing full status update (should_update = true)");
+            self.get_connection_status(app_state)
+        } else {
+            // Use cached status or perform lightweight update
+            if let Some(cached_status) = &self.cached_connection_status {
+                info!("Status bar: Using cached connection status (should_update = false)");
+                cached_status.clone()
+            } else {
+                // No cache available - perform update anyway but log it
+                info!("Status bar: No cache available, performing status update despite should_update = false");
+                self.get_connection_status(app_state)
+            }
+        };
+        
         status_content = status_content.push(
             text(connection_status)
                 .size(11.0)

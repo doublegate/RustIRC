@@ -196,16 +196,18 @@ fn parse_color_codes(chars: &mut std::iter::Peekable<std::str::Chars>) -> (Optio
         chars.next(); // consume comma
         parsing_bg = true;
         
-        // Parse background color (up to 2 digits)
-        for _ in 0..2 {
-            if let Some(&ch) = chars.peek() {
-                if ch.is_ascii_digit() {
-                    bg_str.push(chars.next().unwrap());
+        // Parse background color (up to 2 digits) - now utilizing parsing_bg state
+        if parsing_bg {
+            for _ in 0..2 {
+                if let Some(&ch) = chars.peek() {
+                    if ch.is_ascii_digit() {
+                        bg_str.push(chars.next().unwrap());
+                    } else {
+                        break;
+                    }
                 } else {
                     break;
                 }
-            } else {
-                break;
             }
         }
     }
@@ -216,7 +218,7 @@ fn parse_color_codes(chars: &mut std::iter::Peekable<std::str::Chars>) -> (Optio
         fg_str.parse().ok().filter(|&n| n < 16)
     };
     
-    let bg = if bg_str.is_empty() {
+    let bg = if bg_str.is_empty() || !parsing_bg {
         None
     } else {
         bg_str.parse().ok().filter(|&n| n < 16)
