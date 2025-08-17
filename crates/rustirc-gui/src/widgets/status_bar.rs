@@ -3,7 +3,8 @@
 //! Displays connection status, channel information, user count, lag, and other status indicators.
 //! Features mode display, topic bar, and network information.
 
-use crate::state::{AppState, ConnectionState, TabType};
+use crate::state::{AppState, TabType};
+use rustirc_core::connection::ConnectionState;
 use crate::theme::Theme;
 use iced::{
     widget::{container, text, row, Space},

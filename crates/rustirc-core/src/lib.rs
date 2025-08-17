@@ -10,6 +10,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
+pub mod auth;
+pub mod cli;
 pub mod client;
 pub mod config;
 pub mod connection;
@@ -20,6 +22,8 @@ pub mod router;
 pub mod state;
 pub mod ui;
 
+pub use auth::{SaslAuthenticator, SaslCredentials, SaslMechanism, AuthState, PlainMechanism, ExternalMechanism};
+pub use cli::{CliClient, run_cli_prototype};
 pub use client::IrcClient;
 pub use config::Config;
 pub use connection::{ConnectionManager, IrcConnection, ConnectionConfig, ConnectionState};

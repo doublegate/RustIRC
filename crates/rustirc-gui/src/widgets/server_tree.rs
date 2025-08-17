@@ -3,7 +3,8 @@
 //! Displays a hierarchical tree of servers and their channels.
 //! Features server status indicators, channel activity badges, and context menus.
 
-use crate::state::{AppState, ConnectionState, Tab, TabType};
+use crate::state::{AppState, TabType};
+use rustirc_core::connection::ConnectionState;
 use crate::theme::Theme;
 use iced::{
     widget::{container, scrollable, text, button, row, column, Space},

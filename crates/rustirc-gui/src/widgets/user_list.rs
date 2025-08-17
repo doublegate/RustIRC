@@ -3,7 +3,7 @@
 //! Displays channel users with modes, status indicators, and context menus.
 //! Features user sorting, filtering, and privilege display.
 
-use crate::state::{AppState, UserState, TabType};
+use crate::state::{AppState, UserInfo, TabType};
 use crate::theme::Theme;
 use iced::{
     widget::{container, scrollable, text, button, column, row, Space},
@@ -136,7 +136,7 @@ impl UserList {
 
     /// Render users for a channel tab
     fn render_channel_users<'a>(&self, tab: &'a crate::state::Tab, _app_state: &AppState) -> Element<'a, UserListMessage> {
-        let mut users: Vec<(&String, &UserState)> = tab.users.iter().collect();
+        let mut users: Vec<(&String, &UserInfo)> = tab.users.iter().collect();
         
         // Filter users
         if !self.filter.is_empty() {
@@ -182,7 +182,7 @@ impl UserList {
     }
 
     /// Render user entry
-    fn render_user_entry<'a>(&self, nick: &'a str, user: &UserState) -> Element<'a, UserListMessage> {
+    fn render_user_entry<'a>(&self, nick: &'a str, user: &UserInfo) -> Element<'a, UserListMessage> {
         // Privilege symbol
         let privilege_symbol = get_privilege_symbol(user);
         let privilege_color = get_privilege_color(user);
@@ -292,7 +292,7 @@ impl UserList {
     }
 
     /// Sort users according to current sort mode
-    fn sort_users(&self, users: &mut Vec<(&String, &UserState)>) {
+    fn sort_users(&self, users: &mut Vec<(&String, &UserInfo)>) {
         match self.sort_mode {
             SortMode::Nickname => {
                 users.sort_by(|(a, _), (b, _)| {
@@ -378,7 +378,7 @@ impl Default for UserList {
 }
 
 /// Get privilege symbol for user
-fn get_privilege_symbol(user: &UserState) -> &'static str {
+fn get_privilege_symbol(user: &UserInfo) -> &'static str {
     if user.has_mode('~') {
         "~" // Owner
     } else if user.has_mode('&') {
@@ -395,7 +395,7 @@ fn get_privilege_symbol(user: &UserState) -> &'static str {
 }
 
 /// Get privilege color for user
-fn get_privilege_color(user: &UserState) -> Color {
+fn get_privilege_color(user: &UserInfo) -> Color {
     if user.has_mode('~') {
         Color::from_rgb(1.0, 0.0, 1.0) // Magenta for owner
     } else if user.has_mode('&') {

@@ -20,6 +20,7 @@ tokio-rustls = "0.26"
 rustls-pki-types = "1.0"
 webpki-roots = "0.26"
 rand = "0.8"
+base64 = "0.22"
 
 rustirc-protocol = { path = "../rustirc-protocol" }
 

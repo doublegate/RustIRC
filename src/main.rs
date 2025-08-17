@@ -34,6 +34,10 @@ struct Args {
     /// Enable debug logging
     #[arg(short, long)]
     debug: bool,
+
+    /// Run in CLI mode for testing
+    #[arg(long)]
+    cli: bool,
 }
 
 fn main() -> Result<()> {
@@ -44,7 +48,9 @@ fn main() -> Result<()> {
 
     info!("Starting RustIRC v{}", env!("CARGO_PKG_VERSION"));
 
-    if args.tui {
+    if args.cli {
+        run_cli(args)?;
+    } else if args.tui {
         run_tui(args)?;
     } else {
         run_gui(args)?;
@@ -71,21 +77,61 @@ fn init_logging(debug: bool) -> Result<()> {
     Ok(())
 }
 
-fn run_gui(_args: Args) -> Result<()> {
+fn run_gui(args: Args) -> Result<()> {
     info!("Starting GUI mode with Iced");
     
-    // GUI implementation will be completed in Phase 3
-    warn!("GUI mode is not yet implemented (coming in Phase 3)");
-    warn!("Use --tui flag to run in terminal mode");
+    // Use simplified GUI for now while complex widgets are being updated
+    use rustirc_gui::SimpleRustIrcGui;
+    
+    // Run Iced GUI application - it uses its own static method
+    SimpleRustIrcGui::run()
+        .map_err(|e| anyhow::anyhow!("GUI error: {}", e))?;
     
     Ok(())
 }
 
-fn run_tui(_args: Args) -> Result<()> {
+fn run_tui(args: Args) -> Result<()> {
     info!("Starting TUI mode with Ratatui");
     
-    // TUI implementation will be completed in Phase 3
-    warn!("TUI mode is not yet implemented (coming in Phase 3)");
+    // Initialize TUI application
+    use rustirc_tui::TuiApp;
+    
+    // Create TUI app and run it
+    let mut app = TuiApp::new()?;
+    
+    // Run TUI in async runtime
+    tokio::runtime::Runtime::new()?.block_on(async {
+        app.run().await
+    })?;
     
     Ok(())
+}
+
+fn run_cli(args: Args) -> Result<()> {
+    info!("Starting CLI mode for testing");
+    
+    // Initialize CLI application
+    use rustirc_core::{Config, run_cli_prototype};
+    
+    let config = load_config(args.config.as_deref())?;
+    
+    // Run CLI prototype (blocking)
+    tokio::runtime::Runtime::new()?.block_on(async {
+        run_cli_prototype(config).await
+    })?;
+    
+    Ok(())
+}
+
+fn load_config(config_path: Option<&str>) -> Result<rustirc_core::Config> {
+    use rustirc_core::Config;
+    
+    if let Some(path) = config_path {
+        info!("Loading config from: {}", path);
+        // Load from file when implemented
+        Ok(Config::default())
+    } else {
+        info!("Using default configuration");
+        Ok(Config::default())
+    }
 }
