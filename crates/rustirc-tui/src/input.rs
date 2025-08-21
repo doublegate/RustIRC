@@ -20,6 +20,47 @@ pub enum InputMode {
     Command,  // Command mode (started with :)
 }
 
+/// TUI actions matching GUI functionality
+#[derive(Debug, Clone)]
+pub enum TuiAction {
+    // Input and navigation
+    TabComplete,
+    HistoryPrevious,
+    HistoryNext,
+    ScrollUp,
+    ScrollDown,
+    ShowHelp,
+    
+    // Tab management
+    NextTab,
+    PreviousTab,
+    CloseTab,
+    
+    // Theme management
+    NextTheme,
+    PreviousTheme,
+    
+    // Connection management
+    Connect,
+    Disconnect,
+    JoinChannel,
+    PartChannel,
+    
+    // Message actions
+    SendMessage(String),
+    PrivateMessage(String),
+    
+    // UI toggles
+    ToggleUserList,
+    ToggleServerTree,
+    ToggleTimestamps,
+    ToggleJoinPart,
+    
+    // Other
+    Quit,
+    None,
+}
+
 /// Represents a key event
 #[derive(Debug, Clone)]
 pub struct KeyEvent {
@@ -57,8 +98,8 @@ impl InputHandler {
         self.mode.clone()
     }
 
-    /// Handle a key event and return optional command
-    pub fn handle_key(&mut self, key: KeyEvent, state: &mut TuiState) -> Result<Option<String>> {
+    /// Handle a key event and return optional action
+    pub fn handle_key(&mut self, key: KeyEvent, state: &mut TuiState) -> Result<TuiAction> {
         match self.mode {
             InputMode::Normal => self.handle_normal_mode(key, state),
             InputMode::Insert => self.handle_insert_mode(key, state),
@@ -67,7 +108,7 @@ impl InputHandler {
     }
 
     /// Handle keys in normal (navigation) mode
-    fn handle_normal_mode(&mut self, key: KeyEvent, state: &mut TuiState) -> Result<Option<String>> {
+    fn handle_normal_mode(&mut self, key: KeyEvent, state: &mut TuiState) -> Result<TuiAction> {
         match key.code {
             // Mode switches
             KeyCode::Char('i') => {

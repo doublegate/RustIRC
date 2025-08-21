@@ -143,13 +143,152 @@ pub enum FocusArea {
     Input,
 }
 
+/// Application settings for TUI (matching GUI AppSettings)
+#[derive(Debug, Clone)]
+pub struct TuiSettings {
+    pub theme: String,
+    pub font_size: f32,
+    pub show_timestamps: bool,
+    pub show_join_part: bool,
+    pub highlight_words: Vec<String>,
+    pub notification_sound: bool,
+    pub auto_reconnect: bool,
+    pub nick_colors: bool,
+    pub timestamp_format: String,
+    pub last_message_id: usize,
+    pub notification_popup: bool,
+    pub compact_mode: bool,
+}
+
+impl Default for TuiSettings {
+    fn default() -> Self {
+        Self {
+            theme: "dark".to_string(),
+            font_size: 12.0,
+            show_timestamps: true,
+            show_join_part: false,
+            highlight_words: vec!["RustIRC_User".to_string()],
+            notification_sound: true,
+            auto_reconnect: true,
+            nick_colors: true,
+            timestamp_format: "%H:%M:%S".to_string(),
+            last_message_id: 0,
+            notification_popup: true,
+            compact_mode: false,
+        }
+    }
+}
+
+/// TUI UI state (matching GUI UiState)
+#[derive(Debug, Clone)]
+pub struct TuiUiState {
+    pub show_server_tree: bool,
+    pub show_user_list: bool,
+    pub show_sidebar: bool,
+    pub show_userlist: bool,
+    pub show_help: bool,
+    pub show_status_bar: bool,
+}
+
+impl Default for TuiUiState {
+    fn default() -> Self {
+        Self {
+            show_server_tree: true,
+            show_user_list: true,
+            show_sidebar: true,
+            show_userlist: true,
+            show_help: false,
+            show_status_bar: true,
+        }
+    }
+}
+
+/// Tab information for TUI (matching GUI Tab)
+#[derive(Debug, Clone)]
+pub struct TuiTab {
+    pub id: String,
+    pub name: String,
+    pub tab_type: TuiTabType,
+    pub server_id: Option<String>,
+    pub messages: VecDeque<TuiMessage>,
+    pub unread_count: usize,
+    pub has_highlight: bool,
+    pub activity_level: ActivityLevel,
+}
+
+/// Tab types for TUI
+#[derive(Debug, Clone, PartialEq)]
+pub enum TuiTabType {
+    Server,
+    Channel,
+    PrivateMessage,
+}
+
+/// Activity levels for tabs
+#[derive(Debug, Clone, PartialEq)]
+pub enum ActivityLevel {
+    None,
+    Activity,
+    Highlight,
+}
+
+impl TuiTab {
+    pub fn server(server_id: String) -> Self {
+        Self {
+            id: format!("server:{}", server_id),
+            name: server_id.clone(),
+            tab_type: TuiTabType::Server,
+            server_id: Some(server_id),
+            messages: VecDeque::new(),
+            unread_count: 0,
+            has_highlight: false,
+            activity_level: ActivityLevel::None,
+        }
+    }
+
+    pub fn channel(server_id: String, channel: String) -> Self {
+        Self {
+            id: format!("{}:{}", server_id, channel),
+            name: channel,
+            tab_type: TuiTabType::Channel,
+            server_id: Some(server_id),
+            messages: VecDeque::new(),
+            unread_count: 0,
+            has_highlight: false,
+            activity_level: ActivityLevel::None,
+        }
+    }
+
+    pub fn private_message(server_id: String, nick: String) -> Self {
+        Self {
+            id: format!("{}:pm:{}", server_id, nick),
+            name: nick,
+            tab_type: TuiTabType::PrivateMessage,
+            server_id: Some(server_id),
+            messages: VecDeque::new(),
+            unread_count: 0,
+            has_highlight: false,
+            activity_level: ActivityLevel::None,
+        }
+    }
+}
+
 /// Main TUI state
 #[derive(Debug, Clone)]
 pub struct TuiState {
     /// Connected servers
     pub servers: HashMap<String, ServerState>,
     
-    /// Currently active server
+    /// Open tabs (channels and private messages) - matching GUI
+    pub tabs: HashMap<String, TuiTab>,
+    
+    /// Currently active tab
+    pub current_tab_id: Option<String>,
+    
+    /// Tab order for navigation
+    pub tab_order: Vec<String>,
+    
+    /// Currently active server (legacy, replaced by current_tab_id)
     pub current_server: Option<String>,
     
     /// Current focus area
@@ -167,9 +306,6 @@ pub struct TuiState {
     /// Current position in command history
     pub history_position: usize,
     
-    /// Whether we're showing the help screen
-    pub show_help: bool,
-    
     /// Selected channel in channel list
     pub selected_channel_index: usize,
     
@@ -178,33 +314,130 @@ pub struct TuiState {
     
     /// Application start time for relative timestamps
     pub start_time: SystemTime,
+    
+    /// Global settings
+    pub settings: TuiSettings,
+    
+    /// UI state
+    pub ui_state: TuiUiState,
 }
 
 impl TuiState {
     pub fn new() -> Self {
         Self {
             servers: HashMap::new(),
+            tabs: HashMap::new(),
+            current_tab_id: None,
+            tab_order: Vec::new(),
             current_server: None,
             focus: FocusArea::Input,
             input_buffer: String::new(),
             input_cursor: 0,
             command_history: VecDeque::new(),
             history_position: 0,
-            show_help: false,
             selected_channel_index: 0,
             selected_user_index: 0,
             start_time: SystemTime::now(),
+            settings: TuiSettings::default(),
+            ui_state: TuiUiState::default(),
         }
     }
 
-    /// Add a server
+    /// Get the current tab
+    pub fn current_tab(&self) -> Option<&TuiTab> {
+        if let Some(tab_id) = &self.current_tab_id {
+            self.tabs.get(tab_id)
+        } else {
+            None
+        }
+    }
+
+    /// Get application settings
+    pub fn settings(&self) -> &TuiSettings {
+        &self.settings
+    }
+
+    /// Add a server (with tab management)
     pub fn add_server(&mut self, server_name: String) {
         let server = ServerState::new(server_name.clone());
         self.servers.insert(server_name.clone(), server);
         
-        // Switch to this server if it's the first one
+        // Create server tab
+        let tab = TuiTab::server(server_name.clone());
+        let tab_id = format!("server:{}", server_name);
+        self.tabs.insert(tab_id.clone(), tab);
+        self.tab_order.push(tab_id.clone());
+        
+        // Set as current tab if it's the first one
+        if self.current_tab_id.is_none() {
+            self.current_tab_id = Some(tab_id);
+        }
+        
+        // Legacy support
         if self.current_server.is_none() {
             self.current_server = Some(server_name);
+        }
+    }
+
+    /// Add a channel tab
+    pub fn add_channel_tab(&mut self, server_name: String, channel: String) {
+        let tab = TuiTab::channel(server_name.clone(), channel.clone());
+        let tab_id = format!("{}:{}", server_name, channel);
+        self.tabs.insert(tab_id.clone(), tab);
+        self.tab_order.push(tab_id.clone());
+        
+        // Set as current tab
+        self.current_tab_id = Some(tab_id);
+        
+        // Add channel to server if server exists
+        if let Some(server) = self.servers.get_mut(&server_name) {
+            server.add_channel(channel);
+        }
+    }
+
+    /// Add a private message tab
+    pub fn add_private_message_tab(&mut self, server_name: String, nick: String) {
+        let tab = TuiTab::private_message(server_name.clone(), nick.clone());
+        let tab_id = format!("{}:pm:{}", server_name, nick);
+        self.tabs.insert(tab_id.clone(), tab);
+        self.tab_order.push(tab_id.clone());
+        
+        // Set as current tab
+        self.current_tab_id = Some(tab_id);
+    }
+
+    /// Remove a tab
+    pub fn remove_tab(&mut self, tab_id: &str) {
+        self.tabs.remove(tab_id);
+        self.tab_order.retain(|id| id != tab_id);
+        
+        // If this was current tab, switch to next available
+        if self.current_tab_id.as_ref() == Some(&tab_id.to_string()) {
+            self.current_tab_id = self.tab_order.first().cloned();
+        }
+    }
+
+    /// Select a tab
+    pub fn select_tab(&mut self, tab_id: String) {
+        if self.tabs.contains_key(&tab_id) {
+            self.current_tab_id = Some(tab_id);
+            
+            // Mark as read
+            if let Some(tab) = self.tabs.get_mut(&self.current_tab_id.as_ref().unwrap()) {
+                tab.unread_count = 0;
+                tab.has_highlight = false;
+                tab.activity_level = ActivityLevel::None;
+            }
+        }
+    }
+
+    /// Get current tab (mutable)
+    pub fn current_tab_mut(&mut self) -> Option<&mut TuiTab> {
+        if let Some(tab_id) = &self.current_tab_id {
+            let tab_id = tab_id.clone();
+            self.tabs.get_mut(&tab_id)
+        } else {
+            None
         }
     }
 

@@ -202,6 +202,24 @@ RustIRC/
 
 ## Important Implementation Patterns (August 21, 2025)
 
+### Zero Placeholder Implementation Strategy
+
+**CRITICAL PATTERN**: Never leave placeholder code for future development:
+
+1. **Complete Implementation Required**: Replace all "In a real implementation" comments with working functionality immediately
+2. **Platform-Specific Methods**: Implement full Windows (PowerShell), macOS (osascript), Linux (notify-send) support
+3. **Network Management**: Real server:port parsing, connection task routing, proper message formats
+4. **Dialog Systems**: Complete modal dialogs with app state integration and proper sizing constraints
+5. **Error Resolution Priority**: Fix through implementation, never through removal/disabling/stubbing
+
+### Compilation Error Resolution Workflow
+
+1. **Systematic Approach**: Implement everything, never remove/disable functionality to fix errors
+2. **Platform Integration**: Use conditional compilation (#[cfg]) with complete implementations
+3. **Message Routing**: Ensure proper Task<MessageType> conversions and Into<> implementations
+4. **Size Constraints**: Use Iced Size parameters for min/max dialog dimensions
+5. **App State Sync**: Preferences dialogs must reflect current application state values
+
 ### GUI Debugging & Issue Resolution
 
 When addressing GUI issues in RustIRC:
@@ -221,6 +239,7 @@ When addressing GUI issues in RustIRC:
 ### Code Quality Standards
 
 - Zero tolerance for compilation errors - all fixes must result in successful builds
+- Zero tolerance for placeholder code - all functionality must be fully implemented
 - Maintain backward compatibility while implementing new features
 - Follow established patterns in the codebase for consistency
 - Update documentation immediately after implementing fixes

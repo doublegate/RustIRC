@@ -1,7 +1,6 @@
 //! GUI implementation for RustIRC
 
 pub mod app;
-pub mod simple_gui;
 pub mod theme;
 pub mod state;
 pub mod widgets;
@@ -18,7 +17,6 @@ pub mod testing;
 // pub mod simple_app;
 
 pub use app::RustIrcGui;
-pub use simple_gui::SimpleRustIrcGui;
 pub use menus::{MenuBar, MenuMessage, ContextMenu};
 pub use dialogs::{DialogManager, DialogMessage, DialogType};
 pub use platform::NotificationManager;

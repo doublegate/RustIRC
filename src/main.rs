@@ -39,9 +39,6 @@ struct Args {
     #[arg(long)]
     cli: bool,
 
-    /// Use simplified GUI instead of full-featured GUI
-    #[arg(long)]
-    simple: bool,
 }
 
 fn main() -> Result<()> {
@@ -82,25 +79,14 @@ fn init_logging(debug: bool) -> Result<()> {
 }
 
 fn run_gui(args: Args) -> Result<()> {
-    if args.simple {
-        info!("Starting simplified GUI mode with Iced (basic interface)");
-        
-        // Use simplified GUI as fallback option
-        use rustirc_gui::SimpleRustIrcGui;
-        
-        // Run simplified Iced GUI application
-        SimpleRustIrcGui::run()
-            .map_err(|e| anyhow::anyhow!("Simple GUI error: {}", e))?;
-    } else {
-        info!("Starting full-featured GUI mode with Iced (widgets, themes, resizable panes)");
-        
-        // Use full-featured GUI as default - complete with all widgets and themes
-        use rustirc_gui::RustIrcGui;
-        
-        // Run the full-featured GUI application with all advanced features
-        RustIrcGui::run()
-            .map_err(|e| anyhow::anyhow!("GUI error: {}", e))?;
-    }
+    info!("Starting full-featured GUI mode with Iced (widgets, themes, resizable panes)");
+    
+    // Use full-featured GUI as the only GUI option - complete with all widgets and themes
+    use rustirc_gui::RustIrcGui;
+    
+    // Run the full-featured GUI application with all advanced features
+    RustIrcGui::run()
+        .map_err(|e| anyhow::anyhow!("GUI error: {}", e))?;
     
     Ok(())
 }
