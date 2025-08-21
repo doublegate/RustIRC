@@ -250,7 +250,7 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 
 ## 🚦 Current Status
 
-**Phase**: Phase 3 Complete ✅ + FULL IRC FUNCTIONALITY ACHIEVED ✅ (as of August 20, 2025 - 11:36 PM EDT)  
+**Phase**: Phase 3 Complete ✅ + GUI FIXES APPLIED ✅ (as of August 21, 2025 - 12:30 AM EDT)  
 **Next**: Phase 4 - Scripting & Plugins  
 **Total Tasks**: 249 across 7 phases + comprehensive IRC implementation
 
@@ -261,7 +261,7 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 - ✅ **Phase 3: User Interface** - **FULL GUI (Iced 0.13.1)**, TUI (ratatui), CLI prototype, SASL authentication
 - ✅ **LIVE IRC CLIENT** - Complete IRC protocol implementation with real server connectivity
 
-### 🆕 Latest Major Achievements (August 20, 2025)
+### 🆕 Latest Major Achievements (August 21, 2025)
 
 - ✅ **FULL IRC PROTOCOL IMPLEMENTATION**: Complete IRC message handling (MOTD, JOIN, PART, PRIVMSG, NAMREPLY, LIST)
 - ✅ **REAL SERVER CONNECTIVITY**: Successfully connects to live IRC servers (tested with irc.libera.chat)
@@ -272,6 +272,7 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 - ✅ **MOTD DISPLAY**: Full Message of the Day rendering from live IRC servers
 - ✅ **USER LIST MANAGEMENT**: Real-time user tracking in channels with server synchronization
 - ✅ **COMPREHENSIVE MESSAGE PARSING**: Support for all standard IRC response codes and messages
+- ✅ **GUI FIXES & ENHANCEMENTS**: WHOIS command working, pane dividers always visible, system message filtering operational, menu checkmarks functional
 
 ### Build Status
 

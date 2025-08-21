@@ -21,7 +21,7 @@ use crate::widgets::{
     status_bar::{StatusBar, StatusBarMessage},
 };
 use iced::{
-    widget::{pane_grid, container, row, column, text, button, text_input, scrollable},
+    widget::{pane_grid, container, row, column, text, button, text_input, scrollable, horizontal_rule, stack, mouse_area},
     Element, Length, Task, Color, Background,
 };
 use rustirc_core::IrcClient;
@@ -82,6 +82,28 @@ pub enum Message {
     // Core IRC events from event handler
     CoreEvent(CoreEventMessage),
     
+    // Menu dropdown control
+    MenuToggle(String), // Toggle menu open/closed (File, Edit, View, Tools, Help)
+    MenuClose, // Close all menus
+    
+    // Menu actions
+    MenuFileConnect,
+    MenuFileDisconnect,
+    MenuFileExit,
+    MenuViewToggleSystemMessages,
+    MenuViewToggleUserLists,
+    MenuViewToggleJoinsParts,
+    MenuViewToggleMotd,
+    MenuViewToggleTimestamps,
+    MenuToolsPreferences,
+    MenuHelpAbout,
+    
+    // Dialog messages
+    ShowPreferencesDialog,
+    HidePreferencesDialog,
+    ShowAboutDialog,
+    HideAboutDialog,
+
     // Widget messages
     ServerTree(ServerTreeMessage),
     MessageView(MessageViewMessage),
@@ -136,6 +158,13 @@ pub struct RustIrcGui {
     context_menu_visible: bool,
     context_menu_x: f32,
     context_menu_y: f32,
+    
+    // Menu dropdown state
+    active_menu: Option<String>, // Which menu is currently open (File, Edit, View, Tools, Help)
+    
+    // Dialog state
+    preferences_dialog_visible: bool,
+    about_dialog_visible: bool,
     
     // Connection dialog
     connect_dialog_visible: bool,
@@ -201,6 +230,9 @@ impl Default for RustIrcGui {
             context_menu_visible: false,
             context_menu_x: 0.0,
             context_menu_y: 0.0,
+            active_menu: None,
+            preferences_dialog_visible: false,
+            about_dialog_visible: false,
             connect_dialog_visible: false,
             connect_dialog_server: "irc.libera.chat".to_string(),
             connect_dialog_port: "6697".to_string(),
@@ -256,6 +288,8 @@ impl RustIrcGui {
                                     
                                     // Add message to app state for display
                                     self.app_state.add_message(&server_id, &target, &message, "self");
+                                    // Trigger auto-scroll after adding message
+                                    return self.trigger_auto_scroll();
                                 }
                             }
                         }
@@ -356,6 +390,12 @@ impl RustIrcGui {
             }
             Message::TabSelected(tab_id) => {
                 self.app_state.current_tab_id = Some(tab_id);
+                // Auto-scroll to bottom when switching tabs
+                if self.message_view.is_auto_scroll_enabled() {
+                    return Task::batch(vec![
+                        self.message_view.create_scroll_to_bottom_task().map(Message::MessageView)
+                    ]);
+                }
             }
             Message::TabClosed(tab_id) => {
                 self.app_state.remove_tab(&tab_id);
@@ -378,6 +418,7 @@ impl RustIrcGui {
             Message::ContextMenuAction(action) => {
                 info!("Context menu action: {}", action);
                 self.context_menu_visible = false;
+                self.active_menu = None; // Close menu dropdown as well
                 
                 // Handle specific context menu actions
                 match action.as_str() {
@@ -439,6 +480,14 @@ impl RustIrcGui {
                     "copy" => {
                         // Copy selected text to clipboard
                         warn!("Copy to clipboard not yet implemented");
+                    }
+                    "paste" => {
+                        // Paste from clipboard to input area
+                        warn!("Paste from clipboard not yet implemented");
+                    }
+                    "select_all" => {
+                        // Select all text in message view
+                        warn!("Select all text not yet implemented");
                     }
                     "close_tab" => {
                         // Close current tab
@@ -1179,6 +1228,8 @@ impl RustIrcGui {
                                         _ => None,
                                     }) {
                                         self.app_state.add_message(&connection_id, target, text, nick);
+                                        // Trigger auto-scroll for new messages
+                                        return Task::batch(vec![self.trigger_auto_scroll()]);
                                     }
                                 }
                             }
@@ -1223,6 +1274,62 @@ impl RustIrcGui {
                                     let channel = &message.params[1];
                                     let end_msg = format!("End of user list for {}", channel);
                                     self.app_state.add_message(&connection_id, channel, &end_msg, "System");
+                                }
+                            }
+                            "311" => {
+                                // RPL_WHOISUSER - WHOIS user info
+                                if message.params.len() >= 6 {
+                                    let nick = &message.params[1];
+                                    let user = &message.params[2];
+                                    let host = &message.params[3];
+                                    let realname = &message.params[5];
+                                    let whois_msg = format!("WHOIS: {} ({}@{}) - {}", nick, user, host, realname);
+                                    self.app_state.add_message(&connection_id, &connection_id, &whois_msg, "whois");
+                                }
+                            }
+                            "312" => {
+                                // RPL_WHOISSERVER - WHOIS server info
+                                if message.params.len() >= 4 {
+                                    let nick = &message.params[1];
+                                    let server = &message.params[2];
+                                    let server_info = &message.params[3];
+                                    let whois_msg = format!("WHOIS: {} is using server {} ({})", nick, server, server_info);
+                                    self.app_state.add_message(&connection_id, &connection_id, &whois_msg, "whois");
+                                }
+                            }
+                            "313" => {
+                                // RPL_WHOISOPERATOR - WHOIS operator status
+                                if message.params.len() >= 3 {
+                                    let nick = &message.params[1];
+                                    let whois_msg = format!("WHOIS: {} is an IRC operator", nick);
+                                    self.app_state.add_message(&connection_id, &connection_id, &whois_msg, "whois");
+                                }
+                            }
+                            "317" => {
+                                // RPL_WHOISIDLE - WHOIS idle time
+                                if message.params.len() >= 4 {
+                                    let nick = &message.params[1];
+                                    let idle_time = &message.params[2];
+                                    let signon_time = &message.params[3];
+                                    let whois_msg = format!("WHOIS: {} has been idle for {} seconds, signed on at {}", nick, idle_time, signon_time);
+                                    self.app_state.add_message(&connection_id, &connection_id, &whois_msg, "whois");
+                                }
+                            }
+                            "318" => {
+                                // RPL_ENDOFWHOIS - End of WHOIS
+                                if message.params.len() >= 3 {
+                                    let nick = &message.params[1];
+                                    let whois_msg = format!("WHOIS: End of information for {}", nick);
+                                    self.app_state.add_message(&connection_id, &connection_id, &whois_msg, "whois");
+                                }
+                            }
+                            "319" => {
+                                // RPL_WHOISCHANNELS - WHOIS channels
+                                if message.params.len() >= 3 {
+                                    let nick = &message.params[1];
+                                    let channels = &message.params[2];
+                                    let whois_msg = format!("WHOIS: {} is on channels: {}", nick, channels);
+                                    self.app_state.add_message(&connection_id, &connection_id, &whois_msg, "whois");
                                 }
                             }
                             "332" => {
@@ -1374,6 +1481,82 @@ impl RustIrcGui {
                     }
                 }
             }
+            // Menu dropdown handlers
+            Message::MenuToggle(menu_name) => {
+                if self.active_menu.as_ref() == Some(&menu_name) {
+                    self.active_menu = None; // Close if already open
+                } else {
+                    self.active_menu = Some(menu_name); // Open requested menu
+                }
+            }
+            Message::MenuClose => {
+                self.active_menu = None;
+            }
+            
+            // Dialog handlers  
+            Message::ShowPreferencesDialog => {
+                self.preferences_dialog_visible = true;
+                self.active_menu = None; // Close menu
+            }
+            Message::HidePreferencesDialog => {
+                self.preferences_dialog_visible = false;
+            }
+            Message::ShowAboutDialog => {
+                self.about_dialog_visible = true;
+                self.active_menu = None; // Close menu
+            }
+            Message::HideAboutDialog => {
+                self.about_dialog_visible = false;
+            }
+            
+            // Menu action handlers
+            Message::MenuFileConnect => {
+                self.active_menu = None; // Close menu
+                return Task::batch(vec![Task::done(Message::ShowConnectDialog)]);
+            }
+            Message::MenuFileDisconnect => {
+                self.active_menu = None; // Close menu
+                // Disconnect from current server
+                if let Some(current_tab) = &self.app_state.current_tab_id {
+                    if let Some(tab) = self.app_state.tabs.get(current_tab) {
+                        if let Some(server_id) = &tab.server_id {
+                            return Task::batch(vec![Task::done(Message::DisconnectFromServer(server_id.clone()))]);
+                        }
+                    }
+                }
+            }
+            Message::MenuFileExit => {
+                // Exit the application
+                std::process::exit(0);
+            }
+            Message::MenuViewToggleSystemMessages => {
+                self.active_menu = None; // Close menu
+                self.message_view.toggle_system_messages();
+            }
+            Message::MenuViewToggleUserLists => {
+                self.active_menu = None; // Close menu
+                self.message_view.toggle_user_lists();
+            }
+            Message::MenuViewToggleJoinsParts => {
+                self.active_menu = None; // Close menu
+                self.message_view.toggle_joins_parts();
+            }
+            Message::MenuViewToggleMotd => {
+                self.active_menu = None; // Close menu
+                self.message_view.toggle_motd();
+            }
+            Message::MenuViewToggleTimestamps => {
+                self.active_menu = None; // Close menu
+                // Toggle timestamp display
+                self.message_view.toggle_timestamps();
+                info!("Toggle timestamps requested");
+            }
+            Message::MenuToolsPreferences => {
+                return Task::batch(vec![Task::done(Message::ShowPreferencesDialog)]);
+            }
+            Message::MenuHelpAbout => {
+                return Task::batch(vec![Task::done(Message::ShowAboutDialog)]);
+            }
             Message::None => {}
         }
         
@@ -1387,14 +1570,14 @@ impl RustIrcGui {
         })
         .width(Length::Fill)
         .height(Length::Fill)
-        .spacing(4) // Increase spacing to make dividers more visible
+        .spacing(8) // Larger spacing to make dividers more visible
         .style(|_theme| pane_grid::Style {
             hovered_region: pane_grid::Highlight {
                 background: Background::Color(Color::from_rgb(0.25, 0.47, 0.85)), // Blue hover effect
                 border: iced::Border::default(),
             },
             hovered_split: pane_grid::Line {
-                color: Color::from_rgb(0.25, 0.47, 0.85), // Blue divider color
+                color: Color::from_rgb(0.25, 0.47, 0.85), // Blue divider color on hover
                 width: 2.0,
             },
             picked_split: pane_grid::Line {
@@ -1506,6 +1689,105 @@ impl RustIrcGui {
             .height(Length::Fill)
             .into();
         }
+        
+        // Preferences dialog overlay
+        if self.preferences_dialog_visible {
+            let dialog = container(
+                column![
+                    text("Preferences").size(18).color(Color::WHITE),
+                    horizontal_rule(1),
+                    text("Theme Settings").size(14).color(Color::from_rgb(0.8, 0.8, 0.8)),
+                    text("• Dark Mode: Enabled").size(12).color(Color::from_rgb(0.7, 0.7, 0.7)),
+                    text("• Font Size: 14px").size(12).color(Color::from_rgb(0.7, 0.7, 0.7)),
+                    text("• Auto-connect: Disabled").size(12).color(Color::from_rgb(0.7, 0.7, 0.7)),
+                    horizontal_rule(1),
+                    text("IRC Settings").size(14).color(Color::from_rgb(0.8, 0.8, 0.8)),
+                    text("• Default Server: irc.libera.chat").size(12).color(Color::from_rgb(0.7, 0.7, 0.7)),
+                    text("• Default Port: 6697 (SSL)").size(12).color(Color::from_rgb(0.7, 0.7, 0.7)),
+                    text("• SASL Authentication: Enabled").size(12).color(Color::from_rgb(0.7, 0.7, 0.7)),
+                    horizontal_rule(1),
+                    button("Close")
+                        .on_press(Message::HidePreferencesDialog)
+                        .padding([8, 16])
+                ].spacing(10).padding(20)
+            )
+            .style(|_theme| container::Style {
+                background: Some(Background::Color(Color::from_rgba(0.15, 0.15, 0.15, 0.95))),
+                border: iced::Border {
+                    color: Color::from_rgb(0.4, 0.4, 0.4),
+                    width: 2.0,
+                    radius: 8.0.into(),
+                },
+                shadow: iced::Shadow {
+                    color: Color::from_rgba(0.0, 0.0, 0.0, 0.5),
+                    offset: iced::Vector::new(0.0, 4.0),
+                    blur_radius: 8.0,
+                },
+                ..Default::default()
+            })
+            .center_x(Length::Fill)
+            .center_y(Length::Fill)
+            .width(Length::Fixed(400.0))
+            .height(Length::Fixed(300.0));
+            
+            return container(
+                stack![content, dialog]
+            )
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .into();
+        }
+        
+        // About dialog overlay
+        if self.about_dialog_visible {
+            let dialog = container(
+                column![
+                    text("About RustIRC").size(18).color(Color::WHITE),
+                    horizontal_rule(1),
+                    text("RustIRC v0.1.0").size(16).color(Color::from_rgb(0.9, 0.9, 0.9)),
+                    text("Modern IRC Client").size(14).color(Color::from_rgb(0.8, 0.8, 0.8)),
+                    horizontal_rule(1),
+                    text("Built with Rust and Iced").size(12).color(Color::from_rgb(0.7, 0.7, 0.7)),
+                    text("© 2025 RustIRC Project").size(12).color(Color::from_rgb(0.7, 0.7, 0.7)),
+                    horizontal_rule(1),
+                    text("Features:").size(14).color(Color::from_rgb(0.8, 0.8, 0.8)),
+                    text("• IRCv3 Protocol Support").size(12).color(Color::from_rgb(0.7, 0.7, 0.7)),
+                    text("• SASL Authentication").size(12).color(Color::from_rgb(0.7, 0.7, 0.7)),
+                    text("• TLS/SSL Connections").size(12).color(Color::from_rgb(0.7, 0.7, 0.7)),
+                    text("• Cross-Platform GUI").size(12).color(Color::from_rgb(0.7, 0.7, 0.7)),
+                    text("• Modern Theming").size(12).color(Color::from_rgb(0.7, 0.7, 0.7)),
+                    horizontal_rule(1),
+                    button("Close")
+                        .on_press(Message::HideAboutDialog)
+                        .padding([8, 16])
+                ].spacing(8).padding(20)
+            )
+            .style(|_theme| container::Style {
+                background: Some(Background::Color(Color::from_rgba(0.15, 0.15, 0.15, 0.95))),
+                border: iced::Border {
+                    color: Color::from_rgb(0.4, 0.4, 0.4),
+                    width: 2.0,
+                    radius: 8.0.into(),
+                },
+                shadow: iced::Shadow {
+                    color: Color::from_rgba(0.0, 0.0, 0.0, 0.5),
+                    offset: iced::Vector::new(0.0, 4.0),
+                    blur_radius: 8.0,
+                },
+                ..Default::default()
+            })
+            .center_x(Length::Fill)
+            .center_y(Length::Fill)
+            .width(Length::Fixed(350.0))
+            .height(Length::Fixed(400.0));
+            
+            return container(
+                stack![content, dialog]
+            )
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .into();
+        }
 
         container(content)
             .width(Length::Fill)
@@ -1577,14 +1859,32 @@ impl RustIrcGui {
     }
 
     fn render_menu_bar(&self) -> Element<Message> {
-        // Create menu bar with File, Edit, View, Tools, Help menus
+        // Get current filter states for checkmarks
+        let (show_system, show_user_lists, show_motd, show_joins_parts, show_timestamps) = self.message_view.get_filter_state();
+        
+        // Create menu structure with dropdowns
+        let mut menu_content = column![];
+        
+        // Main menu bar with dropdown buttons
         let file_menu = button(text("File").size(14))
-            .on_press(Message::ShowConnectDialog)
+            .on_press(Message::MenuToggle("File".to_string()))
             .padding([4, 12]);
-        let edit_menu = button(text("Edit").size(14)).padding([4, 12]);
-        let view_menu = button(text("View").size(14)).padding([4, 12]);
-        let tools_menu = button(text("Tools").size(14)).padding([4, 12]);
-        let help_menu = button(text("Help").size(14)).padding([4, 12]);
+            
+        let edit_menu = button(text("Edit").size(14))
+            .on_press(Message::MenuToggle("Edit".to_string()))
+            .padding([4, 12]);
+            
+        let view_menu = button(text("View").size(14))
+            .on_press(Message::MenuToggle("View".to_string()))
+            .padding([4, 12]);
+            
+        let tools_menu = button(text("Tools").size(14))
+            .on_press(Message::MenuToggle("Tools".to_string()))
+            .padding([4, 12]);
+            
+        let help_menu = button(text("Help").size(14))
+            .on_press(Message::MenuToggle("Help".to_string()))
+            .padding([4, 12]);
         
         let menu_row = row![
             file_menu,
@@ -1596,18 +1896,132 @@ impl RustIrcGui {
         .spacing(4)
         .padding([4, 8]);
         
-        container(menu_row)
-            .width(Length::Fill)
-            .height(Length::Fixed(32.0))
-            .style(|_theme| container::Style {
-                background: Some(Background::Color(Color::from_rgb(0.15, 0.15, 0.15))), // Dark gray background
-                border: iced::Border {
-                    radius: iced::border::Radius::from(0.0),
-                    width: 1.0,
-                    color: Color::from_rgb(0.3, 0.3, 0.3), // Subtle border
-                },
-                ..Default::default()
-            })
+        menu_content = menu_content.push(
+            container(menu_row)
+                .width(Length::Fill)
+                .height(Length::Fixed(32.0))
+                .style(|_theme| container::Style {
+                    background: Some(Background::Color(Color::from_rgb(0.15, 0.15, 0.15))),
+                    border: iced::Border {
+                        radius: iced::border::Radius::from(0.0),
+                        width: 1.0,
+                        color: Color::from_rgb(0.3, 0.3, 0.3),
+                    },
+                    ..Default::default()
+                })
+        );
+        
+        // Add dropdown menus based on active_menu
+        if let Some(ref active) = self.active_menu {
+            let dropdown_content = match active.as_str() {
+                "File" => {
+                    column![
+                        button(text("Connect").size(12))
+                            .on_press(Message::MenuFileConnect)
+                            .width(Length::Fixed(120.0))
+                            .padding([4, 8]),
+                        button(text("Disconnect").size(12))
+                            .on_press(Message::MenuFileDisconnect)
+                            .width(Length::Fixed(120.0))
+                            .padding([4, 8]),
+                        horizontal_rule(1),
+                        button(text("Exit").size(12))
+                            .on_press(Message::MenuFileExit)
+                            .width(Length::Fixed(120.0))
+                            .padding([4, 8]),
+                    ]
+                    .spacing(2)
+                    .padding(4)
+                }
+                "Edit" => {
+                    column![
+                        button(text("Copy").size(12))
+                            .on_press(Message::ContextMenuAction("copy".to_string()))
+                            .width(Length::Fixed(120.0))
+                            .padding([4, 8]),
+                        button(text("Paste").size(12))
+                            .on_press(Message::ContextMenuAction("paste".to_string()))
+                            .width(Length::Fixed(120.0))
+                            .padding([4, 8]),
+                        button(text("Select All").size(12))
+                            .on_press(Message::ContextMenuAction("select_all".to_string()))
+                            .width(Length::Fixed(120.0))
+                            .padding([4, 8]),
+                    ]
+                    .spacing(2)
+                    .padding(4)
+                }
+                "View" => {
+                    column![
+                        button(text(if show_system { "☑ System Messages" } else { "☐ System Messages" }).size(12))
+                            .on_press(Message::MenuViewToggleSystemMessages)
+                            .width(Length::Fixed(160.0))
+                            .padding([4, 8]),
+                        button(text(if show_user_lists { "☑ User Lists" } else { "☐ User Lists" }).size(12))
+                            .on_press(Message::MenuViewToggleUserLists)
+                            .width(Length::Fixed(160.0))
+                            .padding([4, 8]),
+                        button(text(if show_joins_parts { "☑ Join/Part Messages" } else { "☐ Join/Part Messages" }).size(12))
+                            .on_press(Message::MenuViewToggleJoinsParts)
+                            .width(Length::Fixed(160.0))
+                            .padding([4, 8]),
+                        button(text(if show_motd { "☑ MOTD" } else { "☐ MOTD" }).size(12))
+                            .on_press(Message::MenuViewToggleMotd)
+                            .width(Length::Fixed(160.0))
+                            .padding([4, 8]),
+                        button(text(if show_timestamps { "☑ Timestamps" } else { "☐ Timestamps" }).size(12))
+                            .on_press(Message::MenuViewToggleTimestamps)
+                            .width(Length::Fixed(160.0))
+                            .padding([4, 8]),
+                    ]
+                    .spacing(2)
+                    .padding(4)
+                }
+                "Tools" => {
+                    column![
+                        button(text("Preferences").size(12))
+                            .on_press(Message::MenuToolsPreferences)
+                            .width(Length::Fixed(120.0))
+                            .padding([4, 8]),
+                    ]
+                    .spacing(2)
+                    .padding(4)
+                }
+                "Help" => {
+                    column![
+                        button(text("About RustIRC").size(12))
+                            .on_press(Message::MenuHelpAbout)
+                            .width(Length::Fixed(120.0))
+                            .padding([4, 8]),
+                    ]
+                    .spacing(2)
+                    .padding(4)
+                }
+                _ => column![].spacing(2).padding(4)
+            };
+            
+            menu_content = menu_content.push(
+                container(dropdown_content)
+                    .style(|_theme| container::Style {
+                        background: Some(Background::Color(Color::from_rgb(0.2, 0.2, 0.2))),
+                        border: iced::Border {
+                            radius: iced::border::Radius::from(4.0),
+                            width: 1.0,
+                            color: Color::from_rgb(0.4, 0.4, 0.4),
+                        },
+                        shadow: iced::Shadow {
+                            color: Color::from_rgba(0.0, 0.0, 0.0, 0.3),
+                            offset: iced::Vector::new(0.0, 2.0),
+                            blur_radius: 4.0,
+                        },
+                        ..Default::default()
+                    })
+            );
+        }
+        
+        // Wrap everything in a mouse area to close menus when clicking outside
+        mouse_area(menu_content)
+            .on_press(Message::MenuClose)
             .into()
     }
 
@@ -1632,7 +2046,22 @@ impl RustIrcGui {
             }
         };
 
-        pane_grid::Content::new(content)
+        // Wrap content in container with border for visible pane dividers
+        let bordered_content = container(content)
+            .style(|_theme| container::Style {
+                border: iced::Border {
+                    color: Color::from_rgb(0.7, 0.7, 0.7),
+                    width: 1.0,
+                    radius: 0.0.into(),
+                },
+                background: None,
+                text_color: None,
+                shadow: iced::Shadow::default(),
+            })
+            .width(Length::Fill)
+            .height(Length::Fill);
+
+        pane_grid::Content::new(bordered_content)
     }
 
     fn render_server_tree(&self) -> Element<Message> {
@@ -1864,6 +2293,35 @@ impl RustIrcGui {
                 // Exit application
                 std::process::exit(0);
             }
+            "/whois" => {
+                if parts.len() > 1 {
+                    let nickname = parts[1].to_string();
+                    info!("WHOIS command: {}", nickname);
+                    
+                    if let Some(current_tab) = &self.app_state.current_tab_id {
+                        if let Some(tab) = self.app_state.tabs.get(current_tab) {
+                            if let Some(server_id) = &tab.server_id {
+                                let client_clone = self.irc_client.clone();
+                                let nickname_clone = nickname.clone();
+                                let server_id_clone = server_id.clone();
+                                
+                                tokio::spawn(async move {
+                                    let client_guard = client_clone.read().await;
+                                    if let Some(client) = client_guard.as_ref() {
+                                        let whois_cmd = rustirc_protocol::Command::Whois {
+                                            targets: vec![nickname_clone.clone()],
+                                        };
+                                        let _ = client.send_command(whois_cmd).await;
+                                    }
+                                });
+                                
+                                // Add status message
+                                self.app_state.add_message(&server_id_clone, &server_id_clone, &format!("Requesting WHOIS information for {}...", nickname), "system");
+                            }
+                        }
+                    }
+                }
+            }
             "/connect" => {
                 if parts.len() > 1 {
                     let server = parts[1].to_string();
@@ -1927,6 +2385,15 @@ impl RustIrcGui {
                 warn!("No IRC client available for server: {}", server_id);
             }
         });
+    }
+    
+    /// Trigger auto-scroll to bottom if enabled
+    fn trigger_auto_scroll(&self) -> Task<Message> {
+        if self.message_view.is_auto_scroll_enabled() {
+            self.message_view.create_scroll_to_bottom_task().map(Message::MessageView)
+        } else {
+            Task::none()
+        }
     }
     
     /// Toggle user list pane visibility

@@ -38,7 +38,11 @@ pub struct MessageView {
     font_size: f32,
     show_timestamps: bool,
     show_joins_parts: bool,
+    show_system_messages: bool,
+    show_user_lists: bool,
+    show_motd: bool,
     compact_mode: bool,
+    scroll_id: scrollable::Id,
 }
 
 impl MessageView {
@@ -51,7 +55,11 @@ impl MessageView {
             font_size: 13.0,
             show_timestamps: true,
             show_joins_parts: true,
+            show_system_messages: false, // Hide system spam by default
+            show_user_lists: false, // Hide user list spam by default
+            show_motd: true,
             compact_mode: false,
+            scroll_id: scrollable::Id::unique(),
         }
     }
 
@@ -61,12 +69,14 @@ impl MessageView {
             MessageViewMessage::ScrollToBottom => {
                 self.auto_scroll = true;
                 self.scroll_position = 1.0;
-                Task::none()
+                scrollable::snap_to(self.scroll_id.clone(), scrollable::RelativeOffset::END)
+                    .map(|_: ()| MessageViewMessage::NoOp)
             }
             MessageViewMessage::ScrollToTop => {
                 self.auto_scroll = false;
                 self.scroll_position = 0.0;
-                Task::none()
+                scrollable::snap_to(self.scroll_id.clone(), scrollable::RelativeOffset::START)
+                    .map(|_: ()| MessageViewMessage::NoOp)
             }
             MessageViewMessage::MessageClicked(index) => {
                 if !self.selected_messages.contains(&index) {
@@ -170,8 +180,17 @@ impl MessageView {
                     .padding(8)
                     .width(Length::Fill)
             )
+            .id(self.scroll_id.clone())
             .width(Length::Fill)
-            .height(Length::Fill);
+            .height(Length::Fill)
+            .direction(
+                scrollable::Direction::Vertical(
+                    scrollable::Scrollbar::new()
+                        .width(8)
+                        .margin(0)
+                        .scroller_width(8)
+                )
+            );
             
             container(scrollable_content)
                 .width(Length::Fill)
@@ -205,12 +224,32 @@ impl MessageView {
 
     /// Check if a message should be shown based on current settings
     fn should_show_message(&self, message: &DisplayMessage) -> bool {
+        // Filter join/part/quit messages
         if !self.show_joins_parts {
             match message.message_type {
                 MessageType::Join | MessageType::Part | MessageType::Quit => return false,
                 _ => {}
             }
         }
+        
+        // Filter system messages (user list spam, end of names, etc.)
+        if !self.show_system_messages && (message.sender == "System" || message.sender == "system") {
+            return false;
+        }
+        
+        // Filter user list messages specifically
+        if !self.show_user_lists && ((message.sender == "System" || message.sender == "system") && 
+            (message.content.contains("users in") || 
+             message.content.contains("End of user list") ||
+             message.content.contains("End of names"))) {
+            return false;
+        }
+        
+        // Filter MOTD messages
+        if !self.show_motd && (message.sender == "motd" || message.sender == "MOTD") {
+            return false;
+        }
+        
         true
     }
 
@@ -427,6 +466,16 @@ impl MessageView {
         self.auto_scroll = true;
         self.scroll_position = f32::MAX; // Will be clamped to bottom
     }
+    
+    /// Create a task to scroll to bottom
+    pub fn create_scroll_to_bottom_task(&self) -> Task<MessageViewMessage> {
+        if self.auto_scroll {
+            scrollable::snap_to(self.scroll_id.clone(), scrollable::RelativeOffset::END)
+                .map(|_: ()| MessageViewMessage::NoOp)
+        } else {
+            Task::none()
+        }
+    }
 
     /// Scroll to top of message view
     pub fn scroll_to_top(&mut self) {
@@ -436,6 +485,32 @@ impl MessageView {
     /// Set search query for message filtering
     pub fn set_search_query(&mut self, query: Option<String>) {
         self.search_query = query;
+    }
+    
+    /// Toggle system message visibility
+    pub fn toggle_system_messages(&mut self) {
+        self.show_system_messages = !self.show_system_messages;
+    }
+    
+    /// Toggle user list message visibility
+    pub fn toggle_user_lists(&mut self) {
+        self.show_user_lists = !self.show_user_lists;
+    }
+    
+    /// Toggle MOTD message visibility
+    pub fn toggle_motd(&mut self) {
+        self.show_motd = !self.show_motd;
+    }
+    
+    
+    /// Get current filtering state
+    pub fn get_filter_state(&self) -> (bool, bool, bool, bool, bool) {
+        (self.show_system_messages, self.show_user_lists, self.show_motd, self.show_joins_parts, self.show_timestamps)
+    }
+    
+    /// Get auto-scroll state
+    pub fn is_auto_scroll_enabled(&self) -> bool {
+        self.auto_scroll
     }
 
     /// Clear message selection

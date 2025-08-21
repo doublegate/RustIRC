@@ -1,8 +1,8 @@
 # RustIRC Project Status
 
-**Last Updated**: 2025-08-20 11:36 PM EDT  
+**Last Updated**: 2025-08-21 12:30 AM EDT  
 **Current Phase**: Phase 4 - Scripting & Plugins (0% Complete) 🔜  
-**Overall Progress**: Phases 1-3 complete with FULL FUNCTIONAL IRC CLIENT, ready for Phase 4 development
+**Overall Progress**: Phases 1-3 complete with FULL FUNCTIONAL IRC CLIENT + GUI FIXES APPLIED, ready for Phase 4 development
 
 ## Overview
 
@@ -119,6 +119,19 @@ RustIRC has successfully completed Phases 1-3 with a **fully functional IRC clie
 - ✅ **IRC REGISTRATION**: Proper IRC client registration and authentication flow
 - ✅ **ARC ARCHITECTURE**: Fixed shared ownership issues for multi-threaded IRC connections
 - ✅ **COMPREHENSIVE MESSAGE PARSING**: Support for MOTD (375/372/376), NAMREPLY (353), LIST (322/323), and all server messages
+
+### GUI FIXES & ENHANCEMENTS PHASE
+**Status**: ✅ COMPLETE (August 21, 2025 12:30 AM EDT)  
+**Duration**: Completed with comprehensive GUI issue resolution  
+**Dependencies**: ✅ All previous phases completion  
+**Key Accomplishments**:
+- ✅ **WHOIS COMMAND FIXED**: Corrected IRC protocol field names (`targets` vs `target/nickmasks`)
+- ✅ **PANE DIVIDERS ALWAYS VISIBLE**: Added container borders using proper Iced 0.13.1 syntax
+- ✅ **SYSTEM MESSAGE FILTERING**: Fixed case-sensitivity issues (both "System" and "system" handled)
+- ✅ **MENU CHECKMARKS WORKING**: Filter state correctly reflected in menu dropdown checkboxes
+- ✅ **COMPREHENSIVE TESTING**: All fixes verified with successful compilation and functionality
+- ✅ **ICED 0.13.1 COMPATIBILITY**: Proper Border styling with radius and container implementation
+- ✅ **ENHANCED USER EXPERIENCE**: Auto-scroll, message filtering, and visual improvements all operational
 
 ### Phase 4: Scripting & Plugins
 **Status**: Not Started  

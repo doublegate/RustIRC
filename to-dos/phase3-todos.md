@@ -1,11 +1,34 @@
 # Phase 3: User Interface - Todo List
 
-**Status**: ✅ COMPLETE + FULL IRC FUNCTIONALITY ACHIEVED (August 20, 2025)  
-**Last Updated**: August 20, 2025 - 11:36 PM EDT  
-**Implementation**: Full GUI/TUI/CLI implementation with LIVE IRC connectivity and complete protocol support  
-**Achievement**: Fully functional IRC client with real-time server communication, MOTD display, channel operations, user management
+**Status**: ✅ COMPLETE + GUI FIXES APPLIED (August 21, 2025)  
+**Last Updated**: August 21, 2025 - 12:30 AM EDT  
+**Implementation**: Full GUI/TUI/CLI implementation with LIVE IRC connectivity and comprehensive GUI improvements  
+**Achievement**: Fully functional IRC client with all user-reported GUI issues resolved
 
-## ✅ LATEST ACHIEVEMENTS: FULL IRC FUNCTIONALITY (August 20, 2025)
+## ✅ LATEST ACHIEVEMENTS: GUI FIXES & ENHANCEMENTS (August 21, 2025)
+
+### Comprehensive GUI Issue Resolution
+- [x] **WHOIS Command Fixed** ✅
+  - [x] Corrected IRC protocol field names (`targets` vs `target/nickmasks`)
+  - [x] Proper WHOIS message construction and transmission
+  - [x] Terminal output shows successful WHOIS command recognition
+
+- [x] **Pane Dividers Always Visible** ✅
+  - [x] Added container borders using proper Iced 0.13.1 syntax
+  - [x] Gray borders around all pane content for clear separation
+  - [x] Dividers no longer require hover to be visible
+
+- [x] **System Message Filtering Working** ✅
+  - [x] Fixed case-sensitivity issues (both "System" and "system" handled)
+  - [x] Proper filtering of user list spam and system notifications
+  - [x] Toggle functionality operational in menu dropdowns
+
+- [x] **Menu Checkmarks Functional** ✅
+  - [x] Filter state correctly reflected in menu dropdown checkboxes
+  - [x] Real-time updates when filter options are toggled
+  - [x] Proper state synchronization between MessageView and menu UI
+
+## ✅ PREVIOUS ACHIEVEMENTS: FULL IRC FUNCTIONALITY (August 20, 2025)
 
 ### Live IRC Server Connectivity
 - [x] **Real IRC Server Connections** ✅
