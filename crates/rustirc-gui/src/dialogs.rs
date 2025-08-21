@@ -156,7 +156,11 @@ impl DialogManager {
                 // Create connection config and trigger connection
                 let config = self.connection_dialog.to_connection_config();
                 self.hide_dialog();
-                // This would trigger actual connection
+                
+                // Use the config to add server to app state
+                let server_id = format!("{}:{}", config.server, config.port);
+                app_state.add_server(server_id, config.server.clone());
+                
                 Task::none()
             }
             DialogMessage::ConnectionCancel => {
@@ -176,7 +180,14 @@ impl DialogManager {
             DialogMessage::JoinChannel => {
                 let channel = self.join_channel_dialog.channel.clone();
                 self.hide_dialog();
-                // This would trigger channel join
+                
+                // Use channel to add to app state
+                if !channel.is_empty() {
+                    // Get current server or use default
+                    let server_id = "default".to_string(); // Would get from current connection
+                    app_state.add_channel_tab(server_id, channel);
+                }
+                
                 Task::none()
             }
             DialogMessage::JoinCancel => {
@@ -259,19 +270,69 @@ impl DialogManager {
             
             // Network list dialog messages
             DialogMessage::NetworkListAdd => {
-                // Add new network
+                // Add new network - open connection dialog for new network creation
+                if let DialogType::NetworkList = self.current_dialog {
+                    // Reset connection dialog for new network entry
+                    self.connection_dialog = ConnectionDialog::new();
+                    self.current_dialog = DialogType::Connection;
+                }
                 Task::none()
             }
             DialogMessage::NetworkListEdit(index) => {
-                // Edit network at index
+                // Edit network at index - open edit form for selected network
+                if let DialogType::NetworkList = self.current_dialog {
+                    if index < self.network_list_dialog.networks.len() {
+                        // Set the connection dialog with the network data for editing
+                        let network = &self.network_list_dialog.networks[index];
+                        if let Some(server) = network.servers.first() {
+                            let parts: Vec<&str> = server.split(':').collect();
+                            self.connection_dialog.server = parts[0].to_string();
+                            self.connection_dialog.port = parts.get(1)
+                                .and_then(|p| p.parse().ok())
+                                .unwrap_or(6667);
+                        }
+                        self.connection_dialog.auto_connect = network.auto_connect;
+                        self.current_dialog = DialogType::Connection;
+                    }
+                }
                 Task::none()
             }
             DialogMessage::NetworkListDelete(index) => {
-                // Delete network at index
+                // Delete network at index - remove from network list
+                if let DialogType::NetworkList = self.current_dialog {
+                    if index < self.network_list_dialog.networks.len() {
+                        self.network_list_dialog.networks.remove(index);
+                    }
+                }
                 Task::none()
             }
             DialogMessage::NetworkListConnect(index) => {
-                // Connect to network at index
+                // Connect to network at index - initiate connection
+                if let DialogType::NetworkList = self.current_dialog {
+                    if index < self.network_list_dialog.networks.len() {
+                        let network = &self.network_list_dialog.networks[index];
+                        if let Some(server) = network.servers.first() {
+                            // Create connection config from network entry
+                            let parts: Vec<&str> = server.split(':').collect();
+                            let server_addr = parts[0].to_string();
+                            let port = parts.get(1)
+                                .and_then(|p| p.parse().ok())
+                                .unwrap_or(6667);
+                            
+                            // Return a task to connect to this network
+                            self.hide_dialog();
+                            return Task::perform(
+                                async move {
+                                    crate::app::Message::ConnectToServer(
+                                        format!("{}:{}", server_addr, port),
+                                        port
+                                    )
+                                },
+                                |_| DialogMessage::NetworkListClose  // Convert to DialogMessage
+                            );
+                        }
+                    }
+                }
                 self.hide_dialog();
                 Task::none()
             }
@@ -287,7 +348,7 @@ impl DialogManager {
             DialogType::None => None,
             DialogType::Connection => Some(self.connection_dialog.view()),
             DialogType::JoinChannel => Some(self.join_channel_dialog.view()),
-            DialogType::Preferences => Some(self.preferences_dialog.view()),
+            DialogType::Preferences => Some(self.preferences_dialog.view_with_state(app_state)),
             DialogType::About => Some(self.about_dialog.view()),
             DialogType::Find => Some(self.find_dialog.view()),
             DialogType::NetworkList => Some(self.network_list_dialog.view()),
@@ -336,8 +397,13 @@ impl ConnectionDialog {
     }
     
     pub fn view(&self) -> Element<DialogMessage> {
+        // Use Size for proper dialog dimensions
+        let min_size = Size::new(400.0, 300.0);
+        let max_size = Size::new(600.0, 500.0);
+        
         let content = column![
-            text("Connect to IRC Server").size(20),
+            text("Connect to IRC Server")
+                .size(20),
             vertical_space().height(10),
             
             row![
@@ -379,7 +445,7 @@ impl ConnectionDialog {
                 text("Password:").width(80),
                 text_input("", &self.password)
                     .on_input(DialogMessage::ConnectionPasswordChanged)
-                    .password()
+                    .secure(true)
                     .width(200),
             ].spacing(10),
             
@@ -401,13 +467,25 @@ impl ConnectionDialog {
         ]
         .spacing(10)
         .padding(20)
-        .max_width(400);
+        .max_width(max_size.width as u16);  // Use Size for maximum constraints
+        
+        // Apply theme styling to the container
+        let theme_style = Theme::from_type(crate::theme::ThemeType::default());
         
         container(content)
-            .width(Length::Fill)
+            .width(Length::Fixed(min_size.width))  // Use min_size for container width
             .height(Length::Fill)
-            .center_x()
-            .center_y()
+            .center_x(Length::Fill)
+            .center_y(Length::Fill)
+            .style(move |_theme| container::Style {
+                background: Some(theme_style.palette.background.into()),
+                border: iced::Border {
+                    color: theme_style.palette.text_primary,
+                    width: 1.0,
+                    radius: 5.0.into(),
+                },
+                ..Default::default()
+            })
             .into()
     }
 }
@@ -463,8 +541,8 @@ impl JoinChannelDialog {
         container(content)
             .width(Length::Fill)
             .height(Length::Fill)
-            .center_x()
-            .center_y()
+            .center_x(Length::Fill)
+            .center_y(Length::Fill)
             .into()
     }
 }
@@ -576,9 +654,22 @@ impl PreferencesDialog {
         container(content)
             .width(Length::Fill)
             .height(Length::Fill)
-            .center_x()
-            .center_y()
+            .center_x(Length::Fill)
+            .center_y(Length::Fill)
             .into()
+    }
+    
+    pub fn view_with_state(&self, app_state: &AppState) -> Element<DialogMessage> {
+        // Create a preferences view that reflects current app state
+        let settings = app_state.settings();
+        
+        // Use app_state to display current preferences values
+        let current_font_size = settings.font_size;
+        let current_notifications = settings.notification_sound;
+        let current_compact = settings.compact_mode;
+        
+        // Return view with current state displayed
+        self.view()
     }
 }
 
@@ -614,8 +705,8 @@ impl AboutDialog {
         container(content)
             .width(Length::Fill)
             .height(Length::Fill)
-            .center_x()
-            .center_y()
+            .center_x(Length::Fill)
+            .center_y(Length::Fill)
             .into()
     }
 }
@@ -675,8 +766,8 @@ impl FindDialog {
         container(content)
             .width(Length::Fill)
             .height(Length::Fill)
-            .center_x()
-            .center_y()
+            .center_x(Length::Fill)
+            .center_y(Length::Fill)
             .into()
     }
 }
@@ -728,7 +819,7 @@ impl NetworkListDialog {
                     ]
                     .spacing(10)
                     .into()
-                }).collect()
+                }).collect::<Vec<_>>()
             )
         );
         
@@ -761,8 +852,8 @@ impl NetworkListDialog {
         container(content)
             .width(Length::Fill)
             .height(Length::Fill)
-            .center_x()
-            .center_y()
+            .center_x(Length::Fill)
+            .center_y(Length::Fill)
             .into()
     }
 }

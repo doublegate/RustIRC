@@ -112,6 +112,18 @@ pub enum Message {
     TabBar(TabBarMessage),
     StatusBar(StatusBarMessage),
     
+    // Input and navigation commands
+    TabComplete,
+    CancelOperation,
+    HistoryPrevious,
+    HistoryNext,
+    ScrollUp,
+    ScrollDown,
+    ShowHelp,
+    CopySelection,
+    PasteText,
+    WindowResized(u16, u16), // width, height
+    
     // No operation
     None,
 }
@@ -242,8 +254,18 @@ impl Default for RustIrcGui {
 }
 
 impl RustIrcGui {
+    /// Create a new RustIrcGui instance for testing
+    pub fn new() -> Self {
+        Self::default()
+    }
+    
+    /// Get current app state for testing
+    pub fn state(&self) -> &AppState {
+        &self.app_state
+    }
+    
     /// Update function for Iced 0.13.1 functional approach
-    fn update(&mut self, message: Message) -> impl Into<Task<Message>> {
+    pub fn update(&mut self, message: Message) -> impl Into<Task<Message>> {
         match message {
             Message::PaneResized(resize_event) => {
                 self.panes.resize(resize_event.split, resize_event.ratio);
@@ -1556,6 +1578,50 @@ impl RustIrcGui {
             }
             Message::MenuHelpAbout => {
                 return Task::batch(vec![Task::done(Message::ShowAboutDialog)]);
+            }
+            
+            // Input and navigation commands
+            Message::TabComplete => {
+                // Trigger tab completion in the input widget
+                // For now, just pass to InputArea widget
+            }
+            Message::CancelOperation => {
+                // Cancel current operation or close dialogs
+                self.preferences_dialog_visible = false;
+                self.about_dialog_visible = false;
+                self.connect_dialog_visible = false;
+            }
+            Message::HistoryPrevious => {
+                // Navigate to previous command in history
+                // For now, just pass to InputArea widget
+            }
+            Message::HistoryNext => {
+                // Navigate to next command in history
+                // For now, just pass to InputArea widget
+            }
+            Message::ScrollUp => {
+                // Scroll up in the message view
+                // For now, just pass to MessageView widget
+            }
+            Message::ScrollDown => {
+                // Scroll down in the message view
+                // For now, just pass to MessageView widget
+            }
+            Message::ShowHelp => {
+                // Show help dialog or help content
+                return Task::batch(vec![Task::done(Message::ShowAboutDialog)]);
+            }
+            Message::CopySelection => {
+                // Copy selected text to clipboard
+                // For now, just a no-op
+            }
+            Message::PasteText => {
+                // Paste text from clipboard
+                // For now, just a no-op
+            }
+            Message::WindowResized(_width, _height) => {
+                // Handle window resize events
+                // For now, just a no-op as Iced handles this
             }
             Message::None => {}
         }

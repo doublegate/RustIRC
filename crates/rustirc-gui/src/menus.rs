@@ -118,11 +118,11 @@ impl MenuBar {
                 Task::none()
             }
             MenuMessage::ViewToggleServerTree => {
-                app_state.ui_state_mut().show_sidebar = !app_state.ui_state().show_sidebar;
+                app_state.ui_state_mut().show_sidebar = !app_state.ui_state.show_sidebar;
                 Task::none()
             }
             MenuMessage::ViewToggleUserList => {
-                app_state.ui_state_mut().show_userlist = !app_state.ui_state().show_userlist;
+                app_state.ui_state_mut().show_userlist = !app_state.ui_state.show_userlist;
                 Task::none()
             }
             MenuMessage::ViewToggleStatusBar => {
@@ -232,36 +232,52 @@ impl MenuBar {
     
     pub fn view(&self, app_state: &AppState) -> Element<MenuMessage> {
         let file_button = button(text("File"))
-            .on_press(MenuMessage::FileConnect); // For now, just connect
+            .on_press(MenuMessage::FileConnect)
+            .width(Length::Shrink); // Use Length for proper sizing
             
         let edit_button = button(text("Edit"))
-            .on_press(MenuMessage::EditPreferences);
+            .on_press(MenuMessage::EditPreferences)
+            .width(Length::Shrink);
             
-        let view_button = button(text("View"))
-            .on_press(MenuMessage::ViewToggleServerTree);
+        let view_button = button(text(if app_state.ui_state.show_sidebar { 
+            "Hide Sidebar" 
+        } else { 
+            "Show Sidebar" 
+        }))
+            .on_press(MenuMessage::ViewToggleServerTree)
+            .width(Length::Shrink);
             
         let server_button = button(text("Server"))
-            .on_press(MenuMessage::ServerConnect);
+            .on_press(MenuMessage::ServerConnect)
+            .width(Length::Shrink);
             
         let channel_button = button(text("Channel"))
-            .on_press(MenuMessage::ChannelJoin);
+            .on_press(MenuMessage::ChannelJoin)
+            .width(Length::Shrink);
             
         let tools_button = button(text("Tools"))
-            .on_press(MenuMessage::ToolsPreferences);
+            .on_press(MenuMessage::ToolsPreferences)
+            .width(Length::Shrink);
             
         let help_button = button(text("Help"))
-            .on_press(MenuMessage::HelpAbout);
+            .on_press(MenuMessage::HelpAbout)
+            .width(Length::Shrink);
         
-        row![
-            file_button,
-            edit_button,
-            view_button,
-            server_button,
-            channel_button,
-            tools_button,
-            help_button,
-        ]
-        .spacing(10)
+        // Use container for proper menu bar styling and full-width layout
+        container(
+            row![
+                file_button,
+                edit_button,
+                view_button,
+                server_button,
+                channel_button,
+                tools_button,
+                help_button,
+            ]
+            .spacing(10)
+            .width(Length::Fill)
+        )
+        .width(Length::Fill)
         .padding(5)
         .into()
     }

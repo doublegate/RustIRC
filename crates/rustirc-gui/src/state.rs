@@ -481,6 +481,8 @@ pub struct AppSettings {
     pub nick_colors: bool,
     pub timestamp_format: String,
     pub last_message_id: usize,
+    pub notification_popup: bool,
+    pub compact_mode: bool,
 }
 
 impl Default for AppSettings {
@@ -496,6 +498,8 @@ impl Default for AppSettings {
             nick_colors: true,
             timestamp_format: "%H:%M:%S".to_string(),
             last_message_id: 0,
+            notification_popup: true,
+            compact_mode: false,
         }
     }
 }

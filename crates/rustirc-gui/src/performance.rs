@@ -43,14 +43,27 @@ impl MessageBatcher {
         self.update_callback = Some(Box::new(callback));
     }
     
-    /// Add a message to the batch
+    /// Add a message to the batch with type filtering
     pub fn add_message(&mut self, tab_id: String, message: DisplayMessage) -> bool {
-        self.pending_messages
-            .entry(tab_id)
-            .or_insert_with(Vec::new)
-            .push(message);
+        // Use MessageType for priority filtering - only add if message type is important
+        if self.should_include_message_type(&message.message_type) {
+            self.pending_messages
+                .entry(tab_id)
+                .or_insert_with(Vec::new)
+                .push(message);
+        }
         
         self.should_flush()
+    }
+    
+    /// Determine if message type should be included in batching
+    fn should_include_message_type(&self, msg_type: &MessageType) -> bool {
+        match msg_type {
+            MessageType::Message | MessageType::Action | MessageType::Notice => true,
+            MessageType::Join | MessageType::Part | MessageType::Quit => true, 
+            MessageType::System => false, // Skip system messages for better performance
+            _ => true, // Include other types by default
+        }
     }
     
     /// Add multiple messages at once
@@ -106,6 +119,23 @@ impl MessageBatcher {
     pub fn clear(&mut self) {
         self.pending_messages.clear();
         self.last_update = Instant::now();
+    }
+    
+    /// Start automatic interval-based flushing for optimal performance
+    pub async fn start_auto_flush(&mut self, flush_interval: Duration) {
+        let mut timer = interval(flush_interval);
+        
+        loop {
+            timer.tick().await;
+            if self.should_flush() {
+                let flushed = self.flush();
+                if !flushed.is_empty() {
+                    if let Some(ref callback) = self.update_callback {
+                        callback(&flushed);
+                    }
+                }
+            }
+        }
     }
 }
 

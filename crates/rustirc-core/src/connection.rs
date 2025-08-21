@@ -144,12 +144,30 @@ impl IrcConnection {
         Ok(())
     }
 
+    /// Resolve server address to SocketAddr for proper network handling
+    async fn resolve_server_address(&self) -> Result<SocketAddr> {
+        let addr_string = format!("{}:{}", self.config.server, self.config.port);
+        
+        // Use tokio's DNS resolution for async operation
+        match tokio::net::lookup_host(addr_string.clone()).await {
+            Ok(mut addrs) => {
+                if let Some(addr) = addrs.next() {
+                    Ok(addr)
+                } else {
+                    Err(Error::ConnectionFailed(format!("No addresses found for {}", addr_string)))
+                }
+            }
+            Err(e) => Err(Error::ConnectionFailed(format!("DNS resolution failed: {}", e)))
+        }
+    }
+
     /// Attempt single connection
     async fn try_connect(&self) -> Result<()> {
-        // Connect to server (DNS resolution is handled by TcpStream::connect)
-        let addr = (self.config.server.as_str(), self.config.port);
+        // Resolve server address with proper SocketAddr usage
+        let socket_addr = self.resolve_server_address().await?;
+        debug!("Resolved server address: {}", socket_addr);
         
-        let stream = timeout(self.config.message_timeout, TcpStream::connect(addr))
+        let stream = timeout(self.config.message_timeout, TcpStream::connect(socket_addr))
             .await
             .map_err(|_| Error::ConnectionTimeout)?
             .map_err(|e| Error::ConnectionFailed(e.to_string()))?;

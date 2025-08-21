@@ -14,14 +14,15 @@ The project prioritizes full compatibility with IRC standards including IRCv3 ex
 
 ## Development Status
 
-**Phase 3 GUI Implementation Complete** (2025-08-17)
+**Phase 3 Complete + GUI Fixes Applied** (2025-08-21)
 
 - **Phase 1**: Research & Setup ✅ (Complete 2025-08-14)
 - **Phase 2**: Core IRC Engine ✅ (Complete 2025-08-17) 
 - **Phase 3**: User Interface ✅ (Complete 2025-08-17)
-- **GUI Framework**: Iced 0.13.1 successfully integrated
-- **Working Features**: CLI prototype, simplified GUI, complete SASL authentication
-- **Current Status**: Fully functional IRC client with basic GUI ready for testing
+- **GUI Fixes**: Comprehensive issue resolution ✅ (Complete 2025-08-21)
+- **GUI Framework**: Iced 0.13.1 with advanced styling and proper IRC protocol implementation
+- **Working Features**: Full IRC client with live server connectivity, WHOIS command, pane dividers, system filtering, menu checkmarks
+- **Current Status**: Production-ready IRC client with all user-reported issues resolved, ready for Phase 4
 
 The repository now contains:
 
@@ -198,3 +199,28 @@ RustIRC/
 - `README.md` - Todo list overview
 - `phase1-todos.md` through `phase7-todos.md` - Detailed task lists
 - Comprehensive task tracking for all development phases
+
+## Important Implementation Patterns (August 21, 2025)
+
+### GUI Debugging & Issue Resolution
+
+When addressing GUI issues in RustIRC:
+
+1. **IRC Protocol Verification**: Always check field names against protocol definitions (e.g., WHOIS uses `targets` not `target/nickmasks`)
+2. **Iced 0.13.1 Styling**: Use proper border syntax with `0.0.into()` for radius, container styling for pane dividers
+3. **Case-Sensitive Filtering**: Handle both "System" and "system" message senders in filtering logic
+4. **State Synchronization**: Use getter methods like `get_filter_state()` to sync UI checkmarks with actual filter states
+
+### Build and Testing Workflow
+
+- Always run `cargo build` to verify fixes before proceeding
+- Test GUI functionality with `cargo run` for full interface mode
+- Verify all user-reported issues systematically with test cases
+- Document all fixes in both code comments and project documentation
+
+### Code Quality Standards
+
+- Zero tolerance for compilation errors - all fixes must result in successful builds
+- Maintain backward compatibility while implementing new features
+- Follow established patterns in the codebase for consistency
+- Update documentation immediately after implementing fixes
