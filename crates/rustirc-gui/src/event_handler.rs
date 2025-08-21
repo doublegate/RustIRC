@@ -7,7 +7,7 @@ use crate::app::Message;
 use rustirc_core::events::{Event, EventHandler};
 use tokio::sync::mpsc;
 use async_trait::async_trait;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 
 /// GUI event handler that translates core events to GUI messages
 pub struct GuiEventHandler {
@@ -130,6 +130,11 @@ impl EventHandler for GuiEventHandler {
                     connection_id: connection_id.clone(),
                     message: message.clone(),
                 }));
+            }
+            
+            Event::PongRequired { connection_id, server } => {
+                debug!("Pong required for {} to server {}", connection_id, server);
+                // Pong is automatically handled by the IRC client, just log it
             }
         }
     }

@@ -11,6 +11,7 @@
 
 use crate::theme::{Theme, ThemeType};
 use crate::state::AppState;
+use crate::event_handler::{GuiEventHandler, CoreEventMessage};
 use crate::widgets::{
     server_tree::{ServerTree, ServerTreeMessage},
     message_view::{MessageView, MessageViewMessage},
@@ -24,9 +25,12 @@ use iced::{
     Element, Length, Task, Color, Background,
 };
 use rustirc_core::IrcClient;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tokio::sync::RwLock;
-use tracing::{info, warn};
+use tracing::{debug, error, info, warn};
+
+/// Global IRC event receiver for subscription
+static IRC_EVENT_RECEIVER: std::sync::OnceLock<Arc<Mutex<Option<tokio::sync::mpsc::UnboundedReceiver<Message>>>>> = std::sync::OnceLock::new();
 
 /// Main application message types
 #[derive(Debug, Clone)]
@@ -60,6 +64,24 @@ pub enum Message {
     // Theme management
     ThemeChanged(ThemeType),
     
+    // Dialog messages
+    ShowConnectDialog,
+    HideConnectDialog,
+    ConnectDialogServerChanged(String),
+    ConnectDialogPortChanged(String), 
+    ConnectDialogNickChanged(String),
+    ConnectDialogConnect,
+    
+    // IRC Event messages (from real IRC events)
+    IrcConnected(String), // connection_id
+    IrcDisconnected(String, String), // connection_id, reason
+    IrcMessageReceived(String, rustirc_protocol::Message), // connection_id, message
+    IrcConnectionStateChanged(String, rustirc_core::ConnectionState), // connection_id, state
+    IrcError(Option<String>, String), // connection_id, error
+    
+    // Core IRC events from event handler
+    CoreEvent(CoreEventMessage),
+    
     // Widget messages
     ServerTree(ServerTreeMessage),
     MessageView(MessageViewMessage),
@@ -86,9 +108,13 @@ pub struct RustIrcGui {
     // Core IRC functionality
     irc_client: Arc<RwLock<Option<Arc<IrcClient>>>>,
     
-    // Application state
+    // Application state  
     app_state: AppState,
     current_theme: Theme,
+    
+    // IRC event handling
+    irc_message_sender: Option<tokio::sync::mpsc::UnboundedSender<Message>>,
+    irc_message_receiver: Option<tokio::sync::mpsc::UnboundedReceiver<Message>>,
     
     // Layout
     panes: pane_grid::State<PaneType>,
@@ -110,6 +136,12 @@ pub struct RustIrcGui {
     context_menu_visible: bool,
     context_menu_x: f32,
     context_menu_y: f32,
+    
+    // Connection dialog
+    connect_dialog_visible: bool,
+    connect_dialog_server: String,
+    connect_dialog_port: String,
+    connect_dialog_nickname: String,
 }
 
 impl Default for RustIrcGui {
@@ -132,8 +164,8 @@ impl Default for RustIrcGui {
             PaneType::UserList,
         ).unwrap();
         let message_pane = split_result.0;
-        let user_pane = split_result.1;
-        // Note: user_pane is used implicitly in the pane_grid system to render the UserList
+        let _user_pane = split_result.1;
+        // Note: _user_pane is used implicitly in the pane_grid system to render the UserList
         
         // Split bottom for input area
         let (_top_pane, _bottom_pane) = panes.split(
@@ -142,36 +174,21 @@ impl Default for RustIrcGui {
             PaneType::InputArea,
         ).unwrap();
 
-        let mut app_state = AppState::new();
+        // Create IRC event message channels
+        let (irc_message_sender, irc_message_receiver) = tokio::sync::mpsc::unbounded_channel::<Message>();
         
-        // Add a default server and channel for demonstration
-        app_state.add_server("libera.chat".to_string(), "Libera Chat".to_string());
-        app_state.add_channel_tab("libera.chat".to_string(), "#rust".to_string());
-        app_state.add_channel_tab("libera.chat".to_string(), "#general".to_string());
-        
-        // Add some sample messages for demonstration
-        app_state.add_message("libera.chat", "#rust", "Welcome to #rust! This is a demo message.", "system");
-        app_state.add_message("libera.chat", "#rust", "Hello everyone!", "user123");
-        app_state.add_message("libera.chat", "#rust", "How's the Rust learning going?", "rustacean");
-        
-        // Add sample users to the channel
-        if let Some(server) = app_state.servers.get_mut("libera.chat") {
-            if let Some(channel) = server.channels.get_mut("#rust") {
-                channel.users = vec![
-                    "@operator".to_string(),
-                    "+voice".to_string(),
-                    "regular_user".to_string(),
-                    "another_user".to_string(),
-                    "user123".to_string(),
-                    "rustacean".to_string(),
-                ];
-            }
-        }
+        // Store receiver globally for subscription
+        IRC_EVENT_RECEIVER.set(Arc::new(Mutex::new(Some(irc_message_receiver)))).ok();
+
+        let app_state = AppState::new();
+        // No default servers or test data - start clean for real IRC connections
 
         Self {
             irc_client: Arc::new(RwLock::new(None)),
             app_state,
             current_theme: Theme::default(),
+            irc_message_sender: Some(irc_message_sender),
+            irc_message_receiver: None, // Stored globally instead
             panes,
             user_list_visible: true, // Initialize user list as visible, user_pane created above
             input_buffer: String::new(),
@@ -184,6 +201,10 @@ impl Default for RustIrcGui {
             context_menu_visible: false,
             context_menu_x: 0.0,
             context_menu_y: 0.0,
+            connect_dialog_visible: false,
+            connect_dialog_server: "irc.libera.chat".to_string(),
+            connect_dialog_port: "6697".to_string(),
+            connect_dialog_nickname: "RustIRC_User".to_string(),
         }
     }
 }
@@ -249,15 +270,29 @@ impl RustIrcGui {
                 let server_id = format!("{}:{}", server, port);
                 let server_clone = server.clone(); // Clone for async move
                 
-                // Initialize IRC client
+                // Initialize IRC client with event handler registration
+                let message_sender = self.irc_message_sender.clone();
+                
                 tokio::spawn(async move {
                     let mut client_write = client_clone.write().await;
-                    if client_write.is_none() {
-                        let config = rustirc_core::Config::default();
-                        let client = Arc::new(rustirc_core::IrcClient::new(config));
-                        if let Ok(()) = client.connect(&server_clone, port).await {
-                            *client_write = Some(client);
-                        }
+                    // Always create a new client for each connection attempt
+                    let config = rustirc_core::Config::default();
+                    let client = Arc::new(rustirc_core::IrcClient::new(config));
+                    
+                    // Always register GUI event handler to receive IRC events
+                    if let Some(sender) = message_sender {
+                        let event_handler = GuiEventHandler::new(sender);
+                        client.event_bus().register(event_handler).await;
+                        info!("GUI event handler registered for IRC events");
+                    } else {
+                        warn!("No message sender available for event handler registration");
+                    }
+                    
+                    if let Ok(()) = client.connect(&server_clone, port).await {
+                        *client_write = Some(client);
+                        info!("IRC client connected and stored");
+                    } else {
+                        error!("Failed to connect to {}:{}", server_clone, port);
                     }
                 });
                 
@@ -423,6 +458,65 @@ impl RustIrcGui {
             }
             Message::ThemeChanged(theme_type) => {
                 self.current_theme = Theme::from_type(theme_type);
+            }
+            
+            // Connection dialog handlers
+            Message::ShowConnectDialog => {
+                self.connect_dialog_visible = true;
+            }
+            Message::HideConnectDialog => {
+                self.connect_dialog_visible = false;
+            }
+            Message::ConnectDialogServerChanged(server) => {
+                self.connect_dialog_server = server;
+            }
+            Message::ConnectDialogPortChanged(port) => {
+                self.connect_dialog_port = port;
+            }
+            Message::ConnectDialogNickChanged(nick) => {
+                self.connect_dialog_nickname = nick;
+            }
+            Message::ConnectDialogConnect => {
+                if let Ok(port) = self.connect_dialog_port.parse::<u16>() {
+                    // Connect to the specified server
+                    let server = self.connect_dialog_server.clone();
+                    let client_clone = self.irc_client.clone();
+                    let server_id = format!("{}:{}", server, port);
+                    let server_clone = server.clone();
+                    let nickname = self.connect_dialog_nickname.clone();
+                    
+                    // Initialize IRC client with custom config and register event handler
+                    if let Some(message_sender) = self.irc_message_sender.clone() {
+                        tokio::spawn(async move {
+                            let mut client_write = client_clone.write().await;
+                            // Always create a new client for each connection attempt
+                            let mut config = rustirc_core::Config::default();
+                            config.user.nickname = nickname;
+                            
+                            let client = Arc::new(rustirc_core::IrcClient::new(config));
+                            
+                            // Always register the GUI event handler to receive real IRC events
+                            let event_handler = GuiEventHandler::new(message_sender);
+                            client.event_bus().register(event_handler).await;
+                            info!("GUI event handler registered for IRC events (dialog connection)");
+                            
+                            if let Ok(()) = client.connect(&server_clone, port).await {
+                                *client_write = Some(client);
+                                info!("IRC client connected via dialog");
+                            } else {
+                                error!("Failed to connect to {}:{} via dialog", server_clone, port);
+                            }
+                        });
+                    } else {
+                        error!("No message sender available for dialog connection");
+                    }
+                    
+                    // Add server to app state
+                    self.app_state.add_server(server_id.clone(), server.to_string());
+                    
+                    // Hide the dialog
+                    self.connect_dialog_visible = false;
+                }
             }
             Message::ServerTree(server_tree_msg) => {
                 // Handle server tree specific actions first
@@ -797,6 +891,489 @@ impl RustIrcGui {
                 // Execute widget task and any additional app-level tasks
                 return Task::batch(vec![task.map(Message::StatusBar)]);
             }
+            
+            // IRC Event handlers (from real IRC events)
+            Message::IrcConnected(connection_id) => {
+                info!("GUI: IRC connected event received: {}", connection_id);
+                // Update connection status in app state
+                if let Some(server) = self.app_state.servers.get_mut(&connection_id) {
+                    server.connection_state = rustirc_core::ConnectionState::Connected;
+                    info!("Updated server connection state to Connected");
+                } else {
+                    warn!("Could not find server {} in app state", connection_id);
+                }
+            }
+            Message::IrcDisconnected(connection_id, reason) => {
+                info!("IRC disconnected: {} - {}", connection_id, reason);
+                // Update connection status in app state
+                if let Some(server) = self.app_state.servers.get_mut(&connection_id) {
+                    server.connection_state = rustirc_core::ConnectionState::Disconnected;
+                }
+            }
+            Message::IrcMessageReceived(connection_id, message) => {
+                info!("IRC message received from {}: {}", connection_id, message);
+                
+                // Parse IRC message and update GUI state
+                match message.command.as_str() {
+                    "001" => {
+                        // RPL_WELCOME - Registration successful
+                        if let Some(server) = self.app_state.servers.get_mut(&connection_id) {
+                            server.connection_state = rustirc_core::ConnectionState::Registered;
+                        }
+                        
+                        // Display welcome message
+                        if let Some(text) = message.params.last() {
+                            self.app_state.add_message(&connection_id, &connection_id, text, "server");
+                        }
+                    }
+                    "375" | "372" | "376" => {
+                        // MOTD start (375), MOTD line (372), MOTD end (376)
+                        if let Some(text) = message.params.last() {
+                            self.app_state.add_message(&connection_id, &connection_id, text, "motd");
+                        }
+                    }
+                    "353" => {
+                        // RPL_NAMREPLY - User list for channel
+                        if message.params.len() >= 3 {
+                            let channel = &message.params[2];
+                            if let Some(user_list) = message.params.get(3) {
+                                let users: Vec<String> = user_list.split_whitespace().map(|s| s.to_string()).collect();
+                                
+                                // Update channel user list
+                                if let Some(server) = self.app_state.servers.get_mut(&connection_id) {
+                                    if let Some(channel_info) = server.channels.get_mut(channel) {
+                                        channel_info.users = users;
+                                        channel_info.user_count = channel_info.users.len();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    "366" => {
+                        // RPL_ENDOFNAMES - End of user list
+                        if message.params.len() >= 2 {
+                            let channel = &message.params[1];
+                            info!("End of names list for channel: {}", channel);
+                        }
+                    }
+                    "322" => {
+                        // RPL_LIST - Channel list entry
+                        if message.params.len() >= 4 {
+                            let channel = &message.params[1];
+                            let user_count = &message.params[2];
+                            let topic = &message.params[3];
+                            let list_entry = format!("{} ({} users): {}", channel, user_count, topic);
+                            self.app_state.add_message(&connection_id, &connection_id, &list_entry, "channel_list");
+                        }
+                    }
+                    "323" => {
+                        // RPL_LISTEND - End of channel list
+                        self.app_state.add_message(&connection_id, &connection_id, "End of channel list", "system");
+                    }
+                    "JOIN" => {
+                        // User joined channel
+                        if let Some(channel) = message.params.first() {
+                            if let Some(nick) = message.prefix.as_ref().and_then(|p| match p {
+                                rustirc_protocol::Prefix::User { nick, .. } => Some(nick.as_str()),
+                                _ => None,
+                            }) {
+                                // Add user to channel
+                                if let Some(server) = self.app_state.servers.get_mut(&connection_id) {
+                                    if let Some(channel_info) = server.channels.get_mut(channel) {
+                                        if !channel_info.users.contains(&nick.to_string()) {
+                                            channel_info.users.push(nick.to_string());
+                                            channel_info.user_count = channel_info.users.len();
+                                        }
+                                    }
+                                }
+                                
+                                // Display join message
+                                let join_msg = format!("{} has joined {}", nick, channel);
+                                self.app_state.add_message(&connection_id, channel, &join_msg, "system");
+                            }
+                        }
+                    }
+                    "PART" => {
+                        // User left channel
+                        if let Some(channel) = message.params.first() {
+                            if let Some(nick) = message.prefix.as_ref().and_then(|p| match p {
+                                rustirc_protocol::Prefix::User { nick, .. } => Some(nick.as_str()),
+                                _ => None,
+                            }) {
+                                // Remove user from channel
+                                if let Some(server) = self.app_state.servers.get_mut(&connection_id) {
+                                    if let Some(channel_info) = server.channels.get_mut(channel) {
+                                        channel_info.users.retain(|u| u != nick);
+                                        channel_info.user_count = channel_info.users.len();
+                                    }
+                                }
+                                
+                                // Display part message
+                                let part_msg = format!("{} has left {}", nick, channel);
+                                self.app_state.add_message(&connection_id, channel, &part_msg, "system");
+                            }
+                        }
+                    }
+                    "QUIT" => {
+                        // User quit
+                        if let Some(nick) = message.prefix.as_ref().and_then(|p| match p {
+                            rustirc_protocol::Prefix::User { nick, .. } => Some(nick.as_str()),
+                            _ => None,
+                        }) {
+                            let quit_reason = message.params.first().map(|s| s.as_str()).unwrap_or("Quit");
+                            let quit_msg = format!("{} has quit ({})", nick, quit_reason);
+                            
+                            // Collect channels that the user was in, then update each separately
+                            let mut channels_to_update = Vec::new();
+                            
+                            // Remove user from all channels
+                            if let Some(server) = self.app_state.servers.get_mut(&connection_id) {
+                                for (channel_name, channel_info) in server.channels.iter_mut() {
+                                    if channel_info.users.contains(&nick.to_string()) {
+                                        channel_info.users.retain(|u| u != nick);
+                                        channel_info.user_count = channel_info.users.len();
+                                        channels_to_update.push(channel_name.clone());
+                                    }
+                                }
+                            }
+                            
+                            // Display quit message in each channel where the user was present
+                            for channel_name in channels_to_update {
+                                self.app_state.add_message(&connection_id, &channel_name, &quit_msg, "system");
+                            }
+                        }
+                    }
+                    "PRIVMSG" => {
+                        // Channel or private message
+                        if message.params.len() >= 2 {
+                            let target = &message.params[0];
+                            let text = &message.params[1];
+                            if let Some(nick) = message.prefix.as_ref().and_then(|p| match p {
+                                rustirc_protocol::Prefix::User { nick, .. } => Some(nick.as_str()),
+                                _ => None,
+                            }) {
+                                self.app_state.add_message(&connection_id, target, text, nick);
+                            }
+                        }
+                    }
+                    "NOTICE" => {
+                        // Notice message
+                        if message.params.len() >= 2 {
+                            let target = &message.params[0];
+                            let text = &message.params[1];
+                            if let Some(nick) = message.prefix.as_ref().and_then(|p| match p {
+                                rustirc_protocol::Prefix::User { nick, .. } => Some(nick.as_str()),
+                                rustirc_protocol::Prefix::Server(server) => Some(server.as_str()),
+                            }) {
+                                let notice_msg = format!("-{}- {}", nick, text);
+                                self.app_state.add_message(&connection_id, target, &notice_msg, "notice");
+                            }
+                        }
+                    }
+                    _ => {
+                        // Log other messages for debugging
+                        info!("Unhandled IRC message: {} from {}", message.command, connection_id);
+                    }
+                }
+            }
+            Message::IrcConnectionStateChanged(connection_id, state) => {
+                info!("IRC connection state changed: {} -> {:?}", connection_id, state);
+                // Update connection state in app state
+                if let Some(server) = self.app_state.servers.get_mut(&connection_id) {
+                    server.connection_state = state;
+                }
+            }
+            Message::IrcError(connection_id, error) => {
+                warn!("IRC error for {:?}: {}", connection_id, error);
+                // Display error message
+                if let Some(conn_id) = &connection_id {
+                    self.app_state.add_message(conn_id, conn_id, &format!("Error: {}", error), "error");
+                }
+            }
+            Message::CoreEvent(core_event) => {
+                // Handle IRC core events from the event handler
+                match core_event {
+                    CoreEventMessage::Connected { connection_id } => {
+                        info!("Core event: Connected to {}", connection_id);
+                        // Update connection status in app state
+                        if let Some(server) = self.app_state.servers.get_mut(&connection_id) {
+                            server.connection_state = rustirc_core::ConnectionState::Connected;
+                        }
+                        self.app_state.add_message(&connection_id, &connection_id, "Connected to server", "system");
+                    }
+                    CoreEventMessage::Disconnected { connection_id, reason } => {
+                        info!("Core event: Disconnected from {} - {}", connection_id, reason);
+                        // Update connection status in app state
+                        if let Some(server) = self.app_state.servers.get_mut(&connection_id) {
+                            server.connection_state = rustirc_core::ConnectionState::Disconnected;
+                        }
+                        self.app_state.add_message(&connection_id, &connection_id, &format!("Disconnected: {}", reason), "system");
+                    }
+                    CoreEventMessage::MessageReceived { connection_id, message } => {
+                        info!("Core event: Message received from {}: {}", connection_id, message);
+                        
+                        // Parse IRC message and update GUI state
+                        match message.command.as_str() {
+                            "375" => {
+                                // MOTD start
+                                if message.params.len() >= 2 {
+                                    let motd_start = &message.params[1];
+                                    self.app_state.add_message(&connection_id, &connection_id, motd_start, "MOTD");
+                                    info!("MOTD start: {}", motd_start);
+                                }
+                            }
+                            "372" => {
+                                // MOTD line
+                                if message.params.len() >= 2 {
+                                    let motd_line = &message.params[1];
+                                    self.app_state.add_message(&connection_id, &connection_id, motd_line, "MOTD");
+                                }
+                            }
+                            "376" => {
+                                // MOTD end
+                                if message.params.len() >= 2 {
+                                    let motd_end = &message.params[1];
+                                    self.app_state.add_message(&connection_id, &connection_id, motd_end, "MOTD");
+                                    info!("MOTD complete: {}", motd_end);
+                                }
+                            }
+                            "353" => {
+                                // NAMES reply (channel user list)
+                                if message.params.len() >= 4 {
+                                    let channel = &message.params[2];
+                                    let users = &message.params[3];
+                                    let user_list: Vec<&str> = users.split_whitespace().collect();
+                                    
+                                    // Add users to channel state
+                                    for user in &user_list {
+                                        let clean_user = user.trim_start_matches(['@', '+', '%', '&', '~']);
+                                        self.app_state.add_user_to_channel(&connection_id, channel, clean_user);
+                                    }
+                                    
+                                    let user_count_msg = format!("Users in {}: {}", channel, user_list.join(", "));
+                                    self.app_state.add_message(&connection_id, channel, &user_count_msg, "System");
+                                    info!("Channel {} users: {:?}", channel, user_list);
+                                }
+                            }
+                            "322" => {
+                                // Channel list entry
+                                if message.params.len() >= 4 {
+                                    let channel = &message.params[1];
+                                    let user_count = &message.params[2];
+                                    let topic = &message.params[3];
+                                    let list_entry = format!("{} ({} users): {}", channel, user_count, topic);
+                                    self.app_state.add_message(&connection_id, &connection_id, &list_entry, "channel_list");
+                                }
+                            }
+                            "323" => {
+                                // End of channel list
+                                self.app_state.add_message(&connection_id, &connection_id, "End of channel list", "system");
+                            }
+                            "PRIVMSG" => {
+                                // Channel or private message
+                                if message.params.len() >= 2 {
+                                    let target = &message.params[0];
+                                    let text = &message.params[1];
+                                    if let Some(nick) = message.prefix.as_ref().and_then(|p| match p {
+                                        rustirc_protocol::Prefix::User { nick, .. } => Some(nick.as_str()),
+                                        _ => None,
+                                    }) {
+                                        self.app_state.add_message(&connection_id, target, text, nick);
+                                    }
+                                }
+                            }
+                            "NOTICE" => {
+                                // Server notice messages
+                                if message.params.len() >= 2 {
+                                    let text = &message.params[1];
+                                    let source = match &message.prefix {
+                                        Some(rustirc_protocol::Prefix::Server(server)) => server.as_str(),
+                                        Some(rustirc_protocol::Prefix::User { nick, .. }) => nick.as_str(),
+                                        _ => "Server",
+                                    };
+                                    self.app_state.add_message(&connection_id, &connection_id, text, source);
+                                    info!("Server notice from {}: {}", source, text);
+                                }
+                            }
+                            "001" => {
+                                // Welcome message (RPL_WELCOME)
+                                if message.params.len() >= 2 {
+                                    let welcome_text = &message.params[1];
+                                    self.app_state.add_message(&connection_id, &connection_id, welcome_text, "Server");
+                                    info!("Welcome message: {}", welcome_text);
+                                }
+                            }
+                            "002" | "003" | "004" | "005" => {
+                                // Server info messages
+                                if message.params.len() >= 2 {
+                                    let info_text = &message.params[1];
+                                    self.app_state.add_message(&connection_id, &connection_id, info_text, "Server");
+                                }
+                            }
+                            "250" | "251" | "252" | "253" | "254" | "255" | "265" | "266" => {
+                                // Server statistics
+                                if message.params.len() >= 2 {
+                                    let stats_text = &message.params[1];
+                                    self.app_state.add_message(&connection_id, &connection_id, stats_text, "Server");
+                                }
+                            }
+                            "366" => {
+                                // End of NAMES (end of user list)
+                                if message.params.len() >= 3 {
+                                    let channel = &message.params[1];
+                                    let end_msg = format!("End of user list for {}", channel);
+                                    self.app_state.add_message(&connection_id, channel, &end_msg, "System");
+                                }
+                            }
+                            "332" => {
+                                // Channel topic
+                                if message.params.len() >= 3 {
+                                    let channel = &message.params[1];
+                                    let topic = &message.params[2];
+                                    let topic_msg = format!("Topic: {}", topic);
+                                    self.app_state.add_message(&connection_id, channel, &topic_msg, "System");
+                                    info!("Channel {} topic: {}", channel, topic);
+                                }
+                            }
+                            "JOIN" => {
+                                // User joined channel
+                                if message.params.len() >= 1 {
+                                    let channel = &message.params[0];
+                                    if let Some(rustirc_protocol::Prefix::User { nick, .. }) = &message.prefix {
+                                        let join_msg = format!("{} has joined {}", nick, channel);
+                                        self.app_state.add_message(&connection_id, channel, &join_msg, "System");
+                                        self.app_state.add_user_to_channel(&connection_id, channel, nick);
+                                        info!("User {} joined {}", nick, channel);
+                                    }
+                                }
+                            }
+                            "PART" => {
+                                // User left channel
+                                if message.params.len() >= 1 {
+                                    let channel = &message.params[0];
+                                    let part_reason = if message.params.len() >= 2 { 
+                                        format!(" ({})", &message.params[1]) 
+                                    } else { 
+                                        String::new() 
+                                    };
+                                    if let Some(rustirc_protocol::Prefix::User { nick, .. }) = &message.prefix {
+                                        let part_msg = format!("{} has left {}{}", nick, channel, part_reason);
+                                        self.app_state.add_message(&connection_id, channel, &part_msg, "System");
+                                        self.app_state.remove_user_from_channel(&connection_id, channel, nick);
+                                        info!("User {} left {}", nick, channel);
+                                    }
+                                }
+                            }
+                            "QUIT" => {
+                                // User quit
+                                if let Some(rustirc_protocol::Prefix::User { nick, .. }) = &message.prefix {
+                                    let quit_reason = if message.params.len() >= 1 { 
+                                        format!(" ({})", &message.params[0]) 
+                                    } else { 
+                                        String::new() 
+                                    };
+                                    let quit_msg = format!("{} has quit{}", nick, quit_reason);
+                                    // Add quit message to all channels where this user was present
+                                    self.app_state.add_message(&connection_id, &connection_id, &quit_msg, "System");
+                                    self.app_state.remove_user_from_all_channels(&connection_id, nick);
+                                    info!("User {} quit", nick);
+                                }
+                            }
+                            _ => {
+                                // Handle other message types
+                                info!("Unhandled core event message: {} from {}", message.command, connection_id);
+                            }
+                        }
+                    }
+                    CoreEventMessage::StateChanged { connection_id, state } => {
+                        info!("Core event: Connection state changed: {} -> {:?}", connection_id, state);
+                        // Update connection state in app state
+                        if let Some(server) = self.app_state.servers.get_mut(&connection_id) {
+                            server.connection_state = state;
+                        }
+                    }
+                    CoreEventMessage::Error { connection_id, error } => {
+                        warn!("Core event: IRC error for {:?}: {}", connection_id, error);
+                        // Display error message
+                        if let Some(conn_id) = &connection_id {
+                            self.app_state.add_message(conn_id, conn_id, &format!("Error: {}", error), "error");
+                        }
+                    }
+                    CoreEventMessage::MessageSent { connection_id, message } => {
+                        debug!("Core event: Message sent to {}: {:?}", connection_id, message);
+                        // Log message sending for debugging
+                    }
+                    CoreEventMessage::ChannelJoined { connection_id, channel } => {
+                        info!("Core event: Joined channel {} on {}", channel, connection_id);
+                        // Add channel to server if not already there
+                        if let Some(server) = self.app_state.servers.get_mut(&connection_id) {
+                            if !server.channels.contains_key(&channel) {
+                                self.app_state.add_channel_tab(connection_id.clone(), channel.clone());
+                            }
+                        }
+                        self.app_state.add_message(&connection_id, &channel, &format!("You have joined {}", channel), "system");
+                    }
+                    CoreEventMessage::ChannelLeft { connection_id, channel } => {
+                        info!("Core event: Left channel {} on {}", channel, connection_id);
+                        // Remove channel from server
+                        if let Some(server) = self.app_state.servers.get_mut(&connection_id) {
+                            server.channels.remove(&channel);
+                        }
+                        self.app_state.add_message(&connection_id, &channel, &format!("You have left {}", channel), "system");
+                    }
+                    CoreEventMessage::UserJoined { connection_id, channel, user } => {
+                        debug!("Core event: User {} joined {} on {}", user, channel, connection_id);
+                        // Add user to channel
+                        if let Some(server) = self.app_state.servers.get_mut(&connection_id) {
+                            if let Some(channel_info) = server.channels.get_mut(&channel) {
+                                if !channel_info.users.contains(&user) {
+                                    channel_info.users.push(user.clone());
+                                    channel_info.user_count = channel_info.users.len();
+                                }
+                            }
+                        }
+                        self.app_state.add_message(&connection_id, &channel, &format!("{} has joined", user), "system");
+                    }
+                    CoreEventMessage::UserLeft { connection_id, channel, user } => {
+                        debug!("Core event: User {} left {} on {}", user, channel, connection_id);
+                        // Remove user from channel
+                        if let Some(server) = self.app_state.servers.get_mut(&connection_id) {
+                            if let Some(channel_info) = server.channels.get_mut(&channel) {
+                                channel_info.users.retain(|u| u != &user);
+                                channel_info.user_count = channel_info.users.len();
+                            }
+                        }
+                        self.app_state.add_message(&connection_id, &channel, &format!("{} has left", user), "system");
+                    }
+                    CoreEventMessage::NickChanged { connection_id, old_nick, new_nick } => {
+                        info!("Core event: Nick changed from {} to {} on {}", old_nick, new_nick, connection_id);
+                        // Update nick in all channels and collect affected channels
+                        let mut affected_channels = Vec::new();
+                        if let Some(server) = self.app_state.servers.get_mut(&connection_id) {
+                            for (channel_name, channel_info) in server.channels.iter_mut() {
+                                if let Some(pos) = channel_info.users.iter().position(|u| u == &old_nick) {
+                                    channel_info.users[pos] = new_nick.clone();
+                                    affected_channels.push(channel_name.clone());
+                                }
+                            }
+                        }
+                        // Add messages to affected channels
+                        for channel_name in affected_channels {
+                            self.app_state.add_message(&connection_id, &channel_name, &format!("{} is now known as {}", old_nick, new_nick), "system");
+                        }
+                    }
+                    CoreEventMessage::TopicChanged { connection_id, channel, topic } => {
+                        info!("Core event: Topic changed in {} on {}: {}", channel, connection_id, topic);
+                        // Update channel topic
+                        if let Some(server) = self.app_state.servers.get_mut(&connection_id) {
+                            if let Some(channel_info) = server.channels.get_mut(&channel) {
+                                channel_info.topic = Some(topic.clone());
+                            }
+                        }
+                        self.app_state.add_message(&connection_id, &channel, &format!("Topic changed to: {}", topic), "system");
+                    }
+                }
+            }
             Message::None => {}
         }
         
@@ -874,15 +1451,100 @@ impl RustIrcGui {
             .into();
         }
 
+        // Add connection dialog if visible
+        if self.connect_dialog_visible {
+            let dialog = container(
+                column![
+                    text("Connect to IRC Server").size(20),
+                    row![
+                        text("Server: ").width(Length::Fixed(80.0)),
+                        text_input("irc.libera.chat", &self.connect_dialog_server)
+                            .on_input(Message::ConnectDialogServerChanged)
+                            .width(Length::Fixed(200.0))
+                    ].spacing(10).align_y(iced::Alignment::Center),
+                    row![
+                        text("Port: ").width(Length::Fixed(80.0)),
+                        text_input("6697", &self.connect_dialog_port)
+                            .on_input(Message::ConnectDialogPortChanged)
+                            .width(Length::Fixed(200.0))
+                    ].spacing(10).align_y(iced::Alignment::Center),
+                    row![
+                        text("Nickname: ").width(Length::Fixed(80.0)),
+                        text_input("RustIRC_User", &self.connect_dialog_nickname)
+                            .on_input(Message::ConnectDialogNickChanged)
+                            .width(Length::Fixed(200.0))
+                    ].spacing(10).align_y(iced::Alignment::Center),
+                    row![
+                        button("Connect")
+                            .on_press(Message::ConnectDialogConnect),
+                        button("Cancel")
+                            .on_press(Message::HideConnectDialog)
+                    ].spacing(20)
+                ].spacing(15).padding(20)
+            )
+            .style(|_theme| container::Style {
+                background: Some(Background::Color(Color::from_rgba(0.2, 0.2, 0.2, 0.95))),
+                border: iced::Border {
+                    color: Color::from_rgb(0.4, 0.4, 0.4),
+                    width: 2.0,
+                    radius: 10.0.into(),
+                },
+                ..Default::default()
+            })
+            .center_x(Length::Fill)
+            .center_y(Length::Fill)
+            .width(Length::Fill)
+            .height(Length::Fill);
+            
+            return container(
+                column![
+                    content,
+                    dialog
+                ]
+            )
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .into();
+        }
+
         container(content)
             .width(Length::Fill)
             .height(Length::Fill)
             .into()
     }
 
+    /// Subscription function for receiving IRC events
+    fn subscription(&self) -> iced::Subscription<Message> {
+        // For now, use a simple time-based subscription to poll for events
+        // In a production implementation, this would be replaced with a proper event stream
+        iced::time::every(std::time::Duration::from_millis(100))
+            .map(|_| {
+                // Try to receive IRC events from the global receiver
+                if let Some(receiver_arc) = IRC_EVENT_RECEIVER.get() {
+                    let mut guard = receiver_arc.lock().unwrap();
+                    if let Some(ref mut receiver) = guard.as_mut() {
+                        match receiver.try_recv() {
+                            Ok(message) => {
+                                info!("GUI: Received IRC event via subscription: {:?}", message);
+                                return message;
+                            }
+                            Err(tokio::sync::mpsc::error::TryRecvError::Empty) => {
+                                // No message available, continue
+                            }
+                            Err(tokio::sync::mpsc::error::TryRecvError::Disconnected) => {
+                                warn!("IRC event channel disconnected");
+                            }
+                        }
+                    }
+                }
+                Message::None
+            })
+    }
+
     /// Run the GUI application using Iced 0.13.1 Application trait
     pub fn run() -> iced::Result {
         iced::application("RustIRC - Modern IRC Client", Self::update, Self::view)
+            .subscription(Self::subscription)
             .theme(Self::theme)
             .run()
     }
@@ -916,7 +1578,9 @@ impl RustIrcGui {
 
     fn render_menu_bar(&self) -> Element<Message> {
         // Create menu bar with File, Edit, View, Tools, Help menus
-        let file_menu = button(text("File").size(14)).padding([4, 12]);
+        let file_menu = button(text("File").size(14))
+            .on_press(Message::ShowConnectDialog)
+            .padding([4, 12]);
         let edit_menu = button(text("Edit").size(14)).padding([4, 12]);
         let view_menu = button(text("View").size(14)).padding([4, 12]);
         let tools_menu = button(text("Tools").size(14)).padding([4, 12]);
@@ -984,17 +1648,38 @@ impl RustIrcGui {
                 
                 messages = messages.push(text(format!("Messages for {}", tab.name)).size(16));
                 
-                // Add sample messages for demonstration
-                messages = messages.push(text("12:00 <user1> Hello everyone!"));
-                messages = messages.push(text("12:01 <user2> How's everyone doing today?"));
-                messages = messages.push(text("12:02 <user3> Great! Working on some Rust code"));
+                // Display real IRC messages from tab.messages
+                for message in &tab.messages {
+                    let formatted_msg = if message.sender == "system" || message.sender == "server" {
+                        format!("*** {}", message.content)
+                    } else if message.sender == "motd" {
+                        format!("MOTD: {}", message.content)
+                    } else if message.sender == "error" {
+                        format!("ERROR: {}", message.content)
+                    } else if message.sender == "notice" {
+                        message.content.clone() // Notice messages are already formatted
+                    } else if message.sender == "channel_list" {
+                        message.content.clone() // Channel list entries are already formatted
+                    } else if message.sender == "self" {
+                        format!("<{}> {}", self.get_current_nick(), message.content)
+                    } else {
+                        format!("<{}> {}", message.sender, message.content)
+                    };
+                    
+                    messages = messages.push(text(formatted_msg));
+                }
+                
+                // Show helpful message if no messages yet
+                if tab.messages.is_empty() {
+                    messages = messages.push(text("No messages yet. Connect to a server to start chatting!").size(12));
+                }
                 
                 messages.into()
             } else {
                 text("No tab selected").into()
             }
         } else {
-            text("Welcome to RustIRC!").into()
+            text("Welcome to RustIRC! Use File > Connect to connect to an IRC server.").into()
         };
 
         scrollable(content).into()
@@ -1018,7 +1703,13 @@ impl RustIrcGui {
                             if let Some(channel_info) = server_info.channels.get(&tab.name) {
                                 // Display actual users from the channel
                                 for user in &channel_info.users {
-                                    content = content.push(text(user));
+                                    // Format user with proper IRC prefixes
+                                    let display_user = if user.starts_with('@') || user.starts_with('+') || user.starts_with('%') {
+                                        user.clone() // User already has mode prefix
+                                    } else {
+                                        user.clone() // Regular user without prefix
+                                    };
+                                    content = content.push(text(display_user));
                                     user_count += 1;
                                 }
                             }
@@ -1027,12 +1718,13 @@ impl RustIrcGui {
                 }
             }
             
-            // Add sample users if no real users found
+            // Show helpful message if no users yet
             if user_count == 0 {
-                content = content.push(text("@operator"));
-                content = content.push(text("+voice"));
-                content = content.push(text("regular_user"));
-                content = content.push(text("another_user"));
+                content = content.push(text("No users in this channel yet.").size(12));
+                content = content.push(text("Join a channel to see user list.").size(10));
+            } else {
+                // Show user count
+                content = content.push(text(format!("({} users)", user_count)).size(10));
             }
         } else {
             content = content.push(text("User list hidden").size(12));
@@ -1124,6 +1816,31 @@ impl RustIrcGui {
                             let current_tab_clone = current_tab.clone();
                             let _ = tab; // Release immutable borrow
                             self.app_state.remove_tab(&current_tab_clone);
+                        }
+                    }
+                }
+            }
+            "/list" => {
+                info!("List channels command");
+                
+                if let Some(current_tab) = &self.app_state.current_tab_id {
+                    if let Some(tab) = self.app_state.tabs.get(current_tab) {
+                        if let Some(server_id) = &tab.server_id {
+                            let client_clone = self.irc_client.clone();
+                            let server_id_clone = server_id.clone();
+                            
+                            tokio::spawn(async move {
+                                let client_guard = client_clone.read().await;
+                                if let Some(client) = client_guard.as_ref() {
+                                    let list_cmd = rustirc_protocol::Command::List {
+                                        channels: None, // None means list all channels
+                                    };
+                                    let _ = client.send_command(list_cmd).await;
+                                }
+                            });
+                            
+                            // Add status message
+                            self.app_state.add_message(&server_id_clone, &server_id_clone, "Requesting channel list from server...", "system");
                         }
                     }
                 }
@@ -1239,6 +1956,12 @@ impl RustIrcGui {
                 }
             }
         }
+    }
+    
+    /// Get current nickname for the user
+    fn get_current_nick(&self) -> String {
+        // Default nickname, in a full implementation this would come from the IRC client config
+        "RustIRC_User".to_string()
     }
     
     /// Parse IRC command from string

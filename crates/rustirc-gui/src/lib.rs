@@ -6,6 +6,7 @@ pub mod theme;
 pub mod state;
 pub mod widgets;
 pub mod formatting;
+pub mod event_handler;
 
 // Still in development - disabled for now
 // pub mod simple_app;
@@ -15,7 +16,6 @@ pub mod formatting;
 // pub mod performance;
 // pub mod accessibility;
 // pub mod testing;
-// pub mod event_handler;
 
 pub use app::RustIrcGui;
 pub use simple_gui::SimpleRustIrcGui;

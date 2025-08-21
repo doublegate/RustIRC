@@ -71,11 +71,12 @@ impl Default for ConnectionConfig {
 }
 
 /// IRC connection handle
+#[derive(Clone)]
 pub struct IrcConnection {
     config: ConnectionConfig,
     state: Arc<RwLock<ConnectionState>>,
     event_bus: Arc<EventBus>,
-    tx_commands: mpsc::UnboundedSender<Command>,
+    tx_commands: Arc<RwLock<Option<mpsc::UnboundedSender<Command>>>>,
     last_ping: Arc<RwLock<Option<Instant>>>,
     connection_id: String,
     state_broadcast: broadcast::Sender<ConnectionState>,
@@ -83,7 +84,6 @@ pub struct IrcConnection {
 
 impl IrcConnection {
     pub fn new(config: ConnectionConfig, event_bus: Arc<EventBus>) -> Self {
-        let (tx_commands, _) = mpsc::unbounded_channel();
         let connection_id = format!("{}:{}", config.server, config.port);
         let (state_broadcast, _) = broadcast::channel(100);
         
@@ -91,7 +91,7 @@ impl IrcConnection {
             config,
             state: Arc::new(RwLock::new(ConnectionState::Disconnected)),
             event_bus,
-            tx_commands,
+            tx_commands: Arc::new(RwLock::new(None)),
             last_ping: Arc::new(RwLock::new(None)),
             connection_id,
             state_broadcast,
@@ -114,7 +114,7 @@ impl IrcConnection {
     }
 
     /// Start connection with automatic reconnection
-    pub async fn connect(&mut self) -> Result<()> {
+    pub async fn connect(&self) -> Result<()> {
         self.set_state(ConnectionState::Connecting).await;
         
         let mut attempt = 0;
@@ -145,13 +145,11 @@ impl IrcConnection {
     }
 
     /// Attempt single connection
-    async fn try_connect(&mut self) -> Result<()> {
-        // Connect to server
-        let addr = format!("{}:{}", self.config.server, self.config.port);
-        let socket_addr: SocketAddr = addr.parse()
-            .map_err(|_| Error::InvalidAddress(addr.clone()))?;
+    async fn try_connect(&self) -> Result<()> {
+        // Connect to server (DNS resolution is handled by TcpStream::connect)
+        let addr = (self.config.server.as_str(), self.config.port);
         
-        let stream = timeout(self.config.message_timeout, TcpStream::connect(socket_addr))
+        let stream = timeout(self.config.message_timeout, TcpStream::connect(addr))
             .await
             .map_err(|_| Error::ConnectionTimeout)?
             .map_err(|e| Error::ConnectionFailed(e.to_string()))?;
@@ -160,7 +158,7 @@ impl IrcConnection {
         
         // Create command channel
         let (tx_commands, rx_commands) = mpsc::unbounded_channel();
-        self.tx_commands = tx_commands.clone();
+        *self.tx_commands.write().await = Some(tx_commands.clone());
         
         // Handle TLS vs plain connections
         if self.config.use_tls {
@@ -184,9 +182,6 @@ impl IrcConnection {
         } else {
             self.handle_connection_plain(stream, rx_commands).await?;
         }
-
-        // Perform IRC registration
-        self.register().await?;
         
         Ok(())
     }
@@ -254,6 +249,18 @@ impl IrcConnection {
         
         // Start ping task
         let ping_task = self.start_ping_task();
+        
+        // Perform IRC registration now that connection tasks are running
+        tokio::spawn({
+            let connection_self = self.clone();
+            async move {
+                // Wait a bit for connection to stabilize
+                tokio::time::sleep(Duration::from_millis(100)).await;
+                if let Err(e) = connection_self.register().await {
+                    error!("IRC registration failed: {}", e);
+                }
+            }
+        });
         
         // Wait for tasks to complete (they run until disconnection)
         tokio::select! {
@@ -331,7 +338,7 @@ impl IrcConnection {
     }
 
     /// Start message reader task with Lines iterator for efficient reading
-    async fn start_reader_task_generic<R>(&self, reader: BufReader<R>) -> Result<()>
+    fn start_reader_task_generic<R>(&self, reader: BufReader<R>) -> tokio::task::JoinHandle<()>
     where
         R: tokio::io::AsyncRead + Unpin + Send + 'static,
     {
@@ -419,17 +426,15 @@ impl IrcConnection {
                 reason: "Read loop ended".to_string(),
             };
             event_bus.emit(event).await;
-        });
-        
-        Ok(())
+        })
     }
 
     /// Start message writer task (generic version)
-    async fn start_writer_task_generic<W>(
+    fn start_writer_task_generic<W>(
         &self,
         mut writer: BufWriter<W>,
         mut rx_commands: mpsc::UnboundedReceiver<Command>,
-    ) -> Result<()>
+    ) -> tokio::task::JoinHandle<()>
     where
         W: tokio::io::AsyncWrite + Unpin + Send + 'static,
     {
@@ -450,13 +455,11 @@ impl IrcConnection {
                     break;
                 }
             }
-        });
-        
-        Ok(())
+        })
     }
 
     /// Start ping/keepalive task
-    async fn start_ping_task(&self) -> Result<()> {
+    fn start_ping_task(&self) -> tokio::task::JoinHandle<()> {
         let tx_commands = self.tx_commands.clone();
         let ping_timeout = self.config.ping_timeout;
         let last_ping = self.last_ping.clone();
@@ -483,15 +486,20 @@ impl IrcConnection {
                         server2: None,
                     };
                     
-                    if tx_commands.send(ping_cmd).is_err() {
-                        // Channel closed, exit task
+                    // Get the sender from the Arc<RwLock<Option<_>>>
+                    let tx_opt = tx_commands.read().await;
+                    if let Some(ref tx) = *tx_opt {
+                        if tx.send(ping_cmd).is_err() {
+                            // Channel closed, exit task
+                            break;
+                        }
+                    } else {
+                        // No sender available, exit task
                         break;
                     }
                 }
             }
-        });
-        
-        Ok(())
+        })
     }
 
     /// Send command through the connection
@@ -508,8 +516,13 @@ impl IrcConnection {
             )));
         }
         
-        self.tx_commands.send(command)
-            .map_err(|_| Error::ConnectionClosed)?;
+        let tx_opt = self.tx_commands.read().await;
+        if let Some(ref tx) = *tx_opt {
+            tx.send(command)
+                .map_err(|_| Error::ConnectionClosed)?;
+        } else {
+            return Err(Error::ConnectionClosed);
+        }
         Ok(())
     }
     
@@ -554,8 +567,13 @@ impl IrcConnection {
     
     /// Internal command sending (for registration)
     async fn send_command_internal(&self, command: Command) -> Result<()> {
-        self.tx_commands.send(command)
-            .map_err(|_| Error::ConnectionClosed)?;
+        let tx_opt = self.tx_commands.read().await;
+        if let Some(ref tx) = *tx_opt {
+            tx.send(command)
+                .map_err(|_| Error::ConnectionClosed)?;
+        } else {
+            return Err(Error::ConnectionClosed);
+        }
         Ok(())
     }
 

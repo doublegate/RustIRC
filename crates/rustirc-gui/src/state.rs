@@ -151,10 +151,13 @@ impl AppState {
     /// Add a message to a tab
     pub fn add_message(&mut self, server_id: &str, target: &str, message: &str, sender: &str) {
         let tab_id = if target.starts_with('#') || target.starts_with('&') {
-            // Channel message
-            format!("{}:channel:{}", server_id, target)
+            // Channel message - use format server_id:channel_name
+            format!("{}:{}", server_id, target)
+        } else if target == server_id {
+            // Server message - use format server:server_id
+            format!("server:{}", server_id)
         } else {
-            // Private message
+            // Private message - use format server_id:pm:nick
             format!("{}:pm:{}", server_id, if sender == "self" { target } else { sender })
         };
         
@@ -180,6 +183,10 @@ impl AppState {
             if tab.messages.len() > 1000 {
                 tab.messages.pop_front();
             }
+        } else {
+            // Log when tab is not found for debugging
+            eprintln!("Warning: Could not find tab '{}' for message from {} to {} on server {}", 
+                     tab_id, sender, target, server_id);
         }
     }
     
@@ -212,6 +219,57 @@ impl AppState {
     fn next_message_id(&mut self) -> usize {
         self.settings.last_message_id += 1;
         self.settings.last_message_id
+    }
+
+    /// Add a user to a channel
+    pub fn add_user_to_channel(&mut self, server_id: &str, channel: &str, nick: &str) {
+        if let Some(server) = self.servers.get_mut(server_id) {
+            if let Some(channel_info) = server.channels.get_mut(channel) {
+                if !channel_info.users.contains(&nick.to_string()) {
+                    channel_info.users.push(nick.to_string());
+                    channel_info.user_count = channel_info.users.len();
+                }
+            }
+        }
+        
+        // Also add to tab's user list if it exists
+        let tab_id = format!("{}:{}", server_id, channel);
+        if let Some(tab) = self.tabs.get_mut(&tab_id) {
+            tab.users.insert(nick.to_string(), UserInfo::new(nick.to_string()));
+        }
+    }
+
+    /// Remove a user from a channel
+    pub fn remove_user_from_channel(&mut self, server_id: &str, channel: &str, nick: &str) {
+        if let Some(server) = self.servers.get_mut(server_id) {
+            if let Some(channel_info) = server.channels.get_mut(channel) {
+                channel_info.users.retain(|user| user != nick);
+                channel_info.user_count = channel_info.users.len();
+            }
+        }
+        
+        // Also remove from tab's user list if it exists
+        let tab_id = format!("{}:{}", server_id, channel);
+        if let Some(tab) = self.tabs.get_mut(&tab_id) {
+            tab.users.remove(nick);
+        }
+    }
+
+    /// Remove a user from all channels (when user quits)
+    pub fn remove_user_from_all_channels(&mut self, server_id: &str, nick: &str) {
+        if let Some(server) = self.servers.get_mut(server_id) {
+            for channel_info in server.channels.values_mut() {
+                channel_info.users.retain(|user| user != nick);
+                channel_info.user_count = channel_info.users.len();
+            }
+        }
+        
+        // Also remove from all channel tabs for this server
+        for (tab_id, tab) in self.tabs.iter_mut() {
+            if tab_id.starts_with(&format!("{}:", server_id)) && tab_id.contains('#') {
+                tab.users.remove(nick);
+            }
+        }
     }
 }
 
