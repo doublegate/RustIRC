@@ -52,9 +52,16 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 - ♿ Accessibility features
 - 📈 Performance monitoring and optimization
 
+## 📦 Latest Release
+
+[![Version](https://img.shields.io/badge/version-0.3.2-blue.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.3.2)
+[![Release Date](https://img.shields.io/badge/released-August%2022%2C%202025-green.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.3.2)
+
+**Version 0.3.2** - Production-ready IRC client with 100% implementation verification
+
 ## 🏗️ Current Development Status
 
-**Last Updated**: August 22, 2025 01:30 AM EDT
+**Last Updated**: August 22, 2025 - Version 0.3.2 Release
 
 ### ✅ **Phase 1: Research & Setup** - **COMPLETE** (100%)
 

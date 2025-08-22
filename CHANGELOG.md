@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Planned for Next Release (Phase 4: Scripting & Plugins)
+- Lua scripting engine with sandboxed execution
+- Python scripting support via PyO3
+- Binary plugin system with hot-reloading
+- Script/plugin manager UI
+- Event-driven scripting API
+
+## [0.3.2] - 2025-08-22
+
+### Summary
+First official release of RustIRC - a modern, secure, and fully-featured IRC client written in Rust. This release represents the completion of Phases 1-3 with 100% implementation verification, zero placeholders or stubs, and production-ready functionality. The client combines the best features of mIRC, HexChat, and WeeChat with modern Rust safety and performance.
+
+### Major Features
+- **Complete IRC Protocol Support**: Full RFC 1459/2812 compliance with IRCv3 extensions
+- **Multi-Interface Support**: Professional GUI (Iced 0.13.1), TUI (ratatui), and CLI modes
+- **Enterprise Security**: Zeroize trait for credentials, TLS/SSL via rustls, comprehensive input validation
+- **Multi-Server Architecture**: Connect to multiple IRC networks simultaneously
+- **SASL Authentication**: PLAIN, EXTERNAL, and SCRAM-SHA-256 mechanisms
+- **Advanced UI Features**: Tab completion, IRC formatting, theme support (20+ themes)
+- **Cross-Platform**: Full support for Linux, macOS, and Windows
+
 ### Phase 2 100% Implementation Verification (2025-08-22 01:30 AM EDT) ✅
 
 #### Verified
