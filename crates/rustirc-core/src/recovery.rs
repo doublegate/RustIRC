@@ -369,14 +369,63 @@ impl RecoveryManager {
     
     /// Check connection state for recovery decisions
     pub async fn check_connection_state(&self, connection_id: &str) -> Option<ConnectionState> {
-        // In a real implementation, this would check the actual connection
-        // For now, we'll return a mock state to demonstrate usage
-        let connections = self.connections.read().await;
-        if connections.contains_key(connection_id) {
-            Some(ConnectionState::Disconnected)
-        } else {
-            None
+        // Check the actual connection state from the state manager
+        let client_state = self.state_manager.get_state().await;
+        
+        // Check if this connection exists in our client state
+        if client_state.servers.contains_key(connection_id) {
+            // Check if we have recovery data for this connection
+            let connections = self.connections.read().await;
+            if let Some(recovery) = connections.get(connection_id) {
+                // If we have recovery data, check the circuit breaker state
+                match recovery.circuit_breaker.state {
+                    CircuitState::Open => {
+                        return Some(ConnectionState::Failed("Circuit breaker open".to_string()));
+                    }
+                    CircuitState::HalfOpen => {
+                        return Some(ConnectionState::Reconnecting);
+                    }
+                    CircuitState::Closed => {
+                        // Normal operation, check actual connection state
+                        // Based on recovery attempts and timing
+                        if let Some(last_attempt) = recovery.last_attempt {
+                            if last_attempt.elapsed() < Duration::from_secs(5) {
+                                return Some(ConnectionState::Connecting);
+                            } else if recovery.current_attempt > 0 {
+                                return Some(ConnectionState::Disconnected);
+                            }
+                        }
+                        // Check the server state for connection status
+                        if let Some(server_state) = self.state_manager.get_server_state(connection_id).await {
+                            // Determine state based on server information
+                            if server_state.connected {
+                                if server_state.registered {
+                                    return Some(ConnectionState::Registered);
+                                } else {
+                                    return Some(ConnectionState::Authenticating);
+                                }
+                            }
+                        }
+                        return Some(ConnectionState::Disconnected);
+                    }
+                }
+            } else {
+                // No recovery data, check server state directly
+                if let Some(server_state) = self.state_manager.get_server_state(connection_id).await {
+                    if server_state.connected {
+                        if server_state.registered {
+                            return Some(ConnectionState::Registered);
+                        } else {
+                            return Some(ConnectionState::Authenticating);
+                        }
+                    }
+                }
+                return Some(ConnectionState::Disconnected);
+            }
         }
+        
+        // Connection not found
+        None
     }
     
     /// Create new IRC connection from recovery data
@@ -512,14 +561,54 @@ impl RecoveryManager {
     /// Perform health check for a connection
     pub async fn health_check(&self, connection_id: String) -> Result<()> {
         // Check if connection is responsive
-        // This would typically involve sending a PING and waiting for PONG
         debug!("Health check for connection {}", connection_id);
 
-        // For now, this is a placeholder
-        // In a real implementation, this would:
-        // 1. Check last activity time
-        // 2. Send PING if needed
-        // 3. Mark connection as failed if no response
+        // Check current connection state
+        if let Some(state) = self.check_connection_state(&connection_id).await {
+            match state {
+                ConnectionState::Registered | ConnectionState::Connected => {
+                    // Connection appears healthy, send PING to verify
+                    let ping_cmd = Command::Ping {
+                        server1: format!("health-check-{}", Instant::now().elapsed().as_secs()),
+                        server2: None,
+                    };
+                    
+                    // Emit PING command through event bus
+                    let event = Event::MessageSent {
+                        connection_id: connection_id.clone(),
+                        message: ping_cmd.to_message(),
+                    };
+                    self.event_bus.emit(event).await;
+                    
+                    // Update last health check time in recovery data
+                    let mut connections = self.connections.write().await;
+                    if let Some(recovery) = connections.get_mut(&connection_id) {
+                        recovery.last_attempt = Some(Instant::now());
+                    }
+                    
+                    info!("Health check PING sent for {}", connection_id);
+                }
+                ConnectionState::Disconnected | ConnectionState::Failed(_) => {
+                    // Connection is down, trigger reconnection if needed
+                    warn!("Health check detected disconnected state for {}", connection_id);
+                    
+                    // Schedule reconnection through recovery task
+                    let _ = self.recovery_tx.send(RecoveryTask::ScheduleReconnect {
+                        connection_id: connection_id.clone(),
+                    });
+                }
+                ConnectionState::Connecting | ConnectionState::Reconnecting => {
+                    // Connection is already being established
+                    debug!("Health check: {} is already reconnecting", connection_id);
+                }
+                ConnectionState::Authenticating => {
+                    // Connection is authenticating, wait for completion
+                    debug!("Health check: {} is authenticating", connection_id);
+                }
+            }
+        } else {
+            warn!("Health check: connection {} not found", connection_id);
+        }
 
         Ok(())
     }

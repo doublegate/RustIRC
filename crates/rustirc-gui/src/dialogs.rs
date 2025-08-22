@@ -6,7 +6,8 @@
 use iced::{Element, Length, Size, Task};
 use iced::widget::{
     button, checkbox, column, container, row, text, text_input, 
-    scrollable, vertical_space, horizontal_space, pick_list
+    scrollable, vertical_space, horizontal_space, pick_list, slider,
+    Space
 };
 use crate::state::AppState;
 use crate::theme::Theme;
@@ -663,13 +664,75 @@ impl PreferencesDialog {
         // Create a preferences view that reflects current app state
         let settings = app_state.settings();
         
-        // Use app_state to display current preferences values
-        let current_font_size = settings.font_size;
-        let current_notifications = settings.notification_sound;
-        let current_compact = settings.compact_mode;
+        // Build the view directly with current app settings instead of relying on dialog state
+        let theme_options = vec!["Dark".to_string(), "Light".to_string(), "Solarized Dark".to_string()];
         
-        // Return view with current state displayed
-        self.view()
+        let theme_picker = pick_list(
+            theme_options,
+            Some(settings.theme.clone()),
+            DialogMessage::PreferencesThemeChanged,
+        );
+        
+        let font_size_slider = slider(8.0..=24.0, settings.font_size, |size| {
+            DialogMessage::PreferencesFontSizeChanged(size.to_string())
+        });
+        
+        let notification_checkbox = checkbox(
+            "Enable notifications",
+            settings.notification_sound,
+        ).on_toggle(DialogMessage::PreferencesNotificationSoundToggled);
+        
+        let compact_checkbox = checkbox(
+            "Compact mode",
+            settings.compact_mode,
+        ).on_toggle(DialogMessage::PreferencesCompactModeToggled);
+        
+        let timestamps_checkbox = checkbox(
+            "Show timestamps",
+            settings.show_timestamps,
+        ).on_toggle(DialogMessage::PreferencesShowTimestampsToggled);
+        
+        let nick_colors_checkbox = checkbox(
+            "Nick colors",
+            settings.nick_colors,
+        ).on_toggle(DialogMessage::PreferencesNickColorsToggled);
+        
+        let content = column![
+            text("Preferences").size(20),
+            Space::with_height(10),
+            
+            text("Theme:"),
+            theme_picker,
+            Space::with_height(10),
+            
+            text(format!("Font Size: {:.0}", settings.font_size)),
+            font_size_slider,
+            Space::with_height(10),
+            
+            notification_checkbox,
+            compact_checkbox,
+            timestamps_checkbox,
+            nick_colors_checkbox,
+            
+            Space::with_height(20),
+            
+            row![
+                button("Apply").on_press(DialogMessage::PreferencesApply),
+                Space::with_width(10),
+                button("Cancel").on_press(DialogMessage::PreferencesCancel),
+            ]
+            .spacing(10)
+        ]
+        .spacing(10)
+        .padding(20)
+        .max_width(400);
+        
+        container(content)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .center_x(Length::Fill)
+            .center_y(Length::Fill)
+            .into()
     }
 }
 

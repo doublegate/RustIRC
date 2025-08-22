@@ -210,7 +210,7 @@ impl TuiRenderer {
             warn!("Small terminal detected: {}x{} - switching to compact mode", frame_size.width, frame_size.height);
         }
         
-        if state.show_help {
+        if state.ui_state.show_help {
             self.render_help_screen(frame);
             return;
         }

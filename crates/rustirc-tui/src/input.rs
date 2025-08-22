@@ -231,7 +231,7 @@ impl InputHandler {
             }
             KeyCode::F(12) => {
                 // Switch theme (F12)
-                return Ok(Some("/theme next".to_string()));
+                return Ok(TuiAction::NextTheme);
             }
             
             // Page navigation
@@ -307,17 +307,17 @@ impl InputHandler {
             // Quick commands
             KeyCode::Char('o') => {
                 // Open - could open connection dialog
-                return Ok(Some("/connect".to_string()));
+                return Ok(TuiAction::Connect);
             }
             
             _ => {}
         }
         
-        Ok(None)
+        Ok(TuiAction::None)
     }
 
     /// Handle keys in insert (text input) mode
-    fn handle_insert_mode(&mut self, key: KeyEvent, state: &mut TuiState) -> Result<Option<String>> {
+    fn handle_insert_mode(&mut self, key: KeyEvent, state: &mut TuiState) -> Result<TuiAction> {
         match key.code {
             // Exit insert mode
             KeyCode::Esc => {
@@ -328,7 +328,11 @@ impl InputHandler {
             // Submit input
             KeyCode::Enter => {
                 let command = state.submit_input();
-                return Ok(if command.is_empty() { None } else { Some(command) });
+                return Ok(if command.is_empty() { 
+                    TuiAction::None 
+                } else { 
+                    TuiAction::SendMessage(command) 
+                });
             }
             
             // Clear input (must come before general Char pattern)
@@ -374,11 +378,11 @@ impl InputHandler {
             _ => {}
         }
         
-        Ok(None)
+        Ok(TuiAction::None)
     }
 
     /// Handle keys in command mode
-    fn handle_command_mode(&mut self, key: KeyEvent, state: &mut TuiState) -> Result<Option<String>> {
+    fn handle_command_mode(&mut self, key: KeyEvent, state: &mut TuiState) -> Result<TuiAction> {
         match key.code {
             // Exit command mode
             KeyCode::Esc => {
@@ -395,7 +399,7 @@ impl InputHandler {
                 
                 if !command.is_empty() {
                     self.last_command = Some(command.clone());
-                    return Ok(Some(command));
+                    return Ok(TuiAction::SendMessage(command));
                 }
             }
             
@@ -441,7 +445,7 @@ impl InputHandler {
             _ => {}
         }
         
-        Ok(None)
+        Ok(TuiAction::None)
     }
 
     /// Handle tab completion for nicknames and channels

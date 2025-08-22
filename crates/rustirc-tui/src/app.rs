@@ -9,10 +9,11 @@
 //! - Efficient text rendering and scrolling
 
 use crate::ui::TuiRenderer;
-use crate::input::{InputHandler, KeyEvent, InputMode};
+use crate::input::{InputHandler, KeyEvent, InputMode, TuiAction};
 use crate::state::TuiState;
 use crate::event_handler::TuiEventHandler;
 use anyhow::Result;
+use tracing::{debug, error, info, warn};
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers},
     execute,
@@ -34,7 +35,6 @@ use std::{
     time::{Duration, Instant},
 };
 use tokio::sync::mpsc;
-use tracing::{debug, error, info, warn};
 
 type TuiTerminal = Terminal<CrosstermBackend<Stdout>>;
 
@@ -229,8 +229,9 @@ impl TuiApp {
         }
         
         // Handle input based on current mode
-        if let Some(command) = self.input_handler.handle_key(key_event, &mut self.tui_state)? {
-            self.handle_command(command)?;
+        let action = self.input_handler.handle_key(key_event, &mut self.tui_state)?;
+        if !matches!(action, TuiAction::None) {
+            self.handle_action(action)?;
         }
         
         Ok(())
@@ -275,6 +276,50 @@ impl TuiApp {
                 debug!("Unhandled core event: {:?}", event);
             }
         }
+    }
+
+    /// Handle TUI actions
+    fn handle_action(&mut self, action: TuiAction) -> Result<()> {
+        match action {
+            TuiAction::SendMessage(command) => {
+                self.handle_command(command)?;
+            }
+            TuiAction::NextTheme => {
+                self.handle_command("/theme next".to_string())?;
+            }
+            TuiAction::Connect => {
+                self.handle_command("/connect".to_string())?;
+            }
+            TuiAction::ShowHelp => {
+                self.tui_state.toggle_help();
+            }
+            TuiAction::ToggleUserList => {
+                self.tui_state.toggle_user_list();
+            }
+            TuiAction::ToggleServerTree => {
+                self.tui_state.toggle_channel_list();
+            }
+            TuiAction::NextTab => {
+                self.tui_state.next_channel();
+            }
+            TuiAction::PreviousTab => {
+                self.tui_state.previous_channel();
+            }
+            TuiAction::ScrollUp => {
+                // Handled by input handler directly
+            }
+            TuiAction::ScrollDown => {
+                // Handled by input handler directly
+            }
+            TuiAction::None => {
+                // No action needed
+            }
+            _ => {
+                // Implement other actions as needed
+                debug!("Unhandled TUI action: {:?}", action);
+            }
+        }
+        Ok(())
     }
 
     /// Handle user commands

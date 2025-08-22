@@ -423,10 +423,12 @@ impl TuiState {
             self.current_tab_id = Some(tab_id);
             
             // Mark as read
-            if let Some(tab) = self.tabs.get_mut(&self.current_tab_id.as_ref().unwrap()) {
-                tab.unread_count = 0;
-                tab.has_highlight = false;
-                tab.activity_level = ActivityLevel::None;
+            if let Some(current_id) = &self.current_tab_id {
+                if let Some(tab) = self.tabs.get_mut(current_id) {
+                    tab.unread_count = 0;
+                    tab.has_highlight = false;
+                    tab.activity_level = ActivityLevel::None;
+                }
             }
         }
     }
@@ -667,7 +669,7 @@ impl TuiState {
 
     /// Toggle help screen
     pub fn toggle_help(&mut self) {
-        self.show_help = !self.show_help;
+        self.ui_state.show_help = !self.ui_state.show_help;
     }
     
     /// Toggle channel list visibility (placeholder for UI state)
