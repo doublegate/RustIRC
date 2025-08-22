@@ -58,7 +58,9 @@ impl EventHandler for TuiEventHandler {
                             let target = &message.params[0];
                             let content = message.params.get(1).unwrap_or(&String::new()).clone();
 
-                            if let Some(rustirc_protocol::message::Prefix::User { nick, .. }) = &message.prefix {
+                            if let Some(rustirc_protocol::message::Prefix::User { nick, .. }) =
+                                &message.prefix
+                            {
                                 if target.starts_with('#') {
                                     // Channel message
                                     state.add_message(
@@ -87,7 +89,9 @@ impl EventHandler for TuiEventHandler {
                                 message.params.get(1).unwrap_or(&String::new())
                             );
 
-                            if let Some(rustirc_protocol::message::Prefix::User { nick, .. }) = &message.prefix {
+                            if let Some(rustirc_protocol::message::Prefix::User { nick, .. }) =
+                                &message.prefix
+                            {
                                 state.add_message(
                                     connection_id.clone(),
                                     target.clone(),
@@ -100,7 +104,9 @@ impl EventHandler for TuiEventHandler {
                     "JOIN" => {
                         if !message.params.is_empty() {
                             let channel = &message.params[0];
-                            if let Some(rustirc_protocol::message::Prefix::User { nick, .. }) = &message.prefix {
+                            if let Some(rustirc_protocol::message::Prefix::User { nick, .. }) =
+                                &message.prefix
+                            {
                                 state.add_message(
                                     connection_id.clone(),
                                     channel.clone(),
@@ -114,7 +120,9 @@ impl EventHandler for TuiEventHandler {
                         if !message.params.is_empty() {
                             let channel = &message.params[0];
                             let reason = message.params.get(1).cloned().unwrap_or_default();
-                            if let Some(rustirc_protocol::message::Prefix::User { nick, .. }) = &message.prefix {
+                            if let Some(rustirc_protocol::message::Prefix::User { nick, .. }) =
+                                &message.prefix
+                            {
                                 let content = if reason.is_empty() {
                                     format!("{nick} has left {channel}")
                                 } else {
@@ -131,7 +139,9 @@ impl EventHandler for TuiEventHandler {
                     }
                     "QUIT" => {
                         let reason = message.params.first().cloned().unwrap_or_default();
-                        if let Some(rustirc_protocol::message::Prefix::User { nick, .. }) = &message.prefix {
+                        if let Some(rustirc_protocol::message::Prefix::User { nick, .. }) =
+                            &message.prefix
+                        {
                             // Add quit message to all channels where the user was present
                             let content = if reason.is_empty() {
                                 format!("{nick} has quit")
