@@ -4,11 +4,11 @@
 //! Features server status indicators, channel activity badges, and context menus.
 
 use crate::state::{AppState, TabType};
-use rustirc_core::connection::ConnectionState;
 use iced::{
-    widget::{container, scrollable, text, button, row, column, Space},
-    Element, Length, Task, Color, Alignment,
+    widget::{button, column, container, row, scrollable, text, Space},
+    Alignment, Color, Element, Length, Task,
 };
+use rustirc_core::connection::ConnectionState;
 use tracing::{info, warn};
 
 /// Messages for server tree interactions
@@ -36,10 +36,14 @@ impl ServerTree {
     }
 
     /// Update the server tree state
-    pub fn update(&mut self, message: ServerTreeMessage, app_state: &mut AppState) -> Task<ServerTreeMessage> {
+    pub fn update(
+        &mut self,
+        message: ServerTreeMessage,
+        app_state: &mut AppState,
+    ) -> Task<ServerTreeMessage> {
         match message {
             ServerTreeMessage::ServerClicked(server_id) => {
-                let tab_id = format!("server:{}", server_id);
+                let tab_id = format!("server:{server_id}");
                 app_state.switch_to_tab(&tab_id);
                 Task::none()
             }
@@ -58,26 +62,31 @@ impl ServerTree {
             ServerTreeMessage::ServerContextMenu(server_id) => {
                 // Show server context menu
                 info!("Showing server context menu for: {}", server_id);
-                
+
                 // Validate server exists before showing menu
                 if !app_state.servers.contains_key(&server_id) {
-                    warn!("Attempted to show context menu for non-existent server: {}", server_id);
+                    warn!(
+                        "Attempted to show context menu for non-existent server: {}",
+                        server_id
+                    );
                     return Task::none();
                 }
-                
+
                 // Server context menu actions: connect, disconnect, edit, remove
                 // For now, just log available actions
-                info!("Server context menu actions: connect, disconnect, edit, remove, add channel");
-                
+                info!(
+                    "Server context menu actions: connect, disconnect, edit, remove, add channel"
+                );
+
                 Task::none()
             }
             ServerTreeMessage::ChannelContextMenu(channel_id) => {
                 // Show channel context menu
                 info!("Showing channel context menu for: {}", channel_id);
-                
+
                 // Channel context menu actions: part, rejoin, clear messages, channel info
                 info!("Channel context menu actions: part, rejoin, clear messages, channel info, user list");
-                
+
                 Task::none()
             }
         }
@@ -89,7 +98,7 @@ impl ServerTree {
 
         for (server_id, server_state) in &app_state.servers {
             let is_expanded = self.expanded_servers.contains(server_id);
-            
+
             // Server header
             let server_indicator = self.get_connection_indicator(&server_state.connection_state);
             let server_name = text(server_id.clone()).size(14);
@@ -108,13 +117,9 @@ impl ServerTree {
             };
 
             let server_row = button(
-                row![
-                    expand_button,
-                    server_indicator,
-                    server_name
-                ]
-                .spacing(8)
-                .align_y(Alignment::Center)
+                row![expand_button, server_indicator, server_name]
+                    .spacing(8)
+                    .align_y(Alignment::Center),
             )
             .on_press(ServerTreeMessage::ServerClicked(server_id.clone()))
             .width(Length::Fill)
@@ -124,9 +129,10 @@ impl ServerTree {
 
             // Channel list (if expanded)
             if is_expanded {
-                for (channel_name, _channel_state) in &server_state.channels {
-                    let tab_id = format!("{}:{}", server_id, channel_name);
-                    let is_active = app_state.current_tab()
+                for channel_name in server_state.channels.keys() {
+                    let tab_id = format!("{server_id}:{channel_name}");
+                    let is_active = app_state
+                        .current_tab()
                         .map(|tab| match &tab.tab_type {
                             TabType::Channel { channel } => channel == channel_name,
                             _ => false,
@@ -146,7 +152,9 @@ impl ServerTree {
                     };
 
                     let channel_name_style = if is_active {
-                        text(channel_name.clone()).size(13).color(Color::from_rgb(0.4, 0.6, 1.0))
+                        text(channel_name.clone())
+                            .size(13)
+                            .color(Color::from_rgb(0.4, 0.6, 1.0))
                     } else {
                         text(channel_name.clone()).size(13)
                     };
@@ -160,7 +168,7 @@ impl ServerTree {
                             activity_indicator
                         ]
                         .spacing(4)
-                        .align_y(Alignment::Center)
+                        .align_y(Alignment::Center),
                     )
                     .on_press(ServerTreeMessage::ChannelClicked(tab_id))
                     .width(Length::Fill)
@@ -173,8 +181,9 @@ impl ServerTree {
                 for (tab_id, tab) in &app_state.tabs {
                     if let TabType::PrivateMessage { nick } = &tab.tab_type {
                         if tab.server_id.as_ref() == Some(server_id) {
-                            let is_active = app_state.current_tab()
-                                .map(|current_tab| &current_tab.tab_type == &tab.tab_type)
+                            let is_active = app_state
+                                .current_tab()
+                                .map(|current_tab| current_tab.tab_type == tab.tab_type)
                                 .unwrap_or(false);
 
                             let activity_indicator = if tab.has_highlight {
@@ -186,7 +195,9 @@ impl ServerTree {
                             };
 
                             let nick_style = if is_active {
-                                text(nick.clone()).size(13).color(Color::from_rgb(0.4, 0.6, 1.0))
+                                text(nick.clone())
+                                    .size(13)
+                                    .color(Color::from_rgb(0.4, 0.6, 1.0))
                             } else {
                                 text(nick.clone()).size(13)
                             };
@@ -200,7 +211,7 @@ impl ServerTree {
                                     activity_indicator
                                 ]
                                 .spacing(4)
-                                .align_y(Alignment::Center)
+                                .align_y(Alignment::Center),
                             )
                             .on_press(ServerTreeMessage::ChannelClicked(tab_id.clone()))
                             .width(Length::Fill)
@@ -213,18 +224,17 @@ impl ServerTree {
             }
         }
 
-        scrollable(
-            container(content)
-                .padding(8)
-                .width(Length::Fill)
-        )
-        .width(Length::Fill)
-        .height(Length::Fill)
-        .into()
+        scrollable(container(content).padding(8).width(Length::Fill))
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .into()
     }
 
     /// Get connection status indicator
-    fn get_connection_indicator(&self, state: &ConnectionState) -> Element<'static, ServerTreeMessage> {
+    fn get_connection_indicator(
+        &self,
+        state: &ConnectionState,
+    ) -> Element<'static, ServerTreeMessage> {
         let (symbol, color) = match state {
             ConnectionState::Disconnected => ("●", Color::from_rgb(0.6, 0.6, 0.6)),
             ConnectionState::Connecting => ("●", Color::from_rgb(1.0, 0.8, 0.0)),

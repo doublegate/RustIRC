@@ -3,8 +3,8 @@
 //! This module provides comprehensive state management for IRC clients using
 //! event sourcing patterns for reliable state reconstruction and persistence.
 
-use crate::events::Event;
 use crate::error::{Error, Result};
+use crate::events::Event;
 use rustirc_protocol::{Message, Prefix};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
@@ -137,7 +137,7 @@ impl ChannelState {
             join_time: current_timestamp(),
         };
         self.users.insert(nick.clone(), channel_user);
-        
+
         // Also add to global user cache if provided
         // This would typically be done at the server level, but we store it here for now
         if !user.nickname.is_empty() {
@@ -152,7 +152,10 @@ impl ChannelState {
             debug!("Removed user {} from channel", nick);
             Some(user)
         } else {
-            warn!("Attempted to remove non-existent user {} from channel", nick);
+            warn!(
+                "Attempted to remove non-existent user {} from channel",
+                nick
+            );
             None
         }
     }
@@ -273,30 +276,71 @@ pub struct StateEvent {
 pub enum StateEventType {
     // Connection events
     ServerConnected,
-    ServerDisconnected { reason: String },
+    ServerDisconnected {
+        reason: String,
+    },
     ServerRegistered,
-    
+
     // User events
-    NickChanged { old_nick: String, new_nick: String },
-    UserJoined { channel: String, user: User },
-    UserLeft { channel: String, nick: String, reason: Option<String> },
-    UserQuit { nick: String, reason: Option<String> },
-    UserModeChanged { nick: String, modes: String },
-    
+    NickChanged {
+        old_nick: String,
+        new_nick: String,
+    },
+    UserJoined {
+        channel: String,
+        user: User,
+    },
+    UserLeft {
+        channel: String,
+        nick: String,
+        reason: Option<String>,
+    },
+    UserQuit {
+        nick: String,
+        reason: Option<String>,
+    },
+    UserModeChanged {
+        nick: String,
+        modes: String,
+    },
+
     // Channel events
-    ChannelJoined { channel: String },
-    ChannelLeft { channel: String, reason: Option<String> },
-    TopicChanged { channel: String, topic: TopicInfo },
-    ChannelModeChanged { channel: String, modes: String },
-    
+    ChannelJoined {
+        channel: String,
+    },
+    ChannelLeft {
+        channel: String,
+        reason: Option<String>,
+    },
+    TopicChanged {
+        channel: String,
+        topic: TopicInfo,
+    },
+    ChannelModeChanged {
+        channel: String,
+        modes: String,
+    },
+
     // Message events
-    MessageReceived { target: String, message: Message },
-    MessageSent { target: String, message: Message },
-    
+    MessageReceived {
+        target: String,
+        message: Message,
+    },
+    MessageSent {
+        target: String,
+        message: Message,
+    },
+
     // Server events
-    CapabilitiesReceived { capabilities: Vec<String> },
-    IsupportReceived { params: HashMap<String, String> },
-    MotdReceived { lines: Vec<String> },
+    CapabilitiesReceived {
+        capabilities: Vec<String>,
+    },
+    IsupportReceived {
+        params: HashMap<String, String>,
+    },
+    MotdReceived {
+        lines: Vec<String>,
+    },
 }
 
 /// Centralized state manager with event sourcing
@@ -331,21 +375,21 @@ impl StateManager {
         let mut state = self.state.write().await;
         let mut events = self.events.write().await;
         let mut counter = self.event_id_counter.write().await;
-        
-        let state_event = self.create_state_event(&event, *counter).await?;
+
+        let state_event = self.create_state_event(event, *counter).await?;
         *counter += 1;
-        
+
         // Apply the event to the state
         self.apply_state_event(&mut state, &state_event).await?;
-        
+
         // Store the event for persistence/replay
         events.push(state_event);
-        
+
         // Update state version
         state.version += 1;
-        
+
         debug!("Applied event, new state version: {}", state.version);
-        
+
         Ok(())
     }
 
@@ -356,34 +400,69 @@ impl StateManager {
                 debug!("Creating state event for connection: {}", connection_id);
                 StateEventType::ServerConnected
             }
-            Event::Disconnected { connection_id, reason } => {
-                debug!("Creating disconnection state event for connection: {} - reason: {}", connection_id, reason);
-                StateEventType::ServerDisconnected { reason: reason.clone() }
+            Event::Disconnected {
+                connection_id,
+                reason,
+            } => {
+                debug!(
+                    "Creating disconnection state event for connection: {} - reason: {}",
+                    connection_id, reason
+                );
+                StateEventType::ServerDisconnected {
+                    reason: reason.clone(),
+                }
             }
-            Event::MessageReceived { connection_id, message } => {
-                debug!("Creating message received state event for connection: {}", connection_id);
+            Event::MessageReceived {
+                connection_id,
+                message,
+            } => {
+                debug!(
+                    "Creating message received state event for connection: {}",
+                    connection_id
+                );
                 let target = self.determine_message_target(message).await;
-                StateEventType::MessageReceived { 
-                    target, 
-                    message: message.clone() 
+                StateEventType::MessageReceived {
+                    target,
+                    message: message.clone(),
                 }
             }
-            Event::ChannelJoined { connection_id, channel } => {
-                debug!("Creating channel joined state event for connection: {} - channel: {}", connection_id, channel);
-                StateEventType::ChannelJoined { channel: channel.clone() }
-            }
-            Event::ChannelLeft { connection_id, channel } => {
-                debug!("Creating channel left state event for connection: {} - channel: {}", connection_id, channel);
-                StateEventType::ChannelLeft { 
-                    channel: channel.clone(), 
-                    reason: None 
+            Event::ChannelJoined {
+                connection_id,
+                channel,
+            } => {
+                debug!(
+                    "Creating channel joined state event for connection: {} - channel: {}",
+                    connection_id, channel
+                );
+                StateEventType::ChannelJoined {
+                    channel: channel.clone(),
                 }
             }
-            Event::NickChanged { connection_id, old, new } => {
-                debug!("Creating nick changed state event for connection: {} - {} -> {}", connection_id, old, new);
-                StateEventType::NickChanged { 
-                    old_nick: old.clone(), 
-                    new_nick: new.clone() 
+            Event::ChannelLeft {
+                connection_id,
+                channel,
+            } => {
+                debug!(
+                    "Creating channel left state event for connection: {} - channel: {}",
+                    connection_id, channel
+                );
+                StateEventType::ChannelLeft {
+                    channel: channel.clone(),
+                    reason: None,
+                }
+            }
+            Event::NickChanged {
+                connection_id,
+                old,
+                new,
+            } => {
+                debug!(
+                    "Creating nick changed state event for connection: {} - {} -> {}",
+                    connection_id, old, new
+                );
+                StateEventType::NickChanged {
+                    old_nick: old.clone(),
+                    new_nick: new.clone(),
                 }
             }
             _ => {
@@ -392,12 +471,12 @@ impl StateManager {
         };
 
         let connection_id = match event {
-            Event::Connected { connection_id } |
-            Event::Disconnected { connection_id, .. } |
-            Event::MessageReceived { connection_id, .. } |
-            Event::ChannelJoined { connection_id, .. } |
-            Event::ChannelLeft { connection_id, .. } |
-            Event::NickChanged { connection_id, .. } => connection_id.clone(),
+            Event::Connected { connection_id }
+            | Event::Disconnected { connection_id, .. }
+            | Event::MessageReceived { connection_id, .. }
+            | Event::ChannelJoined { connection_id, .. }
+            | Event::ChannelLeft { connection_id, .. }
+            | Event::NickChanged { connection_id, .. } => connection_id.clone(),
             _ => String::new(),
         };
 
@@ -411,13 +490,17 @@ impl StateManager {
 
     /// Apply state event to the current state
     async fn apply_state_event(&self, state: &mut ClientState, event: &StateEvent) -> Result<()> {
-        let server_state = state.servers.entry(event.connection_id.clone())
-            .or_insert_with(|| ServerState::new(
-                event.connection_id.clone(),
-                "unknown".to_string(),
-                6667,
-                false,
-            ));
+        let server_state = state
+            .servers
+            .entry(event.connection_id.clone())
+            .or_insert_with(|| {
+                ServerState::new(
+                    event.connection_id.clone(),
+                    "unknown".to_string(),
+                    6667,
+                    false,
+                )
+            });
 
         match &event.event_type {
             StateEventType::ServerConnected => {
@@ -436,7 +519,9 @@ impl StateManager {
                 server_state.registered = true;
             }
             StateEventType::ChannelJoined { channel } => {
-                let channel_state = server_state.channels.entry(channel.clone())
+                let channel_state = server_state
+                    .channels
+                    .entry(channel.clone())
                     .or_insert_with(|| ChannelState::new(channel.clone()));
                 channel_state.joined = true;
             }
@@ -460,7 +545,7 @@ impl StateManager {
             StateEventType::MessageReceived { target, message } => {
                 // Add to appropriate message history
                 let history_entry = HistoryEntry::new(message.clone());
-                
+
                 if target.starts_with('#') || target.starts_with('&') {
                     // Channel message
                     if let Some(channel_state) = server_state.channels.get_mut(target) {
@@ -495,9 +580,11 @@ impl StateManager {
     /// Determine message target for state storage
     async fn determine_message_target(&self, message: &Message) -> String {
         match message.command.as_str() {
-            "PRIVMSG" | "NOTICE" => {
-                message.params.first().unwrap_or(&"unknown".to_string()).clone()
-            }
+            "PRIVMSG" | "NOTICE" => message
+                .params
+                .first()
+                .unwrap_or(&"unknown".to_string())
+                .clone(),
             _ => "server".to_string(),
         }
     }
@@ -506,11 +593,11 @@ impl StateManager {
     pub async fn replay_events(&self, events: Vec<StateEvent>) -> Result<()> {
         let mut state = self.state.write().await;
         *state = ClientState::default();
-        
+
         for event in events {
             self.apply_state_event(&mut state, &event).await?;
         }
-        
+
         Ok(())
     }
 

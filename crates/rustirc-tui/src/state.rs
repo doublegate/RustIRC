@@ -70,7 +70,7 @@ impl ChannelState {
         if self.messages.len() >= MAX_MESSAGES_PER_CHANNEL {
             self.messages.pop_front();
         }
-        
+
         // Update unread count
         if !message.is_own_message {
             self.unread_count += 1;
@@ -78,9 +78,9 @@ impl ChannelState {
                 self.has_highlight = true;
             }
         }
-        
+
         self.messages.push_back(message);
-        
+
         // Auto-scroll to bottom if at the end
         if self.scroll_position == 0 {
             self.scroll_position = 0; // Stay at bottom
@@ -117,7 +117,7 @@ impl ServerState {
     pub fn add_channel(&mut self, channel_name: String) {
         let channel = ChannelState::new(channel_name.clone());
         self.channels.insert(channel_name.clone(), channel);
-        
+
         // Switch to this channel if it's the first one
         if self.current_channel.is_none() {
             self.current_channel = Some(channel_name);
@@ -126,7 +126,7 @@ impl ServerState {
 
     pub fn remove_channel(&mut self, channel_name: &str) {
         self.channels.remove(channel_name);
-        
+
         // Switch to another channel if current was removed
         if self.current_channel.as_ref() == Some(&channel_name.to_string()) {
             self.current_channel = self.channels.keys().next().cloned();
@@ -235,7 +235,7 @@ pub enum ActivityLevel {
 impl TuiTab {
     pub fn server(server_id: String) -> Self {
         Self {
-            id: format!("server:{}", server_id),
+            id: format!("server:{server_id}"),
             name: server_id.clone(),
             tab_type: TuiTabType::Server,
             server_id: Some(server_id),
@@ -248,7 +248,7 @@ impl TuiTab {
 
     pub fn channel(server_id: String, channel: String) -> Self {
         Self {
-            id: format!("{}:{}", server_id, channel),
+            id: format!("{server_id}:{channel}"),
             name: channel,
             tab_type: TuiTabType::Channel,
             server_id: Some(server_id),
@@ -261,7 +261,7 @@ impl TuiTab {
 
     pub fn private_message(server_id: String, nick: String) -> Self {
         Self {
-            id: format!("{}:pm:{}", server_id, nick),
+            id: format!("{server_id}:pm:{nick}"),
             name: nick,
             tab_type: TuiTabType::PrivateMessage,
             server_id: Some(server_id),
@@ -278,46 +278,46 @@ impl TuiTab {
 pub struct TuiState {
     /// Connected servers
     pub servers: HashMap<String, ServerState>,
-    
+
     /// Open tabs (channels and private messages) - matching GUI
     pub tabs: HashMap<String, TuiTab>,
-    
+
     /// Currently active tab
     pub current_tab_id: Option<String>,
-    
+
     /// Tab order for navigation
     pub tab_order: Vec<String>,
-    
+
     /// Currently active server (legacy, replaced by current_tab_id)
     pub current_server: Option<String>,
-    
+
     /// Current focus area
     pub focus: FocusArea,
-    
+
     /// Input buffer
     pub input_buffer: String,
-    
+
     /// Input cursor position
     pub input_cursor: usize,
-    
+
     /// Command history
     pub command_history: VecDeque<String>,
-    
+
     /// Current position in command history
     pub history_position: usize,
-    
+
     /// Selected channel in channel list
     pub selected_channel_index: usize,
-    
+
     /// Selected user in user list
     pub selected_user_index: usize,
-    
+
     /// Application start time for relative timestamps
     pub start_time: SystemTime,
-    
+
     /// Global settings
     pub settings: TuiSettings,
-    
+
     /// UI state
     pub ui_state: TuiUiState,
 }
@@ -361,18 +361,18 @@ impl TuiState {
     pub fn add_server(&mut self, server_name: String) {
         let server = ServerState::new(server_name.clone());
         self.servers.insert(server_name.clone(), server);
-        
+
         // Create server tab
         let tab = TuiTab::server(server_name.clone());
-        let tab_id = format!("server:{}", server_name);
+        let tab_id = format!("server:{server_name}");
         self.tabs.insert(tab_id.clone(), tab);
         self.tab_order.push(tab_id.clone());
-        
+
         // Set as current tab if it's the first one
         if self.current_tab_id.is_none() {
             self.current_tab_id = Some(tab_id);
         }
-        
+
         // Legacy support
         if self.current_server.is_none() {
             self.current_server = Some(server_name);
@@ -382,13 +382,13 @@ impl TuiState {
     /// Add a channel tab
     pub fn add_channel_tab(&mut self, server_name: String, channel: String) {
         let tab = TuiTab::channel(server_name.clone(), channel.clone());
-        let tab_id = format!("{}:{}", server_name, channel);
+        let tab_id = format!("{server_name}:{channel}");
         self.tabs.insert(tab_id.clone(), tab);
         self.tab_order.push(tab_id.clone());
-        
+
         // Set as current tab
         self.current_tab_id = Some(tab_id);
-        
+
         // Add channel to server if server exists
         if let Some(server) = self.servers.get_mut(&server_name) {
             server.add_channel(channel);
@@ -398,10 +398,10 @@ impl TuiState {
     /// Add a private message tab
     pub fn add_private_message_tab(&mut self, server_name: String, nick: String) {
         let tab = TuiTab::private_message(server_name.clone(), nick.clone());
-        let tab_id = format!("{}:pm:{}", server_name, nick);
+        let tab_id = format!("{server_name}:pm:{nick}");
         self.tabs.insert(tab_id.clone(), tab);
         self.tab_order.push(tab_id.clone());
-        
+
         // Set as current tab
         self.current_tab_id = Some(tab_id);
     }
@@ -410,7 +410,7 @@ impl TuiState {
     pub fn remove_tab(&mut self, tab_id: &str) {
         self.tabs.remove(tab_id);
         self.tab_order.retain(|id| id != tab_id);
-        
+
         // If this was current tab, switch to next available
         if self.current_tab_id.as_ref() == Some(&tab_id.to_string()) {
             self.current_tab_id = self.tab_order.first().cloned();
@@ -421,7 +421,7 @@ impl TuiState {
     pub fn select_tab(&mut self, tab_id: String) {
         if self.tabs.contains_key(&tab_id) {
             self.current_tab_id = Some(tab_id);
-            
+
             // Mark as read
             if let Some(current_id) = &self.current_tab_id {
                 if let Some(tab) = self.tabs.get_mut(current_id) {
@@ -446,7 +446,7 @@ impl TuiState {
     /// Remove a server
     pub fn remove_server(&mut self, server_name: &str) {
         self.servers.remove(server_name);
-        
+
         // Switch to another server if current was removed
         if self.current_server.as_ref() == Some(&server_name.to_string()) {
             self.current_server = self.servers.keys().next().cloned();
@@ -468,7 +468,13 @@ impl TuiState {
     }
 
     /// Add a message to a channel
-    pub fn add_message(&mut self, server_name: String, channel_name: String, nick: String, content: String) {
+    pub fn add_message(
+        &mut self,
+        server_name: String,
+        channel_name: String,
+        nick: String,
+        content: String,
+    ) {
         if let Some(server) = self.servers.get_mut(&server_name) {
             if let Some(channel) = server.channels.get_mut(&channel_name) {
                 let message = TuiMessage {
@@ -501,8 +507,9 @@ impl TuiState {
 
     /// Get current channel state
     pub fn current_channel_state(&self) -> Option<&ChannelState> {
-        if let (Some(server_name), Some(channel_name)) = 
-            (&self.current_server, self.current_channel()) {
+        if let (Some(server_name), Some(channel_name)) =
+            (&self.current_server, self.current_channel())
+        {
             if let Some(server) = self.servers.get(server_name) {
                 return server.channels.get(channel_name);
             }
@@ -528,7 +535,7 @@ impl TuiState {
             if server.channels.contains_key(channel_name) {
                 server.current_channel = Some(channel_name.to_string());
                 self.current_server = Some(server_name.to_string());
-                
+
                 // Mark channel as read
                 if let Some(channel) = server.channels.get_mut(channel_name) {
                     channel.mark_as_read();
@@ -549,7 +556,11 @@ impl TuiState {
 
     /// Navigate channels
     pub fn next_channel(&mut self) {
-        let channels: Vec<String> = self.current_server_channels().into_iter().cloned().collect();
+        let channels: Vec<String> = self
+            .current_server_channels()
+            .into_iter()
+            .cloned()
+            .collect();
         let channels_len = channels.len();
         if !channels.is_empty() {
             self.selected_channel_index = (self.selected_channel_index + 1) % channels_len;
@@ -562,7 +573,11 @@ impl TuiState {
     }
 
     pub fn previous_channel(&mut self) {
-        let channels: Vec<String> = self.current_server_channels().into_iter().cloned().collect();
+        let channels: Vec<String> = self
+            .current_server_channels()
+            .into_iter()
+            .cloned()
+            .collect();
         let channels_len = channels.len();
         if !channels.is_empty() {
             self.selected_channel_index = if self.selected_channel_index == 0 {
@@ -611,22 +626,20 @@ impl TuiState {
     /// Submit input and return the command
     pub fn submit_input(&mut self) -> String {
         let command = self.input_buffer.clone();
-        
+
         // Add to history if not empty and different from last command
-        if !command.trim().is_empty() {
-            if self.command_history.back() != Some(&command) {
-                self.command_history.push_back(command.clone());
-                
-                // Limit history size
-                if self.command_history.len() > MAX_COMMAND_HISTORY {
-                    self.command_history.pop_front();
-                }
+        if !command.trim().is_empty() && self.command_history.back() != Some(&command) {
+            self.command_history.push_back(command.clone());
+
+            // Limit history size
+            if self.command_history.len() > MAX_COMMAND_HISTORY {
+                self.command_history.pop_front();
             }
         }
-        
+
         self.clear_input();
         self.history_position = self.command_history.len();
-        
+
         command
     }
 
@@ -671,17 +684,17 @@ impl TuiState {
     pub fn toggle_help(&mut self) {
         self.ui_state.show_help = !self.ui_state.show_help;
     }
-    
+
     /// Toggle channel list visibility (placeholder for UI state)
     pub fn toggle_channel_list(&mut self) {
         // This would toggle channel list visibility in a more complex UI
         // For now, we'll just focus on the channel list
         self.set_focus(FocusArea::ChannelList);
     }
-    
+
     /// Toggle user list visibility (placeholder for UI state)
     pub fn toggle_user_list(&mut self) {
-        // This would toggle user list visibility in a more complex UI  
+        // This would toggle user list visibility in a more complex UI
         // For now, we'll just focus on the user list
         self.set_focus(FocusArea::UserList);
     }
@@ -690,15 +703,14 @@ impl TuiState {
     pub fn update_timestamps(&mut self) {
         // Calculate elapsed time since UNIX_EPOCH for relative timestamps
         let current_time = SystemTime::now();
-        let epoch_duration = current_time.duration_since(UNIX_EPOCH)
-            .unwrap_or_default();
-        
+        let epoch_duration = current_time.duration_since(UNIX_EPOCH).unwrap_or_default();
+
         // Update any time-sensitive UI elements based on elapsed time
         for server in self.servers.values_mut() {
             for channel in server.channels.values_mut() {
                 // Check for old messages and mark them as such
                 let cutoff_time = current_time - std::time::Duration::from_secs(300); // 5 minutes
-                
+
                 for message in &mut channel.messages {
                     if message.timestamp < cutoff_time {
                         // Could add aging logic here for old messages
@@ -706,17 +718,19 @@ impl TuiState {
                 }
             }
         }
-        
+
         // Log timestamp update for debugging
         let total_seconds = epoch_duration.as_secs();
-        if total_seconds % 60 == 0 { // Every minute
-            println!("Timestamp update: {} seconds since UNIX_EPOCH", total_seconds);
+        if total_seconds % 60 == 0 {
+            // Every minute
+            println!("Timestamp update: {total_seconds} seconds since UNIX_EPOCH");
         }
     }
 
     /// Get total unread message count
     pub fn total_unread_count(&self) -> usize {
-        self.servers.values()
+        self.servers
+            .values()
             .flat_map(|server| server.channels.values())
             .map(|channel| channel.unread_count)
             .sum()
@@ -724,7 +738,8 @@ impl TuiState {
 
     /// Check if there are any highlights
     pub fn has_highlights(&self) -> bool {
-        self.servers.values()
+        self.servers
+            .values()
             .flat_map(|server| server.channels.values())
             .any(|channel| channel.has_highlight)
     }

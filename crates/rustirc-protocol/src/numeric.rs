@@ -6,21 +6,21 @@ use serde::{Deserialize, Serialize};
 #[repr(u16)]
 pub enum Numeric {
     // Command responses
-    RplWelcome = 001,
-    RplYourHost = 002,
-    RplCreated = 003,
-    RplMyInfo = 004,
-    RplISupport = 005,
-    
+    RplWelcome = 1,
+    RplYourHost = 2,
+    RplCreated = 3,
+    RplMyInfo = 4,
+    RplISupport = 5,
+
     // User modes
     RplUModeIs = 221,
-    
+
     // Channel information
     RplChannelModeIs = 324,
     RplNoTopic = 331,
     RplTopic = 332,
     RplTopicWhoTime = 333,
-    
+
     // User information
     RplWhoisUser = 311,
     RplWhoisServer = 312,
@@ -28,21 +28,21 @@ pub enum Numeric {
     RplWhoisIdle = 317,
     RplEndOfWhois = 318,
     RplWhoisChannels = 319,
-    
+
     // List replies
     RplListStart = 321,
     RplList = 322,
     RplListEnd = 323,
-    
+
     // Names replies
     RplNameReply = 353,
     RplEndOfNames = 366,
-    
+
     // MOTD
     RplMotdStart = 375,
     RplMotd = 372,
     RplEndOfMotd = 376,
-    
+
     // Error replies
     ErrNoSuchNick = 401,
     ErrNoSuchServer = 402,
@@ -93,7 +93,7 @@ pub enum Numeric {
     ErrNoOperHost = 491,
     ErrUModeUnknownFlag = 501,
     ErrUsersDontMatch = 502,
-    
+
     // SASL
     RplLoggedIn = 900,
     RplLoggedOut = 901,
@@ -120,11 +120,11 @@ impl Numeric {
 
     pub fn from_u16(code: u16) -> Option<Self> {
         match code {
-            001 => Some(Numeric::RplWelcome),
-            002 => Some(Numeric::RplYourHost),
-            003 => Some(Numeric::RplCreated),
-            004 => Some(Numeric::RplMyInfo),
-            005 => Some(Numeric::RplISupport),
+            1 => Some(Numeric::RplWelcome),
+            2 => Some(Numeric::RplYourHost),
+            3 => Some(Numeric::RplCreated),
+            4 => Some(Numeric::RplMyInfo),
+            5 => Some(Numeric::RplISupport),
             221 => Some(Numeric::RplUModeIs),
             324 => Some(Numeric::RplChannelModeIs),
             331 => Some(Numeric::RplNoTopic),

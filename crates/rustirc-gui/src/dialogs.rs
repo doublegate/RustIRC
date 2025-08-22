@@ -3,14 +3,13 @@
 //! Implements modal dialogs for server connections, preferences,
 //! channel joining, and other user interactions.
 
-use iced::{Element, Length, Size, Task};
-use iced::widget::{
-    button, checkbox, column, container, row, text, text_input, 
-    scrollable, vertical_space, horizontal_space, pick_list, slider,
-    Space
-};
 use crate::state::AppState;
 use crate::theme::Theme;
+use iced::widget::{
+    button, checkbox, column, container, horizontal_space, pick_list, row, scrollable, slider,
+    text, text_input, vertical_space, Space,
+};
+use iced::{Element, Length, Size, Task};
 use rustirc_core::connection::ConnectionConfig;
 
 /// Dialog message types
@@ -27,13 +26,13 @@ pub enum DialogMessage {
     ConnectionAutoConnectToggled(bool),
     ConnectionConnect,
     ConnectionCancel,
-    
+
     // Join channel dialog
     JoinChannelChanged(String),
     JoinChannelKeyChanged(String),
     JoinChannel,
     JoinCancel,
-    
+
     // Preferences dialog
     PreferencesThemeChanged(String),
     PreferencesFontSizeChanged(String),
@@ -44,10 +43,10 @@ pub enum DialogMessage {
     PreferencesCompactModeToggled(bool),
     PreferencesApply,
     PreferencesCancel,
-    
+
     // About dialog
     AboutOk,
-    
+
     // Find dialog
     FindQueryChanged(String),
     FindNext,
@@ -55,7 +54,7 @@ pub enum DialogMessage {
     FindCaseSensitiveToggled(bool),
     FindRegexToggled(bool),
     FindClose,
-    
+
     // Network list dialog
     NetworkListAdd,
     NetworkListEdit(usize),
@@ -99,24 +98,28 @@ impl DialogManager {
             network_list_dialog: NetworkListDialog::new(),
         }
     }
-    
+
     pub fn show_dialog(&mut self, dialog_type: DialogType) {
         self.current_dialog = dialog_type;
     }
-    
+
     pub fn hide_dialog(&mut self) {
         self.current_dialog = DialogType::None;
     }
-    
+
     pub fn is_showing(&self) -> bool {
         self.current_dialog != DialogType::None
     }
-    
+
     pub fn current_dialog(&self) -> &DialogType {
         &self.current_dialog
     }
-    
-    pub fn update(&mut self, message: DialogMessage, app_state: &mut AppState) -> Task<DialogMessage> {
+
+    pub fn update(
+        &mut self,
+        message: DialogMessage,
+        app_state: &mut AppState,
+    ) -> Task<DialogMessage> {
         match message {
             // Connection dialog messages
             DialogMessage::ConnectionServerChanged(server) => {
@@ -157,18 +160,18 @@ impl DialogManager {
                 // Create connection config and trigger connection
                 let config = self.connection_dialog.to_connection_config();
                 self.hide_dialog();
-                
+
                 // Use the config to add server to app state
                 let server_id = format!("{}:{}", config.server, config.port);
                 app_state.add_server(server_id, config.server.clone());
-                
+
                 Task::none()
             }
             DialogMessage::ConnectionCancel => {
                 self.hide_dialog();
                 Task::none()
             }
-            
+
             // Join channel dialog messages
             DialogMessage::JoinChannelChanged(channel) => {
                 self.join_channel_dialog.channel = channel;
@@ -181,21 +184,21 @@ impl DialogManager {
             DialogMessage::JoinChannel => {
                 let channel = self.join_channel_dialog.channel.clone();
                 self.hide_dialog();
-                
+
                 // Use channel to add to app state
                 if !channel.is_empty() {
                     // Get current server or use default
                     let server_id = "default".to_string(); // Would get from current connection
                     app_state.add_channel_tab(server_id, channel);
                 }
-                
+
                 Task::none()
             }
             DialogMessage::JoinCancel => {
                 self.hide_dialog();
                 Task::none()
             }
-            
+
             // Preferences dialog messages
             DialogMessage::PreferencesThemeChanged(theme) => {
                 self.preferences_dialog.theme = theme;
@@ -236,13 +239,13 @@ impl DialogManager {
                 self.hide_dialog();
                 Task::none()
             }
-            
+
             // About dialog messages
             DialogMessage::AboutOk => {
                 self.hide_dialog();
                 Task::none()
             }
-            
+
             // Find dialog messages
             DialogMessage::FindQueryChanged(query) => {
                 self.find_dialog.query = query;
@@ -268,7 +271,7 @@ impl DialogManager {
                 self.hide_dialog();
                 Task::none()
             }
-            
+
             // Network list dialog messages
             DialogMessage::NetworkListAdd => {
                 // Add new network - open connection dialog for new network creation
@@ -288,9 +291,8 @@ impl DialogManager {
                         if let Some(server) = network.servers.first() {
                             let parts: Vec<&str> = server.split(':').collect();
                             self.connection_dialog.server = parts[0].to_string();
-                            self.connection_dialog.port = parts.get(1)
-                                .and_then(|p| p.parse().ok())
-                                .unwrap_or(6667);
+                            self.connection_dialog.port =
+                                parts.get(1).and_then(|p| p.parse().ok()).unwrap_or(6667);
                         }
                         self.connection_dialog.auto_connect = network.auto_connect;
                         self.current_dialog = DialogType::Connection;
@@ -316,20 +318,18 @@ impl DialogManager {
                             // Create connection config from network entry
                             let parts: Vec<&str> = server.split(':').collect();
                             let server_addr = parts[0].to_string();
-                            let port = parts.get(1)
-                                .and_then(|p| p.parse().ok())
-                                .unwrap_or(6667);
-                            
+                            let port = parts.get(1).and_then(|p| p.parse().ok()).unwrap_or(6667);
+
                             // Return a task to connect to this network
                             self.hide_dialog();
                             return Task::perform(
                                 async move {
                                     crate::app::Message::ConnectToServer(
-                                        format!("{}:{}", server_addr, port),
-                                        port
+                                        format!("{server_addr}:{port}"),
+                                        port,
                                     )
                                 },
-                                |_| DialogMessage::NetworkListClose  // Convert to DialogMessage
+                                |_| DialogMessage::NetworkListClose, // Convert to DialogMessage
                             );
                         }
                     }
@@ -343,7 +343,7 @@ impl DialogManager {
             }
         }
     }
-    
+
     pub fn view(&self, app_state: &AppState) -> Option<Element<DialogMessage>> {
         match self.current_dialog {
             DialogType::None => None,
@@ -370,6 +370,12 @@ pub struct ConnectionDialog {
     pub auto_connect: bool,
 }
 
+impl Default for ConnectionDialog {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ConnectionDialog {
     pub fn new() -> Self {
         Self {
@@ -383,7 +389,7 @@ impl ConnectionDialog {
             auto_connect: false,
         }
     }
-    
+
     pub fn to_connection_config(&self) -> ConnectionConfig {
         ConnectionConfig {
             server: self.server.clone(),
@@ -391,88 +397,84 @@ impl ConnectionDialog {
             nickname: self.nickname.clone(),
             username: self.username.clone(),
             realname: self.realname.clone(),
-            password: if self.password.is_empty() { None } else { Some(self.password.clone()) },
+            password: if self.password.is_empty() {
+                None
+            } else {
+                Some(self.password.clone())
+            },
             use_tls: self.use_tls,
             ..Default::default()
         }
     }
-    
+
     pub fn view(&self) -> Element<DialogMessage> {
         // Use Size for proper dialog dimensions
         let min_size = Size::new(400.0, 300.0);
         let max_size = Size::new(600.0, 500.0);
-        
+
         let content = column![
-            text("Connect to IRC Server")
-                .size(20),
+            text("Connect to IRC Server").size(20),
             vertical_space().height(10),
-            
             row![
                 text("Server:").width(80),
                 text_input("irc.libera.chat", &self.server)
                     .on_input(DialogMessage::ConnectionServerChanged)
                     .width(200),
-            ].spacing(10),
-            
+            ]
+            .spacing(10),
             row![
                 text("Port:").width(80),
                 text_input("6667", &self.port.to_string())
                     .on_input(DialogMessage::ConnectionPortChanged)
                     .width(100),
-            ].spacing(10),
-            
+            ]
+            .spacing(10),
             row![
                 text("Nickname:").width(80),
                 text_input("nickname", &self.nickname)
                     .on_input(DialogMessage::ConnectionNickChanged)
                     .width(200),
-            ].spacing(10),
-            
+            ]
+            .spacing(10),
             row![
                 text("Username:").width(80),
                 text_input("username", &self.username)
                     .on_input(DialogMessage::ConnectionUsernameChanged)
                     .width(200),
-            ].spacing(10),
-            
+            ]
+            .spacing(10),
             row![
                 text("Real name:").width(80),
                 text_input("Real Name", &self.realname)
                     .on_input(DialogMessage::ConnectionRealnameChanged)
                     .width(200),
-            ].spacing(10),
-            
+            ]
+            .spacing(10),
             row![
                 text("Password:").width(80),
                 text_input("", &self.password)
                     .on_input(DialogMessage::ConnectionPasswordChanged)
                     .secure(true)
                     .width(200),
-            ].spacing(10),
-            
-            checkbox("Use TLS/SSL", self.use_tls)
-                .on_toggle(DialogMessage::ConnectionUseTlsToggled),
-            
+            ]
+            .spacing(10),
+            checkbox("Use TLS/SSL", self.use_tls).on_toggle(DialogMessage::ConnectionUseTlsToggled),
             checkbox("Auto-connect on startup", self.auto_connect)
                 .on_toggle(DialogMessage::ConnectionAutoConnectToggled),
-            
             vertical_space().height(20),
-            
             row![
-                button(text("Connect"))
-                    .on_press(DialogMessage::ConnectionConnect),
+                button(text("Connect")).on_press(DialogMessage::ConnectionConnect),
                 horizontal_space().width(10),
-                button(text("Cancel"))
-                    .on_press(DialogMessage::ConnectionCancel),
+                button(text("Cancel")).on_press(DialogMessage::ConnectionCancel),
             ],
         ]
         .spacing(10)
         .padding(20)
-        .max_width(max_size.width as u16);  // Use Size for maximum constraints
-        
+        .max_width(max_size.width as u16); // Use Size for maximum constraints
+
         // Apply theme styling to the container
         let theme_style = Theme::from_type(crate::theme::ThemeType::default());
-        
+
         container(content)
             .width(Length::Fixed(min_size.width))  // Use min_size for container width
             .height(Length::Fill)
@@ -498,6 +500,12 @@ pub struct JoinChannelDialog {
     pub key: String,
 }
 
+impl Default for JoinChannelDialog {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl JoinChannelDialog {
     pub fn new() -> Self {
         Self {
@@ -505,40 +513,36 @@ impl JoinChannelDialog {
             key: String::new(),
         }
     }
-    
+
     pub fn view(&self) -> Element<DialogMessage> {
         let content = column![
             text("Join Channel").size(20),
             vertical_space().height(10),
-            
             row![
                 text("Channel:").width(80),
                 text_input("#channel", &self.channel)
                     .on_input(DialogMessage::JoinChannelChanged)
                     .width(200),
-            ].spacing(10),
-            
+            ]
+            .spacing(10),
             row![
                 text("Key:").width(80),
                 text_input("", &self.key)
                     .on_input(DialogMessage::JoinChannelKeyChanged)
                     .width(200),
-            ].spacing(10),
-            
+            ]
+            .spacing(10),
             vertical_space().height(20),
-            
             row![
-                button(text("Join"))
-                    .on_press(DialogMessage::JoinChannel),
+                button(text("Join")).on_press(DialogMessage::JoinChannel),
                 horizontal_space().width(10),
-                button(text("Cancel"))
-                    .on_press(DialogMessage::JoinCancel),
+                button(text("Cancel")).on_press(DialogMessage::JoinCancel),
             ],
         ]
         .spacing(10)
         .padding(20)
         .max_width(350);
-        
+
         container(content)
             .width(Length::Fill)
             .height(Length::Fill)
@@ -560,6 +564,12 @@ pub struct PreferencesDialog {
     pub compact_mode: bool,
 }
 
+impl Default for PreferencesDialog {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PreferencesDialog {
     pub fn new() -> Self {
         Self {
@@ -572,7 +582,7 @@ impl PreferencesDialog {
             compact_mode: false,
         }
     }
-    
+
     pub fn from_app_state(app_state: &AppState) -> Self {
         let settings = app_state.settings();
         Self {
@@ -585,7 +595,7 @@ impl PreferencesDialog {
             compact_mode: settings.compact_mode,
         }
     }
-    
+
     pub fn apply_to_app_state(&self, app_state: &mut AppState) {
         let settings = app_state.settings_mut();
         settings.font_size = self.font_size;
@@ -595,63 +605,60 @@ impl PreferencesDialog {
         settings.nick_colors = self.nick_colors;
         settings.compact_mode = self.compact_mode;
     }
-    
+
     pub fn view(&self) -> Element<DialogMessage> {
-        let theme_options = vec!["Dark".to_string(), "Light".to_string(), "Solarized Dark".to_string()];
-        
+        let theme_options = vec![
+            "Dark".to_string(),
+            "Light".to_string(),
+            "Solarized Dark".to_string(),
+        ];
+
         let content = column![
             text("Preferences").size(20),
             vertical_space().height(10),
-            
             text("Appearance").size(16),
             row![
                 text("Theme:").width(120),
-                pick_list(theme_options, Some(self.theme.clone()), DialogMessage::PreferencesThemeChanged)
-                    .width(150),
-            ].spacing(10),
-            
+                pick_list(
+                    theme_options,
+                    Some(self.theme.clone()),
+                    DialogMessage::PreferencesThemeChanged
+                )
+                .width(150),
+            ]
+            .spacing(10),
             row![
                 text("Font size:").width(120),
                 text_input("13", &self.font_size.to_string())
                     .on_input(DialogMessage::PreferencesFontSizeChanged)
                     .width(100),
-            ].spacing(10),
-            
+            ]
+            .spacing(10),
             vertical_space().height(10),
-            
             text("Notifications").size(16),
             checkbox("Sound notifications", self.notification_sound)
                 .on_toggle(DialogMessage::PreferencesNotificationSoundToggled),
-            
             checkbox("Popup notifications", self.notification_popup)
                 .on_toggle(DialogMessage::PreferencesNotificationPopupToggled),
-            
             vertical_space().height(10),
-            
             text("Display").size(16),
             checkbox("Show timestamps", self.show_timestamps)
                 .on_toggle(DialogMessage::PreferencesShowTimestampsToggled),
-            
             checkbox("Colored nicknames", self.nick_colors)
                 .on_toggle(DialogMessage::PreferencesNickColorsToggled),
-            
             checkbox("Compact mode", self.compact_mode)
                 .on_toggle(DialogMessage::PreferencesCompactModeToggled),
-            
             vertical_space().height(20),
-            
             row![
-                button(text("Apply"))
-                    .on_press(DialogMessage::PreferencesApply),
+                button(text("Apply")).on_press(DialogMessage::PreferencesApply),
                 horizontal_space().width(10),
-                button(text("Cancel"))
-                    .on_press(DialogMessage::PreferencesCancel),
+                button(text("Cancel")).on_press(DialogMessage::PreferencesCancel),
             ],
         ]
         .spacing(10)
         .padding(20)
         .max_width(400);
-        
+
         container(content)
             .width(Length::Fill)
             .height(Length::Fill)
@@ -659,63 +666,54 @@ impl PreferencesDialog {
             .center_y(Length::Fill)
             .into()
     }
-    
+
     pub fn view_with_state(&self, app_state: &AppState) -> Element<DialogMessage> {
         // Create a preferences view that reflects current app state
         let settings = app_state.settings();
-        
+
         // Build the view directly with current app settings instead of relying on dialog state
-        let theme_options = vec!["Dark".to_string(), "Light".to_string(), "Solarized Dark".to_string()];
-        
+        let theme_options = vec![
+            "Dark".to_string(),
+            "Light".to_string(),
+            "Solarized Dark".to_string(),
+        ];
+
         let theme_picker = pick_list(
             theme_options,
             Some(settings.theme.clone()),
             DialogMessage::PreferencesThemeChanged,
         );
-        
+
         let font_size_slider = slider(8.0..=24.0, settings.font_size, |size| {
             DialogMessage::PreferencesFontSizeChanged(size.to_string())
         });
-        
-        let notification_checkbox = checkbox(
-            "Enable notifications",
-            settings.notification_sound,
-        ).on_toggle(DialogMessage::PreferencesNotificationSoundToggled);
-        
-        let compact_checkbox = checkbox(
-            "Compact mode",
-            settings.compact_mode,
-        ).on_toggle(DialogMessage::PreferencesCompactModeToggled);
-        
-        let timestamps_checkbox = checkbox(
-            "Show timestamps",
-            settings.show_timestamps,
-        ).on_toggle(DialogMessage::PreferencesShowTimestampsToggled);
-        
-        let nick_colors_checkbox = checkbox(
-            "Nick colors",
-            settings.nick_colors,
-        ).on_toggle(DialogMessage::PreferencesNickColorsToggled);
-        
+
+        let notification_checkbox = checkbox("Enable notifications", settings.notification_sound)
+            .on_toggle(DialogMessage::PreferencesNotificationSoundToggled);
+
+        let compact_checkbox = checkbox("Compact mode", settings.compact_mode)
+            .on_toggle(DialogMessage::PreferencesCompactModeToggled);
+
+        let timestamps_checkbox = checkbox("Show timestamps", settings.show_timestamps)
+            .on_toggle(DialogMessage::PreferencesShowTimestampsToggled);
+
+        let nick_colors_checkbox = checkbox("Nick colors", settings.nick_colors)
+            .on_toggle(DialogMessage::PreferencesNickColorsToggled);
+
         let content = column![
             text("Preferences").size(20),
             Space::with_height(10),
-            
             text("Theme:"),
             theme_picker,
             Space::with_height(10),
-            
             text(format!("Font Size: {:.0}", settings.font_size)),
             font_size_slider,
             Space::with_height(10),
-            
             notification_checkbox,
             compact_checkbox,
             timestamps_checkbox,
             nick_colors_checkbox,
-            
             Space::with_height(20),
-            
             row![
                 button("Apply").on_press(DialogMessage::PreferencesApply),
                 Space::with_width(10),
@@ -726,7 +724,7 @@ impl PreferencesDialog {
         .spacing(10)
         .padding(20)
         .max_width(400);
-        
+
         container(content)
             .width(Length::Fill)
             .height(Length::Fill)
@@ -740,11 +738,17 @@ impl PreferencesDialog {
 #[derive(Debug, Clone)]
 pub struct AboutDialog;
 
+impl Default for AboutDialog {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AboutDialog {
     pub fn new() -> Self {
         Self
     }
-    
+
     pub fn view(&self) -> Element<DialogMessage> {
         let content = column![
             text("RustIRC").size(24),
@@ -758,13 +762,12 @@ impl AboutDialog {
             vertical_space().height(20),
             text("© 2025 RustIRC Project"),
             vertical_space().height(20),
-            button(text("OK"))
-                .on_press(DialogMessage::AboutOk),
+            button(text("OK")).on_press(DialogMessage::AboutOk),
         ]
         .spacing(5)
         .padding(20)
         .max_width(350);
-        
+
         container(content)
             .width(Length::Fill)
             .height(Length::Fill)
@@ -782,6 +785,12 @@ pub struct FindDialog {
     pub regex: bool,
 }
 
+impl Default for FindDialog {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FindDialog {
     pub fn new() -> Self {
         Self {
@@ -790,42 +799,34 @@ impl FindDialog {
             regex: false,
         }
     }
-    
+
     pub fn view(&self) -> Element<DialogMessage> {
         let content = column![
             text("Find").size(20),
             vertical_space().height(10),
-            
             row![
                 text("Find:").width(60),
                 text_input("Search text", &self.query)
                     .on_input(DialogMessage::FindQueryChanged)
                     .width(250),
-            ].spacing(10),
-            
+            ]
+            .spacing(10),
             checkbox("Case sensitive", self.case_sensitive)
                 .on_toggle(DialogMessage::FindCaseSensitiveToggled),
-            
-            checkbox("Regular expression", self.regex)
-                .on_toggle(DialogMessage::FindRegexToggled),
-            
+            checkbox("Regular expression", self.regex).on_toggle(DialogMessage::FindRegexToggled),
             vertical_space().height(20),
-            
             row![
-                button(text("Find Next"))
-                    .on_press(DialogMessage::FindNext),
+                button(text("Find Next")).on_press(DialogMessage::FindNext),
                 horizontal_space().width(10),
-                button(text("Find Previous"))
-                    .on_press(DialogMessage::FindPrevious),
+                button(text("Find Previous")).on_press(DialogMessage::FindPrevious),
                 horizontal_space().width(10),
-                button(text("Close"))
-                    .on_press(DialogMessage::FindClose),
+                button(text("Close")).on_press(DialogMessage::FindClose),
             ],
         ]
         .spacing(10)
         .padding(20)
         .max_width(400);
-        
+
         container(content)
             .width(Length::Fill)
             .height(Length::Fill)
@@ -848,6 +849,12 @@ pub struct NetworkEntry {
     pub auto_connect: bool,
 }
 
+impl Default for NetworkListDialog {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl NetworkListDialog {
     pub fn new() -> Self {
         Self {
@@ -865,53 +872,46 @@ impl NetworkListDialog {
             ],
         }
     }
-    
+
     pub fn view(&self) -> Element<DialogMessage> {
-        let network_list = scrollable(
-            column(
-                self.networks.iter().enumerate().map(|(i, network)| {
+        let network_list = scrollable(column(
+            self.networks
+                .iter()
+                .enumerate()
+                .map(|(i, network)| {
                     row![
                         text(&network.name).width(150),
                         text(network.servers.join(", ")).width(200),
-                        button(text("Connect"))
-                            .on_press(DialogMessage::NetworkListConnect(i)),
-                        button(text("Edit"))
-                            .on_press(DialogMessage::NetworkListEdit(i)),
-                        button(text("Delete"))
-                            .on_press(DialogMessage::NetworkListDelete(i)),
+                        button(text("Connect")).on_press(DialogMessage::NetworkListConnect(i)),
+                        button(text("Edit")).on_press(DialogMessage::NetworkListEdit(i)),
+                        button(text("Delete")).on_press(DialogMessage::NetworkListDelete(i)),
                     ]
                     .spacing(10)
                     .into()
-                }).collect::<Vec<_>>()
-            )
-        );
-        
+                })
+                .collect::<Vec<_>>(),
+        ));
+
         let content = column![
             text("Network List").size(20),
             vertical_space().height(10),
-            
             row![
                 text("Network").width(150),
                 text("Servers").width(200),
                 text("Actions"),
             ],
-            
             network_list.height(300),
-            
             vertical_space().height(10),
-            
             row![
-                button(text("Add Network"))
-                    .on_press(DialogMessage::NetworkListAdd),
+                button(text("Add Network")).on_press(DialogMessage::NetworkListAdd),
                 horizontal_space().width(Length::Fill),
-                button(text("Close"))
-                    .on_press(DialogMessage::NetworkListClose),
+                button(text("Close")).on_press(DialogMessage::NetworkListClose),
             ],
         ]
         .spacing(10)
         .padding(20)
         .max_width(600);
-        
+
         container(content)
             .width(Length::Fill)
             .height(Length::Fill)

@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use std::str::FromStr;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Capability {
@@ -23,12 +24,12 @@ pub enum Capability {
     ServerTime,
     SetName,
     UserhostInNames,
-    
+
     // Draft capabilities
     Multiline,
     NoImplicitNames,
     StandardReplies,
-    
+
     // Custom capability
     Custom(String),
 }
@@ -59,9 +60,13 @@ impl Capability {
             Capability::Custom(s) => s,
         }
     }
+}
 
-    pub fn from_str(s: &str) -> Self {
-        match s {
+impl FromStr for Capability {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
             "account-notify" => Capability::AccountNotify,
             "account-tag" => Capability::AccountTag,
             "away-notify" => Capability::AwayNotify,
@@ -83,7 +88,7 @@ impl Capability {
             "draft/no-implicit-names" => Capability::NoImplicitNames,
             "draft/standard-replies" => Capability::StandardReplies,
             other => Capability::Custom(other.to_string()),
-        }
+        })
     }
 }
 

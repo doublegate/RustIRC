@@ -4,22 +4,28 @@
 //! can use for consistent behavior and state management.
 
 use crate::events::Event as CoreEvent;
+use anyhow::Result;
 use rustirc_protocol::Message;
 use std::collections::HashMap;
-use anyhow::Result;
 
 /// Extract the target (channel or user) from an IRC message
 fn extract_message_target(message: &Message) -> String {
     match message.command.as_str() {
-        "PRIVMSG" | "NOTICE" => {
-            message.params.first().unwrap_or(&"unknown".to_string()).clone()
-        }
-        "JOIN" => {
-            message.params.first().unwrap_or(&"unknown".to_string()).clone()
-        }
-        "PART" => {
-            message.params.first().unwrap_or(&"unknown".to_string()).clone()
-        }
+        "PRIVMSG" | "NOTICE" => message
+            .params
+            .first()
+            .unwrap_or(&"unknown".to_string())
+            .clone(),
+        "JOIN" => message
+            .params
+            .first()
+            .unwrap_or(&"unknown".to_string())
+            .clone(),
+        "PART" => message
+            .params
+            .first()
+            .unwrap_or(&"unknown".to_string())
+            .clone(),
         _ => "server".to_string(),
     }
 }
@@ -27,19 +33,19 @@ fn extract_message_target(message: &Message) -> String {
 /// Common interface for all user interface implementations
 pub trait UserInterface: Send + Sync {
     type Message;
-    
+
     /// Update the UI with an event
     fn update(&mut self, event: UiEvent) -> Option<Self::Message>;
-    
+
     /// Handle state changes from the core IRC engine
     fn handle_state_change(&mut self, change: StateChange);
-    
+
     /// Render the interface (implementation specific)
     fn render(&mut self) -> Result<()>;
-    
+
     /// Get current UI state for serialization
     fn get_state(&self) -> UiState;
-    
+
     /// Set UI state from deserialization
     fn set_state(&mut self, state: UiState);
 }
@@ -53,13 +59,17 @@ pub fn core_event_to_ui_event(core_event: &CoreEvent) -> Option<UiEvent> {
                 state: crate::connection::ConnectionState::Connected,
             }))
         }
-        CoreEvent::Disconnected { connection_id, reason } => {
-            Some(UiEvent::StateChange(StateChange::ConnectionStateChanged {
-                server_id: connection_id.clone(),
-                state: crate::connection::ConnectionState::Failed(reason.clone()),
-            }))
-        }
-        CoreEvent::MessageReceived { connection_id, message } => {
+        CoreEvent::Disconnected {
+            connection_id,
+            reason,
+        } => Some(UiEvent::StateChange(StateChange::ConnectionStateChanged {
+            server_id: connection_id.clone(),
+            state: crate::connection::ConnectionState::Failed(reason.clone()),
+        })),
+        CoreEvent::MessageReceived {
+            connection_id,
+            message,
+        } => {
             // Extract message details for UI display
             let message_target = extract_message_target(message);
             Some(UiEvent::StateChange(StateChange::MessageReceived {
@@ -68,18 +78,20 @@ pub fn core_event_to_ui_event(core_event: &CoreEvent) -> Option<UiEvent> {
                 message: core_event.clone(),
             }))
         }
-        CoreEvent::ChannelJoined { connection_id, channel } => {
-            Some(UiEvent::StateChange(StateChange::ChannelJoined {
-                server_id: connection_id.clone(),
-                channel: channel.clone(),
-            }))
-        }
-        CoreEvent::ChannelLeft { connection_id, channel } => {
-            Some(UiEvent::StateChange(StateChange::ChannelLeft {
-                server_id: connection_id.clone(),
-                channel: channel.clone(),
-            }))
-        }
+        CoreEvent::ChannelJoined {
+            connection_id,
+            channel,
+        } => Some(UiEvent::StateChange(StateChange::ChannelJoined {
+            server_id: connection_id.clone(),
+            channel: channel.clone(),
+        })),
+        CoreEvent::ChannelLeft {
+            connection_id,
+            channel,
+        } => Some(UiEvent::StateChange(StateChange::ChannelLeft {
+            server_id: connection_id.clone(),
+            channel: channel.clone(),
+        })),
         _ => None, // Some core events may not have UI equivalents
     }
 }
@@ -89,28 +101,28 @@ pub fn core_event_to_ui_event(core_event: &CoreEvent) -> Option<UiEvent> {
 pub enum UiEvent {
     /// User input (text or command)
     Input(String),
-    
+
     /// Tab switching
     TabSwitch(ViewId),
-    
+
     /// Scrolling in message area
     Scroll(ScrollDirection),
-    
+
     /// Window/terminal resize
     Resize(u16, u16),
-    
+
     /// Focus change between UI elements
     FocusChange(FocusTarget),
-    
+
     /// Menu action
     MenuAction(MenuAction),
-    
+
     /// Theme change
     ThemeChange(String),
-    
+
     /// Settings update
     SettingsUpdate(SettingsUpdate),
-    
+
     /// State change from IRC core
     StateChange(StateChange),
 }
@@ -123,33 +135,27 @@ pub enum StateChange {
         server_id: String,
         state: crate::connection::ConnectionState,
     },
-    
+
     /// Message received
     MessageReceived {
         server_id: String,
         target: String,
         message: crate::events::Event,
     },
-    
+
     /// Channel joined
-    ChannelJoined {
-        server_id: String,
-        channel: String,
-    },
-    
+    ChannelJoined { server_id: String, channel: String },
+
     /// Channel left
-    ChannelLeft {
-        server_id: String,
-        channel: String,
-    },
-    
+    ChannelLeft { server_id: String, channel: String },
+
     /// User list updated
     UserListUpdated {
         server_id: String,
         channel: String,
         users: Vec<ChannelUser>,
     },
-    
+
     /// Nick changed
     NickChanged {
         server_id: String,
@@ -166,6 +172,12 @@ pub struct ViewManager {
     view_registry: ViewRegistry,
 }
 
+impl Default for ViewManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ViewManager {
     pub fn new() -> Self {
         Self {
@@ -175,12 +187,16 @@ impl ViewManager {
             view_registry: ViewRegistry::new(),
         }
     }
-    
+
     /// Register a new view type
-    pub fn register_view_type<V: View + 'static>(&mut self, view_type: ViewType, factory: ViewFactory<V>) {
+    pub fn register_view_type<V: View + 'static>(
+        &mut self,
+        view_type: ViewType,
+        factory: ViewFactory<V>,
+    ) {
         self.view_registry.register(view_type, factory);
     }
-    
+
     /// Create and add a view
     pub fn create_view(&mut self, view_type: ViewType, id: ViewId) -> Result<()> {
         if let Some(view) = self.view_registry.create_view(view_type, id.clone())? {
@@ -188,7 +204,7 @@ impl ViewManager {
         }
         Ok(())
     }
-    
+
     /// Switch to a view
     pub fn switch_to_view(&mut self, id: ViewId) {
         if self.views.contains_key(&id) {
@@ -196,12 +212,12 @@ impl ViewManager {
             self.active = id;
         }
     }
-    
+
     /// Get current view
     pub fn current_view(&self) -> Option<&dyn View> {
         self.views.get(&self.active).map(|v| v.as_ref())
     }
-    
+
     /// Get mutable current view  
     pub fn current_view_mut(&mut self) -> Option<&mut dyn View> {
         if let Some(view) = self.views.get_mut(&self.active) {
@@ -210,14 +226,14 @@ impl ViewManager {
             None
         }
     }
-    
+
     /// Go back to previous view
     pub fn go_back(&mut self) {
         if let Some(previous) = self.history.pop() {
             self.active = previous;
         }
     }
-    
+
     /// Close a view
     pub fn close_view(&mut self, id: &ViewId) {
         self.views.remove(id);
@@ -231,19 +247,19 @@ impl ViewManager {
 pub trait View: Send + Sync {
     /// Get unique view identifier
     fn id(&self) -> ViewId;
-    
+
     /// Get display title
     fn title(&self) -> String;
-    
+
     /// Update view with a message
     fn update(&mut self, message: ViewMessage);
-    
+
     /// Check if view needs redraw
     fn needs_redraw(&self) -> bool;
-    
+
     /// Mark as redrawn
     fn mark_redrawn(&mut self);
-    
+
     /// Get view metadata
     fn metadata(&self) -> ViewMetadata;
 }
@@ -253,17 +269,23 @@ pub struct ViewRegistry {
     factories: HashMap<ViewType, Box<dyn ViewFactoryTrait>>,
 }
 
+impl Default for ViewRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ViewRegistry {
     pub fn new() -> Self {
         Self {
             factories: HashMap::new(),
         }
     }
-    
+
     pub fn register<V: View + 'static>(&mut self, view_type: ViewType, factory: ViewFactory<V>) {
         self.factories.insert(view_type, Box::new(factory));
     }
-    
+
     pub fn create_view(&self, view_type: ViewType, id: ViewId) -> Result<Option<Box<dyn View>>> {
         if let Some(factory) = self.factories.get(&view_type) {
             Ok(Some(factory.create(id)?))
@@ -284,9 +306,9 @@ pub struct ViewFactory<V: View + 'static> {
 }
 
 impl<V: View + 'static> ViewFactory<V> {
-    pub fn new<F>(create_fn: F) -> Self 
-    where 
-        F: Fn(ViewId) -> Result<V> + Send + Sync + 'static 
+    pub fn new<F>(create_fn: F) -> Self
+    where
+        F: Fn(ViewId) -> Result<V> + Send + Sync + 'static,
     {
         Self {
             create_fn: Box::new(create_fn),

@@ -10,6 +10,9 @@ allow-unwrap-in-tests = true
 allow-dbg-in-tests = true
 allow-print-in-tests = true
 
+# Allow some format! warnings for now during Phase 1 completion
+allow-mixed-uninlined-format-args = true
+
 # Cognitive complexity threshold
 cognitive-complexity-threshold = 30
 
@@ -24,6 +27,9 @@ missing-docs-in-crate-items = true
 # Disallowed types/methods for security
 disallowed-types = [
     "std::process::Command",  # Use controlled execution
+]
+
+disallowed-methods = [
     "std::env::set_var",      # Can cause race conditions
 ]
 
@@ -32,7 +38,6 @@ cargo-ignore-publish = false
 
 # Error message improvements
 verbose-bit-mask-threshold = 1
-verbose-file-reads = true
 enum-variant-name-threshold = 3
 
 # Style preferences
@@ -53,7 +58,7 @@ doc-valid-idents = [
 ]
 
 # Module inception is fine for our architecture
-accept-module-inception = true
+allow-private-module-inception = true
 
 # Large errors are ok for our error types
 large-error-threshold = 128

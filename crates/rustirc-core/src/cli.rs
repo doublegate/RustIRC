@@ -3,12 +3,12 @@
 //! Full-featured command-line interface with all GUI features for testing IRC functionality.
 //! Includes themes, settings, multiple servers, tab management, and comprehensive IRC support.
 
-use crate::{IrcClient, Config, SaslCredentials, AuthState};
+use crate::{AuthState, Config, IrcClient, SaslCredentials};
 use anyhow::Result;
-use std::io::{self, Write};
 use std::collections::HashMap;
+use std::io::{self, Write};
 use tokio::time::{timeout, Duration};
-use tracing::{info, warn, error};
+use tracing::{error, info, warn};
 
 /// CLI application settings matching GUI AppSettings
 #[derive(Debug, Clone)]
@@ -69,18 +69,18 @@ pub enum CliTabType {
 pub struct CliClient {
     /// Multiple server support
     servers: HashMap<String, CliServer>,
-    
+
     /// Tab management
     tabs: HashMap<String, CliTab>,
     current_tab_id: Option<String>,
     tab_order: Vec<String>,
-    
+
     /// Settings
     settings: CliSettings,
-    
+
     /// Connection state
     current_server_id: Option<String>,
-    
+
     /// Command history
     command_history: Vec<String>,
     history_position: usize,
@@ -109,19 +109,19 @@ impl CliClient {
             channels: Vec::new(),
         };
         self.servers.insert(server_id.clone(), server);
-        
+
         // Create server tab
         let tab = CliTab {
-            id: format!("server:{}", server_id),
+            id: format!("server:{server_id}"),
             name,
             tab_type: CliTabType::Server,
             server_id: Some(server_id.clone()),
             active: false,
         };
-        let tab_id = format!("server:{}", server_id);
+        let tab_id = format!("server:{server_id}");
         self.tabs.insert(tab_id.clone(), tab);
         self.tab_order.push(tab_id.clone());
-        
+
         // Set as current if first
         if self.current_tab_id.is_none() {
             self.current_tab_id = Some(tab_id);
@@ -132,19 +132,19 @@ impl CliClient {
     /// Add a channel tab
     pub fn add_channel_tab(&mut self, server_id: String, channel: String) {
         let tab = CliTab {
-            id: format!("{}:{}", server_id, channel),
+            id: format!("{server_id}:{channel}"),
             name: channel.clone(),
             tab_type: CliTabType::Channel,
             server_id: Some(server_id.clone()),
             active: false,
         };
-        let tab_id = format!("{}:{}", server_id, channel);
+        let tab_id = format!("{server_id}:{channel}");
         self.tabs.insert(tab_id.clone(), tab);
         self.tab_order.push(tab_id.clone());
-        
+
         // Set as current tab
         self.current_tab_id = Some(tab_id);
-        
+
         // Add to server's channel list
         if let Some(server) = self.servers.get_mut(&server_id) {
             server.channels.push(channel);
@@ -166,16 +166,33 @@ impl CliClient {
         println!("Current tab: {:?}", self.current_tab_id);
         println!("Servers: {}", self.servers.len());
         for (id, server) in &self.servers {
-            println!("  {} ({}): {} - {} channels", 
-                     id, server.name, 
-                     if server.connected { "Connected" } else { "Disconnected" },
-                     server.channels.len());
+            println!(
+                "  {} ({}): {} - {} channels",
+                id,
+                server.name,
+                if server.connected {
+                    "Connected"
+                } else {
+                    "Disconnected"
+                },
+                server.channels.len()
+            );
         }
         println!("Tabs: {}", self.tabs.len());
         for (i, tab_id) in self.tab_order.iter().enumerate() {
             if let Some(tab) = self.tabs.get(tab_id) {
-                let current_marker = if Some(tab_id) == self.current_tab_id.as_ref() { "*" } else { " " };
-                println!("  {}{}: {} ({:?})", current_marker, i + 1, tab.name, tab.tab_type);
+                let current_marker = if Some(tab_id) == self.current_tab_id.as_ref() {
+                    "*"
+                } else {
+                    " "
+                };
+                println!(
+                    "  {}{}: {} ({:?})",
+                    current_marker,
+                    i + 1,
+                    tab.name,
+                    tab.tab_type
+                );
             }
         }
         println!("Settings:");
@@ -199,7 +216,7 @@ impl CliClient {
     /// Change theme
     pub fn set_theme(&mut self, theme: String) {
         self.settings.theme = theme.clone();
-        println!("Theme changed to: {}", theme);
+        println!("Theme changed to: {theme}");
     }
 
     /// Toggle setting
@@ -207,26 +224,61 @@ impl CliClient {
         match setting {
             "timestamps" => {
                 self.settings.show_timestamps = !self.settings.show_timestamps;
-                println!("Timestamps: {}", if self.settings.show_timestamps { "ON" } else { "OFF" });
-            },
+                println!(
+                    "Timestamps: {}",
+                    if self.settings.show_timestamps {
+                        "ON"
+                    } else {
+                        "OFF"
+                    }
+                );
+            }
             "joinpart" => {
                 self.settings.show_join_part = !self.settings.show_join_part;
-                println!("Join/Part messages: {}", if self.settings.show_join_part { "ON" } else { "OFF" });
-            },
+                println!(
+                    "Join/Part messages: {}",
+                    if self.settings.show_join_part {
+                        "ON"
+                    } else {
+                        "OFF"
+                    }
+                );
+            }
             "compact" => {
                 self.settings.compact_mode = !self.settings.compact_mode;
-                println!("Compact mode: {}", if self.settings.compact_mode { "ON" } else { "OFF" });
-            },
+                println!(
+                    "Compact mode: {}",
+                    if self.settings.compact_mode {
+                        "ON"
+                    } else {
+                        "OFF"
+                    }
+                );
+            }
             "colors" => {
                 self.settings.nick_colors = !self.settings.nick_colors;
-                println!("Nick colors: {}", if self.settings.nick_colors { "ON" } else { "OFF" });
-            },
+                println!(
+                    "Nick colors: {}",
+                    if self.settings.nick_colors {
+                        "ON"
+                    } else {
+                        "OFF"
+                    }
+                );
+            }
             "reconnect" => {
                 self.settings.auto_reconnect = !self.settings.auto_reconnect;
-                println!("Auto-reconnect: {}", if self.settings.auto_reconnect { "ON" } else { "OFF" });
-            },
+                println!(
+                    "Auto-reconnect: {}",
+                    if self.settings.auto_reconnect {
+                        "ON"
+                    } else {
+                        "OFF"
+                    }
+                );
+            }
             _ => {
-                println!("Unknown setting: {}. Available: timestamps, joinpart, compact, colors, reconnect", setting);
+                println!("Unknown setting: {setting}. Available: timestamps, joinpart, compact, colors, reconnect");
             }
         }
     }
@@ -237,7 +289,7 @@ impl CliClient {
         println!("===============================");
         println!("Commands: /help for full list");
         println!();
-        
+
         // Add default server
         self.add_server("libera".to_string(), "Libera.Chat".to_string());
 
@@ -254,7 +306,7 @@ impl CliClient {
             }
 
             if let Err(e) = self.handle_command(input).await {
-                eprintln!("Error: {}", e);
+                eprintln!("Error: {e}");
             }
 
             if input == "/quit" {
@@ -272,17 +324,17 @@ impl CliClient {
             self.command_history.remove(0);
         }
         self.history_position = self.command_history.len();
-        
+
         let parts: Vec<&str> = input.split_whitespace().collect();
-        
-        match parts.get(0) {
+
+        match parts.first() {
             // Connection management
             Some(&"/connect") => self.connect().await,
             Some(&"/disconnect") => {
                 self.disconnect().await?;
                 Ok(())
-            },
-            
+            }
+
             // Channel management
             Some(&"/join") => {
                 if let Some(channel) = parts.get(1) {
@@ -291,7 +343,7 @@ impl CliClient {
                     println!("Usage: /join <channel>");
                     Ok(())
                 }
-            },
+            }
             Some(&"/part") => {
                 if let Some(channel) = parts.get(1) {
                     self.part_channel(channel).await
@@ -299,11 +351,9 @@ impl CliClient {
                     println!("Usage: /part <channel>");
                     Ok(())
                 }
-            },
-            Some(&"/list") => {
-                self.list_channels().await
-            },
-            
+            }
+            Some(&"/list") => self.list_channels().await,
+
             // Messaging
             Some(&"/msg") => {
                 if parts.len() >= 3 {
@@ -314,8 +364,8 @@ impl CliClient {
                     println!("Usage: /msg <target> <message>");
                     Ok(())
                 }
-            },
-            
+            }
+
             // Tab management
             Some(&"/tab") => {
                 if let Some(action) = parts.get(1) {
@@ -336,8 +386,8 @@ impl CliClient {
                     self.list_tabs();
                 }
                 Ok(())
-            },
-            
+            }
+
             // Theme management
             Some(&"/theme") => {
                 if let Some(theme_name) = parts.get(1) {
@@ -346,8 +396,8 @@ impl CliClient {
                     self.list_themes();
                 }
                 Ok(())
-            },
-            
+            }
+
             // Settings
             Some(&"/set") => {
                 if let Some(setting) = parts.get(1) {
@@ -356,13 +406,13 @@ impl CliClient {
                     println!("Usage: /set <setting>. Settings: timestamps, joinpart, compact, colors, reconnect");
                 }
                 Ok(())
-            },
-            
+            }
+
             // Status and information
             Some(&"/status") => {
                 self.show_status();
                 Ok(())
-            },
+            }
             Some(&"/whois") => {
                 if let Some(nick) = parts.get(1) {
                     self.whois(nick).await
@@ -370,27 +420,27 @@ impl CliClient {
                     println!("Usage: /whois <nick>");
                     Ok(())
                 }
-            },
-            
+            }
+
             // Application control
             Some(&"/quit") => {
                 self.disconnect().await?;
                 println!("Goodbye!");
                 Ok(())
-            },
+            }
             Some(&"/help") => {
                 self.show_help();
                 Ok(())
-            },
+            }
             Some(cmd) if cmd.starts_with('/') => {
-                println!("Unknown command: {}. Type /help for available commands.", cmd);
+                println!("Unknown command: {cmd}. Type /help for available commands.");
                 Ok(())
-            },
+            }
             _ => {
                 let is_connected = self.servers.values().any(|s| s.connected);
                 if is_connected {
                     // Send as message to current channel/target
-                    println!("Raw message: {}", input);
+                    println!("Raw message: {input}");
                 } else {
                     println!("Not connected. Use /connect first.");
                 }
@@ -401,29 +451,36 @@ impl CliClient {
 
     async fn connect(&mut self) -> Result<()> {
         // Use current server or create default
-        let server_id = self.current_server_id.clone()
+        let server_id = self
+            .current_server_id
+            .clone()
             .unwrap_or_else(|| "libera".to_string());
-        
+
         // Check if already connected
         if let Some(server) = self.servers.get(&server_id) {
             if server.connected {
-                println!("Already connected to {}.", server_id);
+                println!("Already connected to {server_id}.");
                 return Ok(());
             }
         }
 
-        println!("Connecting to IRC server: {}", server_id);
-        info!("Starting IRC connection attempt for server: {}", server_id);
-        
+        println!("Connecting to IRC server: {server_id}");
+        info!("Starting IRC connection attempt for server: {server_id}");
+
         // Create new client for this server
         let client = IrcClient::new(Config::default());
-        
-        // Use timeout to prevent hanging  
-        match timeout(Duration::from_secs(10), client.connect("irc.libera.chat", 6667)).await {
+
+        // Use timeout to prevent hanging
+        match timeout(
+            Duration::from_secs(10),
+            client.connect("irc.libera.chat", 6667),
+        )
+        .await
+        {
             Ok(Ok(())) => {
-                println!("Connected successfully to {}!", server_id);
-                info!("IRC connection established successfully for server: {}", server_id);
-                
+                println!("Connected successfully to {server_id}!");
+                info!("IRC connection established successfully for server: {server_id}");
+
                 // Create or update server entry
                 let server = CliServer {
                     name: server_id.clone(),
@@ -431,11 +488,11 @@ impl CliClient {
                     connected: true,
                     channels: Vec::new(),
                 };
-                
+
                 self.servers.insert(server_id.clone(), server);
-                
+
                 // Create server tab if it doesn't exist
-                let tab_id = format!("server:{}", server_id);
+                let tab_id = format!("server:{server_id}");
                 if !self.tabs.contains_key(&tab_id) {
                     let tab = CliTab {
                         id: tab_id.clone(),
@@ -446,21 +503,21 @@ impl CliClient {
                     };
                     self.tabs.insert(tab_id.clone(), tab);
                     self.tab_order.push(tab_id.clone());
-                    
+
                     // Set as current if first
                     if self.current_tab_id.is_none() {
                         self.current_tab_id = Some(tab_id);
                         self.current_server_id = Some(server_id.clone());
                     }
                 }
-                
+
                 // Test SASL authentication functionality
                 self.test_sasl_functionality().await?;
-            },
+            }
             Ok(Err(e)) => {
                 error!("Connection failed: {}", e);
                 return Err(e.into());
-            },
+            }
             Err(_) => {
                 warn!("Connection timeout after 10 seconds");
                 error!("Connection timeout");
@@ -470,7 +527,6 @@ impl CliClient {
 
         Ok(())
     }
-
 
     async fn join_channel(&mut self, channel: &str) -> Result<()> {
         let server_id = match &self.current_server_id {
@@ -484,25 +540,25 @@ impl CliClient {
         let server = match self.servers.get_mut(&server_id) {
             Some(s) if s.connected => s,
             Some(_) => {
-                println!("Not connected to {}. Use /connect first.", server_id);
+                println!("Not connected to {server_id}. Use /connect first.");
                 return Ok(());
             }
             None => {
-                println!("Server {} not found. Use /connect first.", server_id);
+                println!("Server {server_id} not found. Use /connect first.");
                 return Ok(());
             }
         };
 
-        println!("Joining channel: {}", channel);
-        
+        println!("Joining channel: {channel}");
+
         if let Some(client) = &mut server.client {
             client.join_channel(channel).await?;
             self.add_channel_tab(server_id, channel.to_string());
-            println!("Joined {}", channel);
+            println!("Joined {channel}");
         } else {
-            println!("No client connection available for server {}", server_id);
+            println!("No client connection available for server {server_id}");
         }
-        
+
         Ok(())
     }
 
@@ -518,23 +574,23 @@ impl CliClient {
         let server = match self.servers.get_mut(&server_id) {
             Some(s) if s.connected => s,
             Some(_) => {
-                println!("Not connected to {}. Use /connect first.", server_id);
+                println!("Not connected to {server_id}. Use /connect first.");
                 return Ok(());
             }
             None => {
-                println!("Server {} not found. Use /connect first.", server_id);
+                println!("Server {server_id} not found. Use /connect first.");
                 return Ok(());
             }
         };
 
-        println!("<{}> {}", target, message);
-        
+        println!("<{target}> {message}");
+
         if let Some(client) = &mut server.client {
             client.send_message(target, message).await?;
         } else {
-            println!("No client connection available for server {}", server_id);
+            println!("No client connection available for server {server_id}");
         }
-        
+
         Ok(())
     }
 
@@ -554,42 +610,45 @@ impl CliClient {
                 }
                 server.connected = false;
                 server.client = None;
-                println!("Disconnected from {}.", server_id);
+                println!("Disconnected from {server_id}.");
             } else {
-                println!("Already disconnected from {}.", server_id);
+                println!("Already disconnected from {server_id}.");
             }
         } else {
-            println!("Server {} not found.", server_id);
+            println!("Server {server_id} not found.");
         }
-        
+
         Ok(())
     }
 
     async fn test_sasl_functionality(&self) -> Result<()> {
         // Test SASL credentials and authentication state
         println!("Testing SASL functionality...");
-        
+
         // Create test credentials
         let credentials = SaslCredentials {
             username: "testuser".to_string(),
             password: "testpass".to_string(),
             authzid: None,
         };
-        
+
         // Test authentication state transitions
         let mut auth_state = AuthState::Idle;
-        println!("Initial auth state: {:?}", auth_state);
-        
+        println!("Initial auth state: {auth_state:?}");
+
         auth_state = AuthState::InProgress;
-        println!("Auth state during authentication: {:?}", auth_state);
-        
+        println!("Auth state during authentication: {auth_state:?}");
+
         auth_state = AuthState::Success;
-        println!("Auth state after success: {:?}", auth_state);
-        
+        println!("Auth state after success: {auth_state:?}");
+
         // In a real implementation, this would use the credentials with a SaslAuthenticator
-        println!("SASL credentials validated for user: {}", credentials.username);
+        println!(
+            "SASL credentials validated for user: {}",
+            credentials.username
+        );
         println!("SASL authentication test completed successfully");
-        
+
         Ok(())
     }
 
@@ -675,7 +734,7 @@ impl CliClient {
                 }
             }
         } else {
-            println!("Tab number {} not found. Use /tab list to see available tabs.", tab_number);
+            println!("Tab number {tab_number} not found. Use /tab list to see available tabs.");
         }
     }
 
@@ -685,11 +744,11 @@ impl CliClient {
             if let Some(tab) = self.tabs.get(&current_id) {
                 println!("Closing tab: {}", tab.name);
             }
-            
+
             // Remove from tabs and order
             self.tabs.remove(&current_id);
             self.tab_order.retain(|id| id != &current_id);
-            
+
             // Switch to next available tab
             self.current_tab_id = self.tab_order.first().cloned();
             if let Some(new_id) = &self.current_tab_id {
@@ -704,8 +763,18 @@ impl CliClient {
         println!("Tabs:");
         for (i, tab_id) in self.tab_order.iter().enumerate() {
             if let Some(tab) = self.tabs.get(tab_id) {
-                let current_marker = if Some(tab_id) == self.current_tab_id.as_ref() { "*" } else { " " };
-                println!("  {}{}: {} ({:?})", current_marker, i + 1, tab.name, tab.tab_type);
+                let current_marker = if Some(tab_id) == self.current_tab_id.as_ref() {
+                    "*"
+                } else {
+                    " "
+                };
+                println!(
+                    "  {}{}: {} ({:?})",
+                    current_marker,
+                    i + 1,
+                    tab.name,
+                    tab.tab_type
+                );
             }
         }
     }
@@ -715,27 +784,30 @@ impl CliClient {
         if let Some(server) = self.get_current_server() {
             if server.connected {
                 if let Some(client) = &server.client {
-                    println!("Leaving channel: {}", channel);
-                    client.send_command(rustirc_protocol::Command::Part { 
-                        channels: vec![channel.to_string()], 
-                        message: None 
-                    }).await?;
-                    
+                    println!("Leaving channel: {channel}");
+                    client
+                        .send_command(rustirc_protocol::Command::Part {
+                            channels: vec![channel.to_string()],
+                            message: None,
+                        })
+                        .await?;
+
                     // Remove from server's channel list
                     server.channels.retain(|c| c != channel);
-                    
+
                     // Close the tab
-                    let tab_id = format!("{}:{}", self.current_server_id.as_ref().unwrap(), channel);
+                    let tab_id =
+                        format!("{}:{}", self.current_server_id.as_ref().unwrap(), channel);
                     self.tabs.remove(&tab_id);
                     self.tab_order.retain(|id| id != &tab_id);
-                    
+
                     // Switch to server tab
                     if let Some(server_id) = &self.current_server_id {
-                        let server_tab_id = format!("server:{}", server_id);
+                        let server_tab_id = format!("server:{server_id}");
                         self.current_tab_id = Some(server_tab_id);
                     }
-                    
-                    println!("Left {}", channel);
+
+                    println!("Left {channel}");
                 } else {
                     println!("No IRC client available");
                 }
@@ -753,9 +825,9 @@ impl CliClient {
             if server.connected {
                 if let Some(client) = &server.client {
                     println!("Requesting channel list...");
-                    client.send_command(rustirc_protocol::Command::List { 
-                        channels: None 
-                    }).await?;
+                    client
+                        .send_command(rustirc_protocol::Command::List { channels: None })
+                        .await?;
                     println!("Channel list requested (results will appear in messages)");
                 } else {
                     println!("No IRC client available");
@@ -773,11 +845,13 @@ impl CliClient {
         if let Some(server) = self.get_current_server() {
             if server.connected {
                 if let Some(client) = &server.client {
-                    println!("Requesting WHOIS for: {}", nick);
-                    client.send_command(rustirc_protocol::Command::Whois { 
-                        targets: vec![nick.to_string()] 
-                    }).await?;
-                    println!("WHOIS requested for {} (results will appear in messages)", nick);
+                    println!("Requesting WHOIS for: {nick}");
+                    client
+                        .send_command(rustirc_protocol::Command::Whois {
+                            targets: vec![nick.to_string()],
+                        })
+                        .await?;
+                    println!("WHOIS requested for {nick} (results will appear in messages)");
                 } else {
                     println!("No IRC client available");
                 }
@@ -790,7 +864,6 @@ impl CliClient {
         Ok(())
     }
 }
-
 
 /// Run the CLI prototype
 pub async fn run_cli_prototype(config: Config) -> Result<()> {

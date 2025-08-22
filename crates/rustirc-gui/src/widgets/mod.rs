@@ -8,16 +8,16 @@
 //! - TabBar: Tab management for channels and private messages
 //! - StatusBar: Connection and channel status information
 
-pub mod server_tree;
-pub mod message_view;
 pub mod input_area;
-pub mod user_list;
-pub mod tab_bar;
+pub mod message_view;
+pub mod server_tree;
 pub mod status_bar;
+pub mod tab_bar;
+pub mod user_list;
 
-pub use server_tree::{ServerTree, ServerTreeMessage};
-pub use message_view::{MessageView, MessageViewMessage};
 pub use input_area::{InputArea, InputAreaMessage};
-pub use user_list::{UserList, UserListMessage};
-pub use tab_bar::{TabBar, TabBarMessage};
+pub use message_view::{MessageView, MessageViewMessage};
+pub use server_tree::{ServerTree, ServerTreeMessage};
 pub use status_bar::{StatusBar, StatusBarMessage};
+pub use tab_bar::{TabBar, TabBarMessage};
+pub use user_list::{UserList, UserListMessage};

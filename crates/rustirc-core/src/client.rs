@@ -1,10 +1,10 @@
 //! IRC Client implementation
 
 use crate::config::Config;
+use crate::connection::{ConnectionConfig, ConnectionManager};
 use crate::error::{Error, Result};
 use crate::events::EventBus;
 use crate::state::ClientState;
-use crate::connection::{ConnectionManager, ConnectionConfig};
 use rustirc_protocol::{Command, Message};
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -20,7 +20,7 @@ impl IrcClient {
     pub fn new(config: Config) -> Self {
         let event_bus = Arc::new(EventBus::new());
         let connection_manager = Arc::new(ConnectionManager::new(event_bus.clone()));
-        
+
         Self {
             config,
             state: Arc::new(RwLock::new(ClientState::default())),
@@ -28,17 +28,17 @@ impl IrcClient {
             connection_manager,
         }
     }
-    
+
     /// Get client configuration
     pub fn get_config(&self) -> &Config {
         &self.config
     }
-    
+
     /// Get server configuration
     pub fn get_server_config(&self, server_id: &str) -> Option<&crate::config::ServerConfig> {
         self.config.servers.iter().find(|s| s.name == server_id)
     }
-    
+
     /// Get UI configuration
     pub fn get_ui_config(&self) -> &crate::config::UiConfig {
         &self.config.ui
@@ -46,10 +46,10 @@ impl IrcClient {
 
     pub async fn connect(&self, server: &str, port: u16) -> Result<()> {
         tracing::info!("Connecting to {}:{}", server, port);
-        
+
         // Find server configuration or use defaults
         let server_config = self.get_server_config(server);
-        
+
         let connection_config = if let Some(srv_config) = server_config {
             ConnectionConfig {
                 server: srv_config.address.clone(),
@@ -72,19 +72,20 @@ impl IrcClient {
                 ..Default::default()
             }
         };
-        
+
         // Create connection ID
-        let connection_id = format!("{}:{}", server, port);
-        
+        let connection_id = format!("{server}:{port}");
+
         // Add connection to manager
-        let connection = self.connection_manager
+        let connection = self
+            .connection_manager
             .add_connection(connection_id.clone(), connection_config)
             .await?;
-        
+
         // Spawn connection task - now connect() works with &self
         let connection_manager = self.connection_manager.clone();
         let connection_id_clone = connection_id.clone();
-        
+
         tokio::spawn(async move {
             match connection.connect().await {
                 Ok(()) => {
@@ -94,11 +95,13 @@ impl IrcClient {
                 Err(e) => {
                     tracing::error!("Connection failed for {}: {}", connection_id_clone, e);
                     // Remove failed connection from manager
-                    connection_manager.remove_connection(&connection_id_clone).await;
+                    connection_manager
+                        .remove_connection(&connection_id_clone)
+                        .await;
                 }
             }
         });
-        
+
         tracing::info!("Real IRC connection initiated for {}", connection_id);
         Ok(())
     }
@@ -111,7 +114,7 @@ impl IrcClient {
 
     pub async fn send_command(&self, command: Command) -> Result<()> {
         tracing::debug!("Sending command: {:?}", command);
-        
+
         // Get the first available connection (in a real app, we'd specify which connection)
         let connections = self.connection_manager.list_connections().await;
         if let Some(connection_id) = connections.first() {
@@ -123,13 +126,13 @@ impl IrcClient {
         } else {
             return Err(Error::Protocol("No connections available".to_string()));
         }
-        
+
         Ok(())
     }
-    
+
     pub async fn send_raw_message(&self, message: Message) -> Result<()> {
         tracing::debug!("Sending raw message: {}", message);
-        
+
         // Get the first available connection (in a real app, we'd specify which connection)
         let connections = self.connection_manager.list_connections().await;
         if let Some(connection_id) = connections.first() {
@@ -141,7 +144,7 @@ impl IrcClient {
         } else {
             return Err(Error::Protocol("No connections available".to_string()));
         }
-        
+
         Ok(())
     }
 
@@ -149,14 +152,16 @@ impl IrcClient {
         self.send_command(Command::Join {
             channels: vec![channel.to_string()],
             keys: vec![],
-        }).await
+        })
+        .await
     }
 
     pub async fn send_message(&self, target: &str, text: &str) -> Result<()> {
         self.send_command(Command::PrivMsg {
             target: target.to_string(),
             text: text.to_string(),
-        }).await
+        })
+        .await
     }
 
     pub fn event_bus(&self) -> Arc<EventBus> {
@@ -166,23 +171,24 @@ impl IrcClient {
     pub async fn get_state(&self) -> ClientState {
         self.state.read().await.clone()
     }
-    
+
     pub fn connection_manager(&self) -> Arc<ConnectionManager> {
         self.connection_manager.clone()
     }
-    
+
     /// Connect to a specific server with custom configuration
     pub async fn connect_with_config(&self, connection_config: ConnectionConfig) -> Result<String> {
         let connection_id = format!("{}:{}", connection_config.server, connection_config.port);
-        
+
         // Add connection to manager
-        let connection = self.connection_manager
+        let connection = self
+            .connection_manager
             .add_connection(connection_id.clone(), connection_config)
             .await?;
-        
+
         // Start the connection - removed Arc::try_unwrap since connect() now takes &self
         let connection_clone = connection.clone();
-        
+
         // Spawn connection task
         let connection_id_clone = connection_id.clone();
         tokio::spawn(async move {
@@ -190,7 +196,7 @@ impl IrcClient {
                 tracing::error!("Connection failed for {}: {}", connection_id_clone, e);
             }
         });
-        
+
         Ok(connection_id)
     }
 }

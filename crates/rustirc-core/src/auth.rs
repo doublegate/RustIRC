@@ -5,7 +5,7 @@
 //! in Phase 2 requirements.
 
 use anyhow::Result;
-use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
+use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use std::collections::HashMap;
 use tracing::{debug, info, warn};
 
@@ -49,9 +49,9 @@ impl SaslMechanism for PlainMechanism {
         let authzid = credentials.authzid.as_deref().unwrap_or("");
         let authcid = &credentials.username;
         let password = &credentials.password;
-        
+
         // Format: authzid\0authcid\0password
-        let response = format!("{}\0{}\0{}", authzid, authcid, password);
+        let response = format!("{authzid}\0{authcid}\0{password}");
         Ok(response.into_bytes())
     }
 
@@ -71,7 +71,12 @@ impl SaslMechanism for ExternalMechanism {
 
     fn initial_response(&self, credentials: &SaslCredentials) -> Result<Vec<u8>> {
         // Send authzid or empty string
-        Ok(credentials.authzid.as_deref().unwrap_or("").as_bytes().to_vec())
+        Ok(credentials
+            .authzid
+            .as_deref()
+            .unwrap_or("")
+            .as_bytes()
+            .to_vec())
     }
 
     fn continue_auth(&mut self, _challenge: Option<&[u8]>) -> Result<Vec<u8>> {
@@ -125,10 +130,10 @@ impl SaslAuthenticator {
         mechanism: &str,
         credentials: SaslCredentials,
     ) -> Result<Vec<u8>> {
-        debug!("Starting SASL authentication with mechanism: {}", mechanism);
+        debug!("Starting SASL authentication with mechanism: {mechanism}");
 
         if !self.mechanisms.contains_key(mechanism) {
-            let error = format!("Unsupported SASL mechanism: {}", mechanism);
+            let error = format!("Unsupported SASL mechanism: {mechanism}");
             self.state = AuthState::Failed(error.clone());
             return Err(anyhow::anyhow!(error));
         }
@@ -163,7 +168,7 @@ impl SaslAuthenticator {
 
     pub fn handle_failure(&mut self, reason: Option<&str>) {
         let error = reason.unwrap_or("Authentication failed").to_string();
-        warn!("SASL authentication failed: {}", error);
+        warn!("SASL authentication failed: {error}");
         self.state = AuthState::Failed(error);
         self.current_mechanism = None;
     }
@@ -188,8 +193,9 @@ pub fn decode_authenticate_data(data: &str) -> Result<Vec<u8>> {
     if data == "+" {
         Ok(Vec::new())
     } else {
-        BASE64.decode(data.as_bytes())
-            .map_err(|e| anyhow::anyhow!("Failed to decode base64: {}", e))
+        BASE64
+            .decode(data.as_bytes())
+            .map_err(|e| anyhow::anyhow!("Failed to decode base64: {e}"))
     }
 }
 
@@ -255,7 +261,7 @@ mod tests {
     #[tokio::test]
     async fn test_authenticator_flow() {
         let mut auth = SaslAuthenticator::new();
-        
+
         let creds = SaslCredentials {
             username: "testuser".to_string(),
             password: "testpass".to_string(),

@@ -1,24 +1,24 @@
 //! GUI implementation for RustIRC
 
-pub mod app;
-pub mod theme;
-pub mod state;
-pub mod widgets;
-pub mod formatting;
-pub mod event_handler;
-pub mod menus;
-pub mod dialogs;
-pub mod platform;
-pub mod performance;
 pub mod accessibility;
+pub mod app;
+pub mod dialogs;
+pub mod event_handler;
+pub mod formatting;
+pub mod menus;
+pub mod performance;
+pub mod platform;
+pub mod state;
 pub mod testing;
+pub mod theme;
+pub mod widgets;
 
 // Deprecated simple app - being phased out
 // pub mod simple_app;
 
 pub use app::RustIrcGui;
-pub use menus::{MenuBar, MenuMessage, ContextMenu};
 pub use dialogs::{DialogManager, DialogMessage, DialogType};
+pub use menus::{ContextMenu, MenuBar, MenuMessage};
 pub use platform::NotificationManager;
 
 // pub use simple_app::{SimpleApp, run_simple_test};

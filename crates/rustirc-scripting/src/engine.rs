@@ -9,9 +9,7 @@ pub struct ScriptEngine {
 
 impl ScriptEngine {
     pub fn new() -> Result<Self> {
-        Ok(Self {
-            lua: Lua::new(),
-        })
+        Ok(Self { lua: Lua::new() })
     }
 
     pub async fn load_script(&self, _name: &str, _code: &str) -> Result<()> {

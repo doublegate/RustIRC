@@ -20,7 +20,11 @@ pub struct Tag {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Prefix {
     Server(String),
-    User { nick: String, user: Option<String>, host: Option<String> },
+    User {
+        nick: String,
+        user: Option<String>,
+        host: Option<String>,
+    },
 }
 
 impl Message {
@@ -65,7 +69,7 @@ impl fmt::Display for Message {
                 }
                 write!(f, "{}", tag.key)?;
                 if let Some(value) = &tag.value {
-                    write!(f, "={}", value)?;
+                    write!(f, "={value}")?;
                 }
             }
             write!(f, " ")?;
@@ -73,7 +77,7 @@ impl fmt::Display for Message {
 
         // Prefix
         if let Some(prefix) = &self.prefix {
-            write!(f, ":{} ", prefix)?;
+            write!(f, ":{prefix} ")?;
         }
 
         // Command
@@ -83,9 +87,9 @@ impl fmt::Display for Message {
         for (i, param) in self.params.iter().enumerate() {
             write!(f, " ")?;
             if i == self.params.len() - 1 && (param.contains(' ') || param.starts_with(':')) {
-                write!(f, ":{}", param)?;
+                write!(f, ":{param}")?;
             } else {
-                write!(f, "{}", param)?;
+                write!(f, "{param}")?;
             }
         }
 
@@ -96,14 +100,14 @@ impl fmt::Display for Message {
 impl fmt::Display for Prefix {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Prefix::Server(server) => write!(f, "{}", server),
+            Prefix::Server(server) => write!(f, "{server}"),
             Prefix::User { nick, user, host } => {
-                write!(f, "{}", nick)?;
+                write!(f, "{nick}")?;
                 if let Some(user) = user {
-                    write!(f, "!{}", user)?;
+                    write!(f, "!{user}")?;
                 }
                 if let Some(host) = host {
-                    write!(f, "@{}", host)?;
+                    write!(f, "@{host}")?;
                 }
                 Ok(())
             }

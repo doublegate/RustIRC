@@ -7,10 +7,10 @@ use thiserror::Error;
 pub enum ParseError {
     #[error("Empty message")]
     EmptyMessage,
-    
+
     #[error("Invalid format: {0}")]
     InvalidFormat(String),
-    
+
     #[error("Message too long: {0} bytes (max: 512)")]
     MessageTooLong(usize),
 }
@@ -92,7 +92,9 @@ impl Parser {
         })
     }
 
-    fn parse_tags(chars: &mut std::iter::Peekable<std::str::Chars>) -> Result<Vec<Tag>, ParseError> {
+    fn parse_tags(
+        chars: &mut std::iter::Peekable<std::str::Chars>,
+    ) -> Result<Vec<Tag>, ParseError> {
         let mut tags = Vec::new();
         let mut current_tag = String::new();
 
@@ -132,9 +134,11 @@ impl Parser {
         }
     }
 
-    fn parse_prefix(chars: &mut std::iter::Peekable<std::str::Chars>) -> Result<Prefix, ParseError> {
+    fn parse_prefix(
+        chars: &mut std::iter::Peekable<std::str::Chars>,
+    ) -> Result<Prefix, ParseError> {
         let mut prefix_str = String::new();
-        
+
         while let Some(ch) = chars.peek() {
             if ch.is_whitespace() {
                 break;
@@ -150,12 +154,12 @@ impl Parser {
         if prefix_str.contains('!') || prefix_str.contains('@') {
             let mut parts = prefix_str.splitn(2, '!');
             let nick = parts.next().unwrap().to_string();
-            
+
             if let Some(rest) = parts.next() {
                 let mut parts = rest.splitn(2, '@');
                 let user = Some(parts.next().unwrap().to_string());
                 let host = parts.next().map(String::from);
-                
+
                 Ok(Prefix::User { nick, user, host })
             } else if let Some((nick, host)) = prefix_str.split_once('@') {
                 Ok(Prefix::User {
@@ -176,7 +180,7 @@ impl Parser {
     }
 
     fn skip_whitespace(chars: &mut std::iter::Peekable<std::str::Chars>) {
-        while chars.peek().map_or(false, |ch| ch.is_whitespace()) {
+        while chars.peek().is_some_and(|ch| ch.is_whitespace()) {
             chars.next();
         }
     }
@@ -203,7 +207,8 @@ mod tests {
 
     #[test]
     fn test_parse_with_tags() {
-        let msg = Parser::parse("@time=2021-01-01T00:00:00.000Z :server NOTICE #channel :Test").unwrap();
+        let msg =
+            Parser::parse("@time=2021-01-01T00:00:00.000Z :server NOTICE #channel :Test").unwrap();
         assert!(msg.tags.is_some());
         assert_eq!(msg.tags.unwrap()[0].key, "time");
     }

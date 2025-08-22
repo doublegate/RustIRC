@@ -28,7 +28,7 @@ impl ThemeName {
             ThemeName::Solarized,
         ]
     }
-    
+
     pub fn name(&self) -> &'static str {
         match self {
             ThemeName::Dark => "Dark",
@@ -99,7 +99,7 @@ impl TuiColors {
             info: Color::Blue,
         }
     }
-    
+
     /// High contrast theme for accessibility
     pub fn high_contrast() -> Self {
         Self {
@@ -119,47 +119,47 @@ impl TuiColors {
             info: Color::Cyan,
         }
     }
-    
+
     /// Monokai theme
     pub fn monokai() -> Self {
         Self {
-            primary: Color::Rgb(166, 226, 46),   // Green
-            secondary: Color::Rgb(102, 217, 239), // Cyan
-            accent: Color::Rgb(249, 38, 114),     // Pink
-            background: Color::Rgb(39, 40, 34),   // Dark gray
-            text: Color::Rgb(248, 248, 242),      // Light gray
-            text_muted: Color::Rgb(117, 113, 94), // Muted gray
-            border: Color::Rgb(73, 72, 62),       // Border gray
+            primary: Color::Rgb(166, 226, 46),        // Green
+            secondary: Color::Rgb(102, 217, 239),     // Cyan
+            accent: Color::Rgb(249, 38, 114),         // Pink
+            background: Color::Rgb(39, 40, 34),       // Dark gray
+            text: Color::Rgb(248, 248, 242),          // Light gray
+            text_muted: Color::Rgb(117, 113, 94),     // Muted gray
+            border: Color::Rgb(73, 72, 62),           // Border gray
             border_focused: Color::Rgb(166, 226, 46), // Green
-            highlight: Color::Rgb(249, 38, 114),  // Pink
-            activity: Color::Rgb(253, 151, 31),   // Orange
-            error: Color::Rgb(249, 38, 114),      // Pink
-            success: Color::Rgb(166, 226, 46),    // Green
-            warning: Color::Rgb(253, 151, 31),    // Orange
-            info: Color::Rgb(102, 217, 239),      // Cyan
+            highlight: Color::Rgb(249, 38, 114),      // Pink
+            activity: Color::Rgb(253, 151, 31),       // Orange
+            error: Color::Rgb(249, 38, 114),          // Pink
+            success: Color::Rgb(166, 226, 46),        // Green
+            warning: Color::Rgb(253, 151, 31),        // Orange
+            info: Color::Rgb(102, 217, 239),          // Cyan
         }
     }
-    
+
     /// Solarized dark theme
     pub fn solarized() -> Self {
         Self {
-            primary: Color::Rgb(42, 161, 152),    // Cyan
-            secondary: Color::Rgb(38, 139, 210),  // Blue
-            accent: Color::Rgb(211, 54, 130),     // Magenta
-            background: Color::Rgb(0, 43, 54),    // Base03
-            text: Color::Rgb(131, 148, 150),      // Base0
-            text_muted: Color::Rgb(88, 110, 117), // Base01
-            border: Color::Rgb(7, 54, 66),        // Base02
+            primary: Color::Rgb(42, 161, 152),        // Cyan
+            secondary: Color::Rgb(38, 139, 210),      // Blue
+            accent: Color::Rgb(211, 54, 130),         // Magenta
+            background: Color::Rgb(0, 43, 54),        // Base03
+            text: Color::Rgb(131, 148, 150),          // Base0
+            text_muted: Color::Rgb(88, 110, 117),     // Base01
+            border: Color::Rgb(7, 54, 66),            // Base02
             border_focused: Color::Rgb(42, 161, 152), // Cyan
-            highlight: Color::Rgb(220, 50, 47),   // Red
-            activity: Color::Rgb(181, 137, 0),    // Yellow
-            error: Color::Rgb(220, 50, 47),       // Red
-            success: Color::Rgb(133, 153, 0),     // Green
-            warning: Color::Rgb(203, 75, 22),     // Orange
-            info: Color::Rgb(42, 161, 152),       // Cyan
+            highlight: Color::Rgb(220, 50, 47),       // Red
+            activity: Color::Rgb(181, 137, 0),        // Yellow
+            error: Color::Rgb(220, 50, 47),           // Red
+            success: Color::Rgb(133, 153, 0),         // Green
+            warning: Color::Rgb(203, 75, 22),         // Orange
+            info: Color::Rgb(42, 161, 152),           // Cyan
         }
     }
-    
+
     /// Get theme by name
     pub fn from_theme(theme: ThemeName) -> Self {
         match theme {
@@ -192,38 +192,48 @@ impl ThemeManager {
             colors: TuiColors::dark(),
         }
     }
-    
+
     pub fn with_theme(theme: ThemeName) -> Self {
         Self {
             current_theme: theme,
             colors: TuiColors::from_theme(theme),
         }
     }
-    
+
     pub fn set_theme(&mut self, theme: ThemeName) {
         self.current_theme = theme;
         self.colors = TuiColors::from_theme(theme);
     }
-    
+
     pub fn current_theme(&self) -> ThemeName {
         self.current_theme
     }
-    
+
     pub fn colors(&self) -> &TuiColors {
         &self.colors
     }
-    
+
     pub fn next_theme(&mut self) {
         let themes = ThemeName::all();
-        let current_index = themes.iter().position(|&t| t == self.current_theme).unwrap_or(0);
+        let current_index = themes
+            .iter()
+            .position(|&t| t == self.current_theme)
+            .unwrap_or(0);
         let next_index = (current_index + 1) % themes.len();
         self.set_theme(themes[next_index]);
     }
-    
+
     pub fn previous_theme(&mut self) {
         let themes = ThemeName::all();
-        let current_index = themes.iter().position(|&t| t == self.current_theme).unwrap_or(0);
-        let prev_index = if current_index == 0 { themes.len() - 1 } else { current_index - 1 };
+        let current_index = themes
+            .iter()
+            .position(|&t| t == self.current_theme)
+            .unwrap_or(0);
+        let prev_index = if current_index == 0 {
+            themes.len() - 1
+        } else {
+            current_index - 1
+        };
         self.set_theme(themes[prev_index]);
     }
 }

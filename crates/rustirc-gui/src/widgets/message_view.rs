@@ -3,13 +3,13 @@
 //! Displays IRC messages with formatting, timestamps, and scrolling.
 //! Features message rendering, auto-scroll, search, and selection.
 
+use crate::formatting::{parse_irc_text, replace_emoticons};
 use crate::state::{AppState, DisplayMessage, MessageType};
 use crate::theme::Theme;
-use crate::formatting::{parse_irc_text, replace_emoticons};
 use iced::{
-    widget::{container, scrollable, text, column, row, Space, button},
-    Element, Length, Task, Color, Alignment, Background,
-    font::{Weight, Style as FontStyle},
+    font::{Style as FontStyle, Weight},
+    widget::{button, column, container, row, scrollable, text, Space},
+    Alignment, Background, Color, Element, Length, Task,
 };
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::{info, warn};
@@ -56,7 +56,7 @@ impl MessageView {
             show_timestamps: true,
             show_joins_parts: true,
             show_system_messages: false, // Hide system spam by default
-            show_user_lists: false, // Hide user list spam by default
+            show_user_lists: false,      // Hide user list spam by default
             show_motd: true,
             compact_mode: false,
             scroll_id: scrollable::Id::unique(),
@@ -64,7 +64,11 @@ impl MessageView {
     }
 
     /// Update the message view state
-    pub fn update(&mut self, message: MessageViewMessage, app_state: &mut AppState) -> Task<MessageViewMessage> {
+    pub fn update(
+        &mut self,
+        message: MessageViewMessage,
+        app_state: &mut AppState,
+    ) -> Task<MessageViewMessage> {
         match message {
             MessageViewMessage::ScrollToBottom => {
                 self.auto_scroll = true;
@@ -106,18 +110,23 @@ impl MessageView {
                 if !self.selected_messages.is_empty() {
                     // Get selected messages from app_state based on indices
                     if let Some(current_tab) = app_state.current_tab() {
-                        let selected_text: Vec<String> = self.selected_messages.iter()
+                        let selected_text: Vec<String> = self
+                            .selected_messages
+                            .iter()
                             .filter_map(|&index| current_tab.messages.get(index))
-                            .map(|message| format!("{} <{}> {}", 
-                                format_timestamp(&message.timestamp, "%H:%M:%S"),
-                                message.sender,
-                                message.content
-                            ))
+                            .map(|message| {
+                                format!(
+                                    "{} <{}> {}",
+                                    format_timestamp(&message.timestamp, "%H:%M:%S"),
+                                    message.sender,
+                                    message.content
+                                )
+                            })
                             .collect();
-                        
+
                         if !selected_text.is_empty() {
                             let combined_text = selected_text.join("\n");
-                            
+
                             // Use clipboard crate to copy text
                             return Task::perform(async move { combined_text }, |text| {
                                 // Note: This would normally use iced::clipboard::write(text)
@@ -133,19 +142,17 @@ impl MessageView {
             MessageViewMessage::UrlClicked(url) => {
                 // Open URL in default browser
                 info!("Opening URL: {}", url);
-                
+
                 // Use open crate to open URL in default browser
                 tokio::spawn(async move {
                     if let Err(e) = open::that(&url) {
                         warn!("Failed to open URL {}: {}", url, e);
                     }
                 });
-                
+
                 Task::none()
             }
-            MessageViewMessage::NoOp => {
-                Task::none()
-            }
+            MessageViewMessage::NoOp => Task::none(),
         }
     }
 
@@ -154,44 +161,42 @@ impl MessageView {
         // Create theme instance for theming support
         let theme = Theme::default();
         let current_tab = app_state.current_tab();
-        
+
         if let Some(tab) = current_tab {
             let mut content = column![];
-            
+
             for (index, message) in tab.messages.iter().enumerate() {
                 // Filter messages based on settings
                 if !self.should_show_message(message) {
                     continue;
                 }
-                
+
                 // Check if message matches search
                 if let Some(ref query) = self.search_query {
-                    if !message.content.to_lowercase().contains(&query.to_lowercase()) {
+                    if !message
+                        .content
+                        .to_lowercase()
+                        .contains(&query.to_lowercase())
+                    {
                         continue;
                     }
                 }
-                
+
                 let message_element = self.render_message(message, index, app_state);
                 content = content.push(message_element);
             }
-            
-            let scrollable_content = scrollable(
-                container(content)
-                    .padding(8)
-                    .width(Length::Fill)
-            )
-            .id(self.scroll_id.clone())
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .direction(
-                scrollable::Direction::Vertical(
+
+            let scrollable_content = scrollable(container(content).padding(8).width(Length::Fill))
+                .id(self.scroll_id.clone())
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .direction(scrollable::Direction::Vertical(
                     scrollable::Scrollbar::new()
                         .width(8)
                         .margin(0)
-                        .scroller_width(8)
-                )
-            );
-            
+                        .scroller_width(8),
+                ));
+
             container(scrollable_content)
                 .width(Length::Fill)
                 .height(Length::Fill)
@@ -209,12 +214,12 @@ impl MessageView {
                             .size(14)
                             .color(theme.get_text_color()),
                     ]
-                    .align_x(Alignment::Center)
+                    .align_x(Alignment::Center),
                 )
                 .center_x(Length::Fill)
                 .center_y(Length::Fill)
                 .width(Length::Fill)
-                .height(Length::Fill)
+                .height(Length::Fill),
             )
             .width(Length::Fill)
             .height(Length::Fill)
@@ -231,37 +236,46 @@ impl MessageView {
                 _ => {}
             }
         }
-        
+
         // Filter system messages (user list spam, end of names, etc.)
-        if !self.show_system_messages && (message.sender == "System" || message.sender == "system") {
+        if !self.show_system_messages && (message.sender == "System" || message.sender == "system")
+        {
             return false;
         }
-        
+
         // Filter user list messages specifically
-        if !self.show_user_lists && ((message.sender == "System" || message.sender == "system") && 
-            (message.content.contains("users in") || 
-             message.content.contains("End of user list") ||
-             message.content.contains("End of names"))) {
+        if !self.show_user_lists
+            && ((message.sender == "System" || message.sender == "system")
+                && (message.content.contains("users in")
+                    || message.content.contains("End of user list")
+                    || message.content.contains("End of names")))
+        {
             return false;
         }
-        
+
         // Filter MOTD messages
         if !self.show_motd && (message.sender == "motd" || message.sender == "MOTD") {
             return false;
         }
-        
+
         true
     }
 
     /// Render a single message
-    fn render_message(&self, message: &DisplayMessage, index: usize, app_state: &AppState) -> Element<MessageViewMessage> {
+    fn render_message(
+        &self,
+        message: &DisplayMessage,
+        index: usize,
+        app_state: &AppState,
+    ) -> Element<MessageViewMessage> {
         let is_selected = self.selected_messages.contains(&index);
         let is_highlight = message.is_highlight;
         let is_own_message = message.is_own_message;
 
         // Build timestamp
         let timestamp_element: Element<MessageViewMessage> = if self.show_timestamps {
-            let timestamp = format_timestamp(&message.timestamp, &app_state.settings().timestamp_format);
+            let timestamp =
+                format_timestamp(&message.timestamp, &app_state.settings().timestamp_format);
             text(timestamp)
                 .size(self.font_size - 1.0)
                 .color(Color::from_rgb(0.5, 0.5, 0.5))
@@ -280,24 +294,28 @@ impl MessageView {
             };
 
             let sender_text = match message.message_type {
-                MessageType::Message | MessageType::Notice => format!("<{}>", sender),
-                MessageType::Action => format!("* {}", sender),
-                MessageType::Join => format!("→ {}", sender),
-                MessageType::Part => format!("← {}", sender),
-                MessageType::Quit => format!("⚠ {}", sender),
-                MessageType::Nick => format!("~ {}", sender),
-                MessageType::Topic => format!("ⓘ {}", sender),
-                MessageType::Mode => format!("⚙ {}", sender),
+                MessageType::Message | MessageType::Notice => format!("<{sender}>"),
+                MessageType::Action => format!("* {sender}"),
+                MessageType::Join => format!("→ {sender}"),
+                MessageType::Part => format!("← {sender}"),
+                MessageType::Quit => format!("⚠ {sender}"),
+                MessageType::Nick => format!("~ {sender}"),
+                MessageType::Topic => format!("ⓘ {sender}"),
+                MessageType::Mode => format!("⚙ {sender}"),
                 MessageType::System => "***".to_string(),
-                MessageType::Regular => format!("<{}>", sender),
+                MessageType::Regular => format!("<{sender}>"),
             };
 
             text(sender_text)
                 .size(self.font_size)
-                .font(iced::Font { 
+                .font(iced::Font {
                     weight: Weight::Bold,
-                    style: if is_own_message { FontStyle::Italic } else { FontStyle::Normal },
-                    ..iced::Font::default() 
+                    style: if is_own_message {
+                        FontStyle::Italic
+                    } else {
+                        FontStyle::Normal
+                    },
+                    ..iced::Font::default()
                 })
                 .color(sender_color)
                 .into()
@@ -310,31 +328,18 @@ impl MessageView {
 
         // Build the complete message row
         let message_row = if self.compact_mode {
-            row![
-                timestamp_element,
-                sender_element,
-                content_element
-            ]
-            .spacing(8)
-            .align_y(Alignment::Center)
+            row![timestamp_element, sender_element, content_element]
+                .spacing(8)
+                .align_y(Alignment::Center)
         } else {
             row![
-                column![
-                    timestamp_element,
-                    Space::with_height(Length::Fixed(2.0))
-                ]
-                .width(Length::Fixed(80.0))
-                .align_x(Alignment::End),
-                column![
-                    sender_element,
-                    Space::with_height(Length::Fixed(2.0))
-                ]
-                .width(Length::Fixed(120.0)),
-                column![
-                    content_element,
-                    Space::with_height(Length::Fixed(2.0))
-                ]
-                .width(Length::Fill)
+                column![timestamp_element, Space::with_height(Length::Fixed(2.0))]
+                    .width(Length::Fixed(80.0))
+                    .align_x(Alignment::End),
+                column![sender_element, Space::with_height(Length::Fixed(2.0))]
+                    .width(Length::Fixed(120.0)),
+                column![content_element, Space::with_height(Length::Fixed(2.0))]
+                    .width(Length::Fill)
             ]
             .spacing(8)
             .align_y(Alignment::Start)
@@ -365,74 +370,73 @@ impl MessageView {
     fn render_formatted_content(&self, content: &str) -> Element<MessageViewMessage> {
         // First replace emoticons in the raw content
         let content_with_emoticons = replace_emoticons(content);
-        
+
         // Parse IRC text formatting (colors, bold, etc.)
         let parsed_spans = parse_irc_text(&content_with_emoticons);
-        
+
         // Convert spans to elements with URL click handler
-        let elements: Vec<Element<MessageViewMessage>> = parsed_spans.into_iter().map(|span| {
-            // Create text element with proper formatting - clone text to own it
-            let mut text_element = text(span.text.clone()).size(self.font_size);
-            
-            // Apply IRC color formatting using irc_color_to_rgb
-            if let Some(fg_color) = span.foreground {
-                text_element = text_element.color(fg_color);
-            }
-            
-            // Apply background color if present
-            // Note: Background color rendering would require container styling
-            if let Some(_bg_color) = span.background {
-                // Background colors could be implemented with container wrapping
-                // For now, we apply foreground color enhancement
-                info!("Background color detected in IRC message formatting");
-            }
-            
-            // Apply formatting based on span type
-            if span.bold {
-                text_element = text_element.font(iced::Font { 
-                    weight: iced::font::Weight::Bold, 
-                    ..iced::Font::default() 
-                });
-            }
-            
-            if span.italic {
-                text_element = text_element.font(iced::Font { 
-                    style: iced::font::Style::Italic, 
-                    ..iced::Font::default() 
-                });
-            }
-            
-            if span.monospace {
-                text_element = text_element.font(iced::Font { 
-                    family: iced::font::Family::Monospace, 
-                    ..iced::Font::default() 
-                });
-            }
-            
-            // Handle URL clicking if this is a URL span
-            if span.is_url {
-                // For URLs, apply underline styling and use the irc_color_to_rgb for link color
-                let url_color = span.foreground.unwrap_or_else(|| irc_color_to_rgb(12)); // Light blue for links
-                button(text_element.color(url_color))
-                    .on_press(MessageViewMessage::UrlClicked(span.text))
-                    .padding(0)
-                    .into()
-            } else {
-                text_element.into()
-            }
-        }).collect();
-        
+        let elements: Vec<Element<MessageViewMessage>> = parsed_spans
+            .into_iter()
+            .map(|span| {
+                // Create text element with proper formatting - clone text to own it
+                let mut text_element = text(span.text.clone()).size(self.font_size);
+
+                // Apply IRC color formatting using irc_color_to_rgb
+                if let Some(fg_color) = span.foreground {
+                    text_element = text_element.color(fg_color);
+                }
+
+                // Apply background color if present
+                // Note: Background color rendering would require container styling
+                if let Some(_bg_color) = span.background {
+                    // Background colors could be implemented with container wrapping
+                    // For now, we apply foreground color enhancement
+                    info!("Background color detected in IRC message formatting");
+                }
+
+                // Apply formatting based on span type
+                if span.bold {
+                    text_element = text_element.font(iced::Font {
+                        weight: iced::font::Weight::Bold,
+                        ..iced::Font::default()
+                    });
+                }
+
+                if span.italic {
+                    text_element = text_element.font(iced::Font {
+                        style: iced::font::Style::Italic,
+                        ..iced::Font::default()
+                    });
+                }
+
+                if span.monospace {
+                    text_element = text_element.font(iced::Font {
+                        family: iced::font::Family::Monospace,
+                        ..iced::Font::default()
+                    });
+                }
+
+                // Handle URL clicking if this is a URL span
+                if span.is_url {
+                    // For URLs, apply underline styling and use the irc_color_to_rgb for link color
+                    let url_color = span.foreground.unwrap_or_else(|| irc_color_to_rgb(12)); // Light blue for links
+                    button(text_element.color(url_color))
+                        .on_press(MessageViewMessage::UrlClicked(span.text))
+                        .padding(0)
+                        .into()
+                } else {
+                    text_element.into()
+                }
+            })
+            .collect();
+
         // Combine elements into a row
         if elements.is_empty() {
             // Fallback to plain text if no spans
-            text(content_with_emoticons)
-                .size(self.font_size)
-                .into()
+            text(content_with_emoticons).size(self.font_size).into()
         } else {
             // Combine all formatted elements into a row
-            row(elements)
-                .spacing(0)
-                .into()
+            row(elements).spacing(0).into()
         }
     }
 
@@ -466,7 +470,7 @@ impl MessageView {
         self.auto_scroll = true;
         self.scroll_position = f32::MAX; // Will be clamped to bottom
     }
-    
+
     /// Create a task to scroll to bottom
     pub fn create_scroll_to_bottom_task(&self) -> Task<MessageViewMessage> {
         if self.auto_scroll {
@@ -486,28 +490,33 @@ impl MessageView {
     pub fn set_search_query(&mut self, query: Option<String>) {
         self.search_query = query;
     }
-    
+
     /// Toggle system message visibility
     pub fn toggle_system_messages(&mut self) {
         self.show_system_messages = !self.show_system_messages;
     }
-    
+
     /// Toggle user list message visibility
     pub fn toggle_user_lists(&mut self) {
         self.show_user_lists = !self.show_user_lists;
     }
-    
+
     /// Toggle MOTD message visibility
     pub fn toggle_motd(&mut self) {
         self.show_motd = !self.show_motd;
     }
-    
-    
+
     /// Get current filtering state
     pub fn get_filter_state(&self) -> (bool, bool, bool, bool, bool) {
-        (self.show_system_messages, self.show_user_lists, self.show_motd, self.show_joins_parts, self.show_timestamps)
+        (
+            self.show_system_messages,
+            self.show_user_lists,
+            self.show_motd,
+            self.show_joins_parts,
+            self.show_timestamps,
+        )
     }
-    
+
     /// Get auto-scroll state
     pub fn is_auto_scroll_enabled(&self) -> bool {
         self.auto_scroll
@@ -529,16 +538,16 @@ impl Default for MessageView {
 fn format_timestamp(timestamp: &SystemTime, format: &str) -> String {
     let duration = timestamp.duration_since(UNIX_EPOCH).unwrap_or_default();
     let secs = duration.as_secs();
-    
+
     // Simple time formatting (hours:minutes:seconds)
     let hours = (secs / 3600) % 24;
     let minutes = (secs / 60) % 60;
     let seconds = secs % 60;
-    
+
     match format {
-        "%H:%M:%S" => format!("{:02}:{:02}:{:02}", hours, minutes, seconds),
-        "%H:%M" => format!("{:02}:{:02}", hours, minutes),
-        _ => format!("{:02}:{:02}:{:02}", hours, minutes, seconds),
+        "%H:%M:%S" => format!("{hours:02}:{minutes:02}:{seconds:02}"),
+        "%H:%M" => format!("{hours:02}:{minutes:02}"),
+        _ => format!("{hours:02}:{minutes:02}:{seconds:02}"),
     }
 }
 
@@ -549,11 +558,11 @@ fn get_nick_color(nick: &str) -> Color {
     for byte in nick.bytes() {
         hash = hash.wrapping_mul(31).wrapping_add(byte as u32);
     }
-    
+
     let hue = (hash % 360) as f32;
     let saturation = 0.7;
     let lightness = 0.6;
-    
+
     hsl_to_rgb(hue, saturation, lightness)
 }
 
@@ -563,43 +572,43 @@ fn hsl_to_rgb(h: f32, s: f32, l: f32) -> Color {
     let c = (1.0 - (2.0 * l - 1.0).abs()) * s;
     let x = c * (1.0 - ((h * 6.0) % 2.0 - 1.0).abs());
     let m = l - c / 2.0;
-    
-    let (r, g, b) = if h < 1.0/6.0 {
+
+    let (r, g, b) = if h < 1.0 / 6.0 {
         (c, x, 0.0)
-    } else if h < 2.0/6.0 {
+    } else if h < 2.0 / 6.0 {
         (x, c, 0.0)
-    } else if h < 3.0/6.0 {
+    } else if h < 3.0 / 6.0 {
         (0.0, c, x)
-    } else if h < 4.0/6.0 {
+    } else if h < 4.0 / 6.0 {
         (0.0, x, c)
-    } else if h < 5.0/6.0 {
+    } else if h < 5.0 / 6.0 {
         (x, 0.0, c)
     } else {
         (c, 0.0, x)
     };
-    
+
     Color::from_rgb(r + m, g + m, b + m)
 }
 
 /// Convert IRC color codes to RGB
 fn irc_color_to_rgb(color_code: u8) -> Color {
     match color_code % 16 {
-        0 => Color::from_rgb(1.0, 1.0, 1.0),     // White
-        1 => Color::from_rgb(0.0, 0.0, 0.0),     // Black
-        2 => Color::from_rgb(0.0, 0.0, 0.5),     // Blue
-        3 => Color::from_rgb(0.0, 0.5, 0.0),     // Green
-        4 => Color::from_rgb(0.8, 0.0, 0.0),     // Red
-        5 => Color::from_rgb(0.5, 0.0, 0.0),     // Brown
-        6 => Color::from_rgb(0.5, 0.0, 0.5),     // Purple
-        7 => Color::from_rgb(0.8, 0.5, 0.0),     // Orange
-        8 => Color::from_rgb(1.0, 1.0, 0.0),     // Yellow
-        9 => Color::from_rgb(0.0, 1.0, 0.0),     // Light Green
-        10 => Color::from_rgb(0.0, 0.5, 0.5),    // Cyan
-        11 => Color::from_rgb(0.0, 1.0, 1.0),    // Light Cyan
-        12 => Color::from_rgb(0.0, 0.0, 1.0),    // Light Blue
-        13 => Color::from_rgb(1.0, 0.0, 1.0),    // Pink
-        14 => Color::from_rgb(0.5, 0.5, 0.5),    // Grey
-        15 => Color::from_rgb(0.8, 0.8, 0.8),    // Light Grey
-        _ => Color::from_rgb(0.9, 0.9, 0.9),     // Default
+        0 => Color::from_rgb(1.0, 1.0, 1.0),  // White
+        1 => Color::from_rgb(0.0, 0.0, 0.0),  // Black
+        2 => Color::from_rgb(0.0, 0.0, 0.5),  // Blue
+        3 => Color::from_rgb(0.0, 0.5, 0.0),  // Green
+        4 => Color::from_rgb(0.8, 0.0, 0.0),  // Red
+        5 => Color::from_rgb(0.5, 0.0, 0.0),  // Brown
+        6 => Color::from_rgb(0.5, 0.0, 0.5),  // Purple
+        7 => Color::from_rgb(0.8, 0.5, 0.0),  // Orange
+        8 => Color::from_rgb(1.0, 1.0, 0.0),  // Yellow
+        9 => Color::from_rgb(0.0, 1.0, 0.0),  // Light Green
+        10 => Color::from_rgb(0.0, 0.5, 0.5), // Cyan
+        11 => Color::from_rgb(0.0, 1.0, 1.0), // Light Cyan
+        12 => Color::from_rgb(0.0, 0.0, 1.0), // Light Blue
+        13 => Color::from_rgb(1.0, 0.0, 1.0), // Pink
+        14 => Color::from_rgb(0.5, 0.5, 0.5), // Grey
+        15 => Color::from_rgb(0.8, 0.8, 0.8), // Light Grey
+        _ => Color::from_rgb(0.9, 0.9, 0.9),  // Default
     }
 }

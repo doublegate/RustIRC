@@ -1,4 +1,7 @@
 [toolchain]
 channel = "stable"
-components = ["rustfmt", "clippy"]
+components = ["rustfmt", "clippy", "rust-docs", "rust-src"]
 profile = "default"
+
+# Optional: Add targets for cross-compilation
+# targets = ["x86_64-pc-windows-gnu", "x86_64-apple-darwin"]

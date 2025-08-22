@@ -24,6 +24,12 @@ pub struct AppState {
     pub ui_state: UiState,
 }
 
+impl Default for AppState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AppState {
     pub fn new() -> Self {
         Self {
@@ -54,13 +60,13 @@ impl AppState {
     pub fn add_server(&mut self, server_id: String, name: String) {
         let server_info = ServerInfo::new(name);
         self.servers.insert(server_id.clone(), server_info);
-        
+
         // Create server tab
         let tab = Tab::server(server_id.clone());
-        let tab_id = format!("server:{}", server_id);
+        let tab_id = format!("server:{server_id}");
         self.tabs.insert(tab_id.clone(), tab);
         self.tab_order.push(tab_id.clone());
-        
+
         // Set as current tab if it's the first one
         if self.current_tab_id.is_none() {
             self.current_tab_id = Some(tab_id);
@@ -70,19 +76,20 @@ impl AppState {
     /// Add a channel tab
     pub fn add_channel_tab(&mut self, server_id: String, channel: String) {
         let tab = Tab::channel(server_id.clone(), channel.clone());
-        let tab_id = format!("{}:{}", server_id, channel);
+        let tab_id = format!("{server_id}:{channel}");
         self.tabs.insert(tab_id.clone(), tab);
         self.tab_order.push(tab_id.clone());
-        
+
         // Set as current tab
         self.current_tab_id = Some(tab_id);
-        
+
         // Add channel to server if server exists
         if let Some(server) = self.servers.get_mut(&server_id) {
-            server.channels.insert(channel.clone(), ChannelInfo::new(channel));
+            server
+                .channels
+                .insert(channel.clone(), ChannelInfo::new(channel));
         }
     }
-
 
     /// Remove a tab
     pub fn remove_tab(&mut self, tab_id: &str) {
@@ -140,30 +147,34 @@ impl AppState {
     /// Add a private message tab
     pub fn add_private_tab(&mut self, server_id: &str, nick: String) {
         let tab = Tab::private_message(server_id.to_string(), nick.clone());
-        let tab_id = format!("{}:pm:{}", server_id, nick);
+        let tab_id = format!("{server_id}:pm:{nick}");
         self.tabs.insert(tab_id.clone(), tab);
         self.tab_order.push(tab_id.clone());
-        
+
         // Set as current tab
         self.current_tab_id = Some(tab_id);
     }
-    
+
     /// Add a message to a tab
     pub fn add_message(&mut self, server_id: &str, target: &str, message: &str, sender: &str) {
         let tab_id = if target.starts_with('#') || target.starts_with('&') {
             // Channel message - use format server_id:channel_name
-            format!("{}:{}", server_id, target)
+            format!("{server_id}:{target}")
         } else if target == server_id {
             // Server message - use format server:server_id
-            format!("server:{}", server_id)
+            format!("server:{server_id}")
         } else {
             // Private message - use format server_id:pm:nick
-            format!("{}:pm:{}", server_id, if sender == "self" { target } else { sender })
+            format!(
+                "{}:pm:{}",
+                server_id,
+                if sender == "self" { target } else { sender }
+            )
         };
-        
+
         // Get message ID before mutable borrow
         let message_id = self.next_message_id();
-        
+
         if let Some(tab) = self.tabs.get_mut(&tab_id) {
             let display_msg = DisplayMessage {
                 id: message_id,
@@ -175,38 +186,40 @@ impl AppState {
                 is_highlight: false,
                 is_own_message: sender == "self",
             };
-            
+
             tab.messages.push_back(display_msg);
             tab.has_activity = true;
-            
+
             // Limit message history
             if tab.messages.len() > 1000 {
                 tab.messages.pop_front();
             }
         } else {
             // Log when tab is not found for debugging
-            eprintln!("Warning: Could not find tab '{}' for message from {} to {} on server {}", 
-                     tab_id, sender, target, server_id);
+            eprintln!(
+                "Warning: Could not find tab '{tab_id}' for message from {sender} to {target} on server {server_id}"
+            );
         }
     }
-    
+
     /// Remove a server and all associated tabs
     pub fn remove_server(&mut self, server_id: &str) {
         // Remove server from servers map
         self.servers.remove(server_id);
-        
+
         // Remove all tabs for this server
-        let tabs_to_remove: Vec<String> = self.tabs
+        let tabs_to_remove: Vec<String> = self
+            .tabs
             .iter()
             .filter(|(_, tab)| tab.server_id.as_ref() == Some(&server_id.to_string()))
             .map(|(id, _)| id.clone())
             .collect();
-        
+
         for tab_id in tabs_to_remove {
             self.tabs.remove(&tab_id);
             self.tab_order.retain(|id| id != &tab_id);
         }
-        
+
         // If current tab was removed, switch to another tab
         if let Some(current_id) = &self.current_tab_id {
             if !self.tabs.contains_key(current_id) {
@@ -214,7 +227,7 @@ impl AppState {
             }
         }
     }
-    
+
     /// Generate next message ID
     fn next_message_id(&mut self) -> usize {
         self.settings.last_message_id += 1;
@@ -231,11 +244,12 @@ impl AppState {
                 }
             }
         }
-        
+
         // Also add to tab's user list if it exists
-        let tab_id = format!("{}:{}", server_id, channel);
+        let tab_id = format!("{server_id}:{channel}");
         if let Some(tab) = self.tabs.get_mut(&tab_id) {
-            tab.users.insert(nick.to_string(), UserInfo::new(nick.to_string()));
+            tab.users
+                .insert(nick.to_string(), UserInfo::new(nick.to_string()));
         }
     }
 
@@ -247,9 +261,9 @@ impl AppState {
                 channel_info.user_count = channel_info.users.len();
             }
         }
-        
+
         // Also remove from tab's user list if it exists
-        let tab_id = format!("{}:{}", server_id, channel);
+        let tab_id = format!("{server_id}:{channel}");
         if let Some(tab) = self.tabs.get_mut(&tab_id) {
             tab.users.remove(nick);
         }
@@ -263,10 +277,10 @@ impl AppState {
                 channel_info.user_count = channel_info.users.len();
             }
         }
-        
+
         // Also remove from all channel tabs for this server
         for (tab_id, tab) in self.tabs.iter_mut() {
-            if tab_id.starts_with(&format!("{}:", server_id)) && tab_id.contains('#') {
+            if tab_id.starts_with(&format!("{server_id}:")) && tab_id.contains('#') {
                 tab.users.remove(nick);
             }
         }
@@ -361,7 +375,7 @@ pub enum TabType {
     Server,
     Channel { channel: String },
     PrivateMessage { nick: String },
-    Private,  // For backwards compatibility
+    Private, // For backwards compatibility
 }
 
 /// Activity level indicators
@@ -461,10 +475,21 @@ impl UserInfo {
 
     /// Get user privilege level (for sorting)
     pub fn privilege_level(&self) -> u8 {
-        if self.has_mode('o') { 4 }  // Op
-        else if self.has_mode('h') { 3 }  // Half-op
-        else if self.has_mode('v') { 2 }  // Voice
-        else { 1 }  // Regular user
+        if self.has_mode('o') {
+            4
+        }
+        // Op
+        else if self.has_mode('h') {
+            3
+        }
+        // Half-op
+        else if self.has_mode('v') {
+            2
+        }
+        // Voice
+        else {
+            1
+        } // Regular user
     }
 }
 

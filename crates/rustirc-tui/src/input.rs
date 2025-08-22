@@ -7,7 +7,7 @@
 //! - Command completion and history
 //! - Focus management between panes
 
-use crate::state::{TuiState, FocusArea};
+use crate::state::{FocusArea, TuiState};
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyModifiers};
 use tracing::info;
@@ -15,9 +15,9 @@ use tracing::info;
 /// Input modes for vi-like interface
 #[derive(Debug, Clone, PartialEq)]
 pub enum InputMode {
-    Normal,   // Navigation mode
-    Insert,   // Text input mode
-    Command,  // Command mode (started with :)
+    Normal,  // Navigation mode
+    Insert,  // Text input mode
+    Command, // Command mode (started with :)
 }
 
 /// TUI actions matching GUI functionality
@@ -30,32 +30,32 @@ pub enum TuiAction {
     ScrollUp,
     ScrollDown,
     ShowHelp,
-    
+
     // Tab management
     NextTab,
     PreviousTab,
     CloseTab,
-    
+
     // Theme management
     NextTheme,
     PreviousTheme,
-    
+
     // Connection management
     Connect,
     Disconnect,
     JoinChannel,
     PartChannel,
-    
+
     // Message actions
     SendMessage(String),
     PrivateMessage(String),
-    
+
     // UI toggles
     ToggleUserList,
     ToggleServerTree,
     ToggleTimestamps,
     ToggleJoinPart,
-    
+
     // Other
     Quit,
     None,
@@ -120,7 +120,7 @@ impl InputHandler {
                 state.set_focus(FocusArea::Input);
                 state.insert_char(':');
             }
-            
+
             // Navigation
             KeyCode::Char('h') | KeyCode::Left => {
                 match state.focus {
@@ -194,7 +194,7 @@ impl InputHandler {
                     }
                 }
             }
-            
+
             // Tab navigation
             KeyCode::Tab => {
                 state.next_focus();
@@ -208,7 +208,7 @@ impl InputHandler {
                     FocusArea::Input => state.set_focus(FocusArea::UserList),
                 }
             }
-            
+
             // Channel navigation
             KeyCode::Char('n') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 state.next_channel();
@@ -216,7 +216,7 @@ impl InputHandler {
             KeyCode::Char('p') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 state.previous_channel();
             }
-            
+
             // Function keys
             KeyCode::F(1) => {
                 state.toggle_help();
@@ -233,59 +233,47 @@ impl InputHandler {
                 // Switch theme (F12)
                 return Ok(TuiAction::NextTheme);
             }
-            
+
             // Page navigation
             KeyCode::PageUp => {
-                match state.focus {
-                    FocusArea::MessageArea => {
-                        // Scroll up by page
-                        if let Some(channel) = state.current_channel_state_mut() {
-                            channel.scroll_position += 10;
-                        }
+                if state.focus == FocusArea::MessageArea {
+                    // Scroll up by page
+                    if let Some(channel) = state.current_channel_state_mut() {
+                        channel.scroll_position += 10;
                     }
-                    _ => {}
                 }
             }
             KeyCode::PageDown => {
-                match state.focus {
-                    FocusArea::MessageArea => {
-                        // Scroll down by page
-                        if let Some(channel) = state.current_channel_state_mut() {
-                            if channel.scroll_position >= 10 {
-                                channel.scroll_position -= 10;
-                            } else {
-                                channel.scroll_position = 0;
-                            }
-                        }
-                    }
-                    _ => {}
-                }
-            }
-            
-            // Home/End keys
-            KeyCode::Home => {
-                match state.focus {
-                    FocusArea::MessageArea => {
-                        // Scroll to top
-                        if let Some(channel) = state.current_channel_state_mut() {
-                            channel.scroll_position = channel.messages.len().saturating_sub(1);
-                        }
-                    }
-                    _ => {}
-                }
-            }
-            KeyCode::End => {
-                match state.focus {
-                    FocusArea::MessageArea => {
-                        // Scroll to bottom
-                        if let Some(channel) = state.current_channel_state_mut() {
+                if state.focus == FocusArea::MessageArea {
+                    // Scroll down by page
+                    if let Some(channel) = state.current_channel_state_mut() {
+                        if channel.scroll_position >= 10 {
+                            channel.scroll_position -= 10;
+                        } else {
                             channel.scroll_position = 0;
                         }
                     }
-                    _ => {}
                 }
             }
-            
+
+            // Home/End keys
+            KeyCode::Home => {
+                if state.focus == FocusArea::MessageArea {
+                    // Scroll to top
+                    if let Some(channel) = state.current_channel_state_mut() {
+                        channel.scroll_position = channel.messages.len().saturating_sub(1);
+                    }
+                }
+            }
+            KeyCode::End => {
+                if state.focus == FocusArea::MessageArea {
+                    // Scroll to bottom
+                    if let Some(channel) = state.current_channel_state_mut() {
+                        channel.scroll_position = 0;
+                    }
+                }
+            }
+
             // Enter channel or activate
             KeyCode::Enter => {
                 match state.focus {
@@ -298,21 +286,21 @@ impl InputHandler {
                     _ => {}
                 }
             }
-            
+
             // Help
             KeyCode::Char('?') => {
                 state.toggle_help();
             }
-            
+
             // Quick commands
             KeyCode::Char('o') => {
                 // Open - could open connection dialog
                 return Ok(TuiAction::Connect);
             }
-            
+
             _ => {}
         }
-        
+
         Ok(TuiAction::None)
     }
 
@@ -324,22 +312,22 @@ impl InputHandler {
                 self.mode = InputMode::Normal;
                 state.set_focus(FocusArea::MessageArea);
             }
-            
+
             // Submit input
             KeyCode::Enter => {
                 let command = state.submit_input();
-                return Ok(if command.is_empty() { 
-                    TuiAction::None 
-                } else { 
-                    TuiAction::SendMessage(command) 
+                return Ok(if command.is_empty() {
+                    TuiAction::None
+                } else {
+                    TuiAction::SendMessage(command)
                 });
             }
-            
+
             // Clear input (must come before general Char pattern)
             KeyCode::Char('u') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 state.clear_input();
             }
-            
+
             // Text editing
             KeyCode::Char(c) => {
                 state.insert_char(c);
@@ -347,7 +335,7 @@ impl InputHandler {
             KeyCode::Backspace => {
                 state.delete_char();
             }
-            
+
             // Cursor movement
             KeyCode::Left => {
                 state.move_cursor_left();
@@ -361,7 +349,7 @@ impl InputHandler {
             KeyCode::End => {
                 state.input_cursor = state.input_buffer.len();
             }
-            
+
             // History navigation
             KeyCode::Up => {
                 state.history_up();
@@ -369,15 +357,15 @@ impl InputHandler {
             KeyCode::Down => {
                 state.history_down();
             }
-            
+
             // Tab completion (basic)
             KeyCode::Tab => {
                 self.handle_tab_completion(state);
             }
-            
+
             _ => {}
         }
-        
+
         Ok(TuiAction::None)
     }
 
@@ -390,19 +378,19 @@ impl InputHandler {
                 state.clear_input();
                 state.set_focus(FocusArea::MessageArea);
             }
-            
+
             // Execute command
             KeyCode::Enter => {
                 let command = state.submit_input();
                 self.mode = InputMode::Normal;
                 state.set_focus(FocusArea::MessageArea);
-                
+
                 if !command.is_empty() {
                     self.last_command = Some(command.clone());
                     return Ok(TuiAction::SendMessage(command));
                 }
             }
-            
+
             // Text editing (similar to insert mode but for commands)
             KeyCode::Char(c) => {
                 state.insert_char(c);
@@ -414,7 +402,7 @@ impl InputHandler {
                     self.mode = InputMode::Insert;
                 }
             }
-            
+
             // Cursor movement
             KeyCode::Left => {
                 state.move_cursor_left();
@@ -428,7 +416,7 @@ impl InputHandler {
             KeyCode::End => {
                 state.input_cursor = state.input_buffer.len();
             }
-            
+
             // Command history
             KeyCode::Up => {
                 state.history_up();
@@ -436,15 +424,15 @@ impl InputHandler {
             KeyCode::Down => {
                 state.history_down();
             }
-            
+
             // Tab completion for commands
             KeyCode::Tab => {
                 self.handle_command_completion(state);
             }
-            
+
             _ => {}
         }
-        
+
         Ok(TuiAction::None)
     }
 
@@ -453,10 +441,10 @@ impl InputHandler {
         // Simple tab completion - in a real implementation this would be more sophisticated
         let input = &state.input_buffer;
         let cursor = state.input_cursor;
-        
+
         // Use cursor position for more precise completion
         info!("Tab completion at cursor position: {}", cursor);
-        
+
         // Find the word at cursor
         let words: Vec<&str> = input.split_whitespace().collect();
         if let Some(last_word) = words.last() {
@@ -480,17 +468,15 @@ impl InputHandler {
     /// Handle command completion
     fn handle_command_completion(&mut self, state: &mut TuiState) {
         let input = &state.input_buffer;
-        if input.starts_with(':') {
-            let command_part = &input[1..];
-            
+        if let Some(command_part) = input.strip_prefix(':') {
             let commands = vec![
-                "connect", "join", "part", "quit", "msg", "nick", "topic", 
-                "kick", "ban", "unban", "mode", "whois", "help", "clear"
+                "connect", "join", "part", "quit", "msg", "nick", "topic", "kick", "ban", "unban",
+                "mode", "whois", "help", "clear",
             ];
-            
+
             for command in commands {
                 if command.starts_with(command_part) {
-                    state.input_buffer = format!(":{}", command);
+                    state.input_buffer = format!(":{command}");
                     state.input_cursor = state.input_buffer.len();
                     break;
                 }

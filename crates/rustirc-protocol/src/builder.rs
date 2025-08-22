@@ -63,13 +63,13 @@ impl MessageBuilder {
             key: key.into(),
             value,
         };
-        
+
         if let Some(ref mut tags) = self.message.tags {
             tags.push(tag);
         } else {
             self.message.tags = Some(vec![tag]);
         }
-        
+
         self
     }
 

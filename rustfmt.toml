@@ -1,59 +1,26 @@
 # RustIRC Code Formatting Configuration
+# All options below are STABLE and work with stable Rust toolchain
 
-# Basic formatting
+# Edition settings (stable)
 edition = "2021"
+style_edition = "2021"
+
+# Basic formatting (stable)
 hard_tabs = false
 tab_spaces = 4
 newline_style = "Unix"
 use_small_heuristics = "Default"
 
-# Line width
+# Line width (stable)
 max_width = 100
-error_on_line_overflow = false
 
-# Comments
-comment_width = 80
-wrap_comments = true
-format_code_in_doc_comments = true
-normalize_comments = true
-normalize_doc_attributes = true
-
-# Imports
-imports_granularity = "Crate"
-imports_layout = "Mixed"
-group_imports = "StdExternalCrate"
+# Imports (stable)
 reorder_imports = true
 reorder_modules = true
 
-# Code organization
+# Code organization (stable)
 use_field_init_shorthand = true
 use_try_shorthand = true
-format_strings = true
-format_macro_matchers = true
-format_macro_bodies = true
 
-# Spacing
-space_after_colon = true
-space_before_colon = false
-spaces_around_ranges = false
-binop_separator = "Front"
-
-# Structs and enums
-struct_field_align_threshold = 20
-enum_discrim_align_threshold = 20
-trailing_comma = "Vertical"
-
-# Functions
-fn_single_line = false
-where_single_line = false
-force_multiline_blocks = false
-
-# Control flow
-control_brace_style = "AlwaysSameLine"
-brace_style = "SameLineWhere"
-
-# Misc
+# Miscellaneous (stable)
 merge_derives = true
-overflow_delimited_expr = false
-blank_lines_upper_bound = 2
-blank_lines_lower_bound = 0

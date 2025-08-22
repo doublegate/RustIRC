@@ -22,17 +22,21 @@ pub mod router;
 pub mod state;
 pub mod ui;
 
-pub use auth::{SaslAuthenticator, SaslCredentials, SaslMechanism, AuthState, PlainMechanism, ExternalMechanism};
-pub use cli::{CliClient, run_cli_prototype};
+pub use auth::{
+    AuthState, ExternalMechanism, PlainMechanism, SaslAuthenticator, SaslCredentials, SaslMechanism,
+};
+pub use cli::{run_cli_prototype, CliClient};
 pub use client::IrcClient;
 pub use config::Config;
-pub use connection::{ConnectionManager, IrcConnection, ConnectionConfig, ConnectionState};
+pub use connection::{ConnectionConfig, ConnectionManager, ConnectionState, IrcConnection};
 pub use error::{Error, Result};
 pub use events::{Event, EventHandler};
-pub use recovery::{RecoveryManager, ReconnectConfig, RecoveryStats};
-pub use router::{MessageRouter, MessageHandler, MessageContext, CommandProcessor};
-pub use state::{ClientState, ServerState, ChannelState, StateManager, User, ChannelUser, TopicInfo};
-pub use ui::{UserInterface, UiEvent, StateChange, ViewManager, View, ViewId, ViewType};
+pub use recovery::{ReconnectConfig, RecoveryManager, RecoveryStats};
+pub use router::{CommandProcessor, MessageContext, MessageHandler, MessageRouter};
+pub use state::{
+    ChannelState, ChannelUser, ClientState, ServerState, StateManager, TopicInfo, User,
+};
+pub use ui::{StateChange, UiEvent, UserInterface, View, ViewId, ViewManager, ViewType};
 
 /// Global client instance manager
 pub struct ClientManager {
@@ -48,7 +52,10 @@ impl ClientManager {
 
     pub async fn create_client(&self, id: String, config: Config) -> Result<Arc<IrcClient>> {
         let client = Arc::new(IrcClient::new(config));
-        self.clients.write().await.insert(id.clone(), client.clone());
+        self.clients
+            .write()
+            .await
+            .insert(id.clone(), client.clone());
         Ok(client)
     }
 

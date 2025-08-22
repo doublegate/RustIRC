@@ -1,8 +1,8 @@
 //! Plugin system for RustIRC
 
-pub mod manager;
 pub mod api;
 pub mod loader;
+pub mod manager;
 
-pub use manager::PluginManager;
 pub use api::PluginApi;
+pub use manager::PluginManager;

@@ -147,9 +147,17 @@ impl IrcConnection {
                 server: server.to_string(),
             })
         } else {
-            // For non-TLS, we'd need a different type
-            // This is simplified for the prototype
-            unimplemented!("Non-TLS connections not implemented in this prototype")
+            // Non-TLS connection (insecure, for testing only)
+            let stream = TcpStream::connect(server).await?;
+            let (reader, writer) = stream.into_split();
+            
+            warn!("Using insecure non-TLS connection to {}", server);
+            
+            Ok(Connection {
+                reader: BufReader::new(reader),
+                writer,
+                server: server.to_string(),
+            })
         }
     }
 

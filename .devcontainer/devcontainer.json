@@ -1,0 +1,40 @@
+{
+  "name": "RustIRC Development",
+  "image": "mcr.microsoft.com/vscode/devcontainers/rust:1-bullseye",
+  "features": {
+    "ghcr.io/devcontainers/features/rust:1": {
+      "version": "stable",
+      "profile": "default"
+    },
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "tamasfe.even-better-toml",
+        "serayuzgur.crates",
+        "vadimcn.vscode-lldb",
+        "mutantdino.resourcemonitor",
+        "yzhang.markdown-all-in-one",
+        "streetsidesoftware.code-spell-checker"
+      ],
+      "settings": {
+        "rust-analyzer.cargo.features": "all",
+        "rust-analyzer.checkOnSave.command": "clippy",
+        "editor.formatOnSave": true
+      }
+    }
+  },
+  "postCreateCommand": "cargo build",
+  "remoteUser": "vscode",
+  "mounts": [
+    "source=${localWorkspaceFolder}/target,target=/workspaces/rustirc/target,type=bind,consistency=cached"
+  ],
+  "containerEnv": {
+    "RUST_BACKTRACE": "1",
+    "CARGO_HOME": "/usr/local/cargo",
+    "RUSTUP_HOME": "/usr/local/rustup"
+  }
+}

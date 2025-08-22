@@ -4,13 +4,13 @@
 //! Features mode display, topic bar, and network information.
 
 use crate::state::{AppState, TabType};
-use rustirc_core::connection::ConnectionState;
 use crate::theme::Theme;
 use iced::{
-    widget::{container, text, row, Space},
-    Element, Length, Task, Color, Alignment,
+    widget::{container, row, text, Space},
+    Alignment, Color, Element, Length, Task,
 };
-use std::time::{SystemTime, Duration};
+use rustirc_core::connection::ConnectionState;
+use std::time::{Duration, SystemTime};
 use tracing::info;
 
 /// Messages for status bar interactions
@@ -45,7 +45,11 @@ impl StatusBar {
     }
 
     /// Update the status bar state
-    pub fn update(&mut self, message: StatusBarMessage, _app_state: &mut AppState) -> Task<StatusBarMessage> {
+    pub fn update(
+        &mut self,
+        message: StatusBarMessage,
+        _app_state: &mut AppState,
+    ) -> Task<StatusBarMessage> {
         match message {
             StatusBarMessage::UpdateStatus => {
                 self.last_update = SystemTime::now();
@@ -55,9 +59,7 @@ impl StatusBar {
                 self.show_topic = !self.show_topic;
                 Task::none()
             }
-            StatusBarMessage::ClearStatus => {
-                Task::none()
-            }
+            StatusBarMessage::ClearStatus => Task::none(),
         }
     }
 
@@ -66,12 +68,14 @@ impl StatusBar {
         // Create theme instance and duration for theming support
         let theme = Theme::default();
         let update_duration = Duration::from_secs(1);
-        
+
         // Use duration for status update timing and conditional updates
-        let elapsed = SystemTime::now().duration_since(self.last_update).unwrap_or(Duration::ZERO);
+        let elapsed = SystemTime::now()
+            .duration_since(self.last_update)
+            .unwrap_or(Duration::ZERO);
         let should_update = elapsed >= update_duration;
         let current_tab = app_state.current_tab();
-        
+
         // Main status row
         let mut status_content = row![];
 
@@ -91,19 +95,16 @@ impl StatusBar {
                 self.get_connection_status(app_state)
             }
         };
-        
+
         status_content = status_content.push(
             text(connection_status)
                 .size(11.0)
-                .color(theme.get_text_color())
+                .color(theme.get_text_color()),
         );
 
         status_content = status_content.push(Space::with_width(Length::Fixed(8.0)));
-        status_content = status_content.push(
-            text("|")
-                .size(11.0)
-                .color(Color::from_rgb(0.5, 0.5, 0.5))
-        );
+        status_content =
+            status_content.push(text("|").size(11.0).color(Color::from_rgb(0.5, 0.5, 0.5)));
         status_content = status_content.push(Space::with_width(Length::Fixed(8.0)));
 
         // Tab-specific information
@@ -112,7 +113,7 @@ impl StatusBar {
             status_content = status_content.push(
                 text(tab_info)
                     .size(11.0)
-                    .color(Color::from_rgb(0.8, 0.8, 0.8))
+                    .color(Color::from_rgb(0.8, 0.8, 0.8)),
             );
 
             // User count for channels
@@ -121,9 +122,9 @@ impl StatusBar {
                     let user_count = tab.users.len();
                     status_content = status_content.push(Space::with_width(Length::Fixed(8.0)));
                     status_content = status_content.push(
-                        text(format!("({} users)", user_count))
+                        text(format!("({user_count} users)"))
                             .size(11.0)
-                            .color(Color::from_rgb(0.6, 0.6, 0.6))
+                            .color(Color::from_rgb(0.6, 0.6, 0.6)),
                     );
                 }
             }
@@ -133,11 +134,12 @@ impl StatusBar {
                 if let Some(server_id) = &tab.server_id {
                     if let Some(server_state) = app_state.servers.get(server_id) {
                         if !server_state.modes.is_empty() {
-                            status_content = status_content.push(Space::with_width(Length::Fixed(8.0)));
+                            status_content =
+                                status_content.push(Space::with_width(Length::Fixed(8.0)));
                             status_content = status_content.push(
                                 text(format!("+{}", server_state.modes.join("")))
                                     .size(11.0)
-                                    .color(Color::from_rgb(0.0, 0.8, 0.0))
+                                    .color(Color::from_rgb(0.0, 0.8, 0.0)),
                             );
                         }
                     }
@@ -155,7 +157,7 @@ impl StatusBar {
                 status_content = status_content.push(
                     text(lag_info)
                         .size(11.0)
-                        .color(Color::from_rgb(0.6, 0.6, 0.6))
+                        .color(Color::from_rgb(0.6, 0.6, 0.6)),
                 );
                 status_content = status_content.push(Space::with_width(Length::Fixed(8.0)));
             }
@@ -166,7 +168,7 @@ impl StatusBar {
         status_content = status_content.push(
             text(time_str)
                 .size(11.0)
-                .color(Color::from_rgb(0.7, 0.7, 0.7))
+                .color(Color::from_rgb(0.7, 0.7, 0.7)),
         );
 
         let status_row = container(status_content)
@@ -176,14 +178,9 @@ impl StatusBar {
         // Topic bar (if enabled and applicable)
         if self.show_topic {
             if let Some(topic_bar) = self.render_topic_bar(app_state) {
-                return container(
-                    iced::widget::column![
-                        topic_bar,
-                        status_row
-                    ]
-                )
-                .width(Length::Fill)
-                .into();
+                return container(iced::widget::column![topic_bar, status_row])
+                    .width(Length::Fill)
+                    .into();
             }
         }
 
@@ -193,7 +190,7 @@ impl StatusBar {
     /// Get connection status text
     fn get_connection_status(&self, app_state: &AppState) -> String {
         let current_tab = app_state.current_tab();
-        
+
         if let Some(tab) = current_tab {
             if let Some(server_id) = &tab.server_id {
                 if let Some(server_state) = app_state.servers.get(server_id) {
@@ -210,7 +207,7 @@ impl StatusBar {
                             }
                         }
                         ConnectionState::Reconnecting => "Reconnecting...".to_string(),
-                        ConnectionState::Failed(ref error) => format!("Failed: {}", error),
+                        ConnectionState::Failed(ref error) => format!("Failed: {error}"),
                     }
                 } else {
                     "Unknown server".to_string()
@@ -228,16 +225,16 @@ impl StatusBar {
         match &tab.tab_type {
             TabType::Server => {
                 if let Some(server_id) = &tab.server_id {
-                    format!("Server: {}", server_id)
+                    format!("Server: {server_id}")
                 } else {
                     "Server".to_string()
                 }
             }
             TabType::Channel { channel } => {
-                format!("Channel: {}", channel)
+                format!("Channel: {channel}")
             }
             TabType::PrivateMessage { nick } => {
-                format!("Private: {}", nick)
+                format!("Private: {nick}")
             }
             TabType::Private => {
                 format!("Private: {}", tab.name)
@@ -249,7 +246,7 @@ impl StatusBar {
     fn get_lag_info(&self, app_state: &AppState) -> String {
         // Implement actual lag measurement
         let current_tab = app_state.current_tab();
-        
+
         if let Some(tab) = current_tab {
             if let Some(server_id) = &tab.server_id {
                 if let Some(server_state) = app_state.servers.get(server_id) {
@@ -258,7 +255,7 @@ impl StatusBar {
                         let elapsed = SystemTime::now()
                             .duration_since(last_ping)
                             .unwrap_or_default();
-                        
+
                         if elapsed.as_secs() > 0 {
                             return format!("Lag: {}ms", elapsed.as_millis());
                         } else {
@@ -270,26 +267,28 @@ impl StatusBar {
                 }
             }
         }
-        
+
         String::new()
     }
 
     /// Get current time
     fn get_current_time(&self) -> String {
         let now = SystemTime::now();
-        let duration = now.duration_since(std::time::UNIX_EPOCH).unwrap_or_default();
+        let duration = now
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default();
         let secs = duration.as_secs();
-        
+
         let hours = (secs / 3600) % 24;
         let minutes = (secs / 60) % 60;
-        
-        format!("{:02}:{:02}", hours, minutes)
+
+        format!("{hours:02}:{minutes:02}")
     }
 
     /// Render topic bar if applicable
     fn render_topic_bar(&self, app_state: &AppState) -> Option<Element<StatusBarMessage>> {
         let current_tab = app_state.current_tab()?;
-        
+
         if let TabType::Channel { channel } = &current_tab.tab_type {
             if let Some(server_id) = &current_tab.server_id {
                 if let Some(server_state) = app_state.servers.get(server_id) {
@@ -312,18 +311,18 @@ impl StatusBar {
                                             .size(11.0)
                                             .color(Color::from_rgb(0.8, 0.8, 0.8))
                                     ]
-                                    .align_y(Alignment::Center)
+                                    .align_y(Alignment::Center),
                                 )
                                 .padding([4, 8])
                                 .width(Length::Fill)
-                                .into()
+                                .into(),
                             );
                         }
                     }
                 }
             }
         }
-        
+
         None
     }
 
@@ -351,8 +350,8 @@ impl StatusBar {
     pub fn get_status_summary(&self, app_state: &AppState) -> String {
         let connection_status = self.get_connection_status(app_state);
         let tab_count = app_state.tabs.len();
-        
-        format!("{} | {} tabs", connection_status, tab_count)
+
+        format!("{connection_status} | {tab_count} tabs")
     }
 }
 

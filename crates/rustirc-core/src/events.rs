@@ -1,42 +1,86 @@
 //! Event system
 
+use async_trait::async_trait;
 use rustirc_protocol::Message;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use async_trait::async_trait;
 
 #[derive(Debug, Clone)]
 pub enum Event {
     // Connection events
-    Connected { connection_id: String },
-    Disconnected { connection_id: String, reason: String },
-    StateChanged { connection_id: String, state: crate::connection::ConnectionState },
-    
+    Connected {
+        connection_id: String,
+    },
+    Disconnected {
+        connection_id: String,
+        reason: String,
+    },
+    StateChanged {
+        connection_id: String,
+        state: crate::connection::ConnectionState,
+    },
+
     // Message events
-    MessageReceived { connection_id: String, message: Message },
-    MessageSent { connection_id: String, message: Message },
-    
+    MessageReceived {
+        connection_id: String,
+        message: Message,
+    },
+    MessageSent {
+        connection_id: String,
+        message: Message,
+    },
+
     // Channel events
-    ChannelJoined { connection_id: String, channel: String },
-    ChannelLeft { connection_id: String, channel: String },
-    UserJoined { connection_id: String, channel: String, user: String },
-    UserLeft { connection_id: String, channel: String, user: String },
-    
-    // User events  
-    NickChanged { connection_id: String, old: String, new: String },
-    TopicChanged { connection_id: String, channel: String, topic: String },
-    
+    ChannelJoined {
+        connection_id: String,
+        channel: String,
+    },
+    ChannelLeft {
+        connection_id: String,
+        channel: String,
+    },
+    UserJoined {
+        connection_id: String,
+        channel: String,
+        user: String,
+    },
+    UserLeft {
+        connection_id: String,
+        channel: String,
+        user: String,
+    },
+
+    // User events
+    NickChanged {
+        connection_id: String,
+        old: String,
+        new: String,
+    },
+    TopicChanged {
+        connection_id: String,
+        channel: String,
+        topic: String,
+    },
+
     // Error events
-    Error { connection_id: Option<String>, error: String },
-    
+    Error {
+        connection_id: Option<String>,
+        error: String,
+    },
+
     // Protocol events
-    PongRequired { connection_id: String, server: String },
+    PongRequired {
+        connection_id: String,
+        server: String,
+    },
 }
 
 #[async_trait]
 pub trait EventHandler: Send + Sync {
     async fn handle(&self, event: &Event);
-    fn priority(&self) -> i32 { 0 }
+    fn priority(&self) -> i32 {
+        0
+    }
 }
 
 pub struct EventBus {
@@ -62,7 +106,7 @@ impl EventBus {
             handler.handle(&event).await;
         }
     }
-    
+
     pub async fn publish(&self, event: Event) {
         self.emit(event).await;
     }

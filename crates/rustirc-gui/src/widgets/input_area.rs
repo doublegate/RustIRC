@@ -6,9 +6,9 @@
 use crate::state::{AppState, TabType};
 use crate::theme::Theme;
 use iced::{
-    widget::{container, text_input, button, row, column, text, Space},
-    Element, Length, Task, Color, Alignment,
     keyboard::{Key, Modifiers},
+    widget::{button, column, container, row, text, text_input, Space},
+    Alignment, Color, Element, Length, Task,
 };
 use std::collections::VecDeque;
 use tracing::info;
@@ -57,7 +57,11 @@ impl InputArea {
     }
 
     /// Update the input area state
-    pub fn update(&mut self, message: InputAreaMessage, app_state: &mut AppState) -> Task<InputAreaMessage> {
+    pub fn update(
+        &mut self,
+        message: InputAreaMessage,
+        app_state: &mut AppState,
+    ) -> Task<InputAreaMessage> {
         match message {
             InputAreaMessage::InputChanged(value) => {
                 self.current_input = value;
@@ -155,14 +159,14 @@ impl InputArea {
     pub fn view(&self, app_state: &AppState) -> Element<InputAreaMessage> {
         // Create theme instance for theming support
         let theme = Theme::default();
-        
+
         let current_tab = app_state.current_tab();
-        
+
         // Determine input placeholder
         let placeholder = if let Some(tab) = current_tab {
             match &tab.tab_type {
-                TabType::Channel { channel } => format!("Message {}...", channel),
-                TabType::PrivateMessage { nick } => format!("Message {}...", nick),
+                TabType::Channel { channel } => format!("Message {channel}..."),
+                TabType::PrivateMessage { nick } => format!("Message {nick}..."),
                 TabType::Server => "Enter IRC command...".to_string(),
                 TabType::Private => format!("Message {}...", tab.name),
             }
@@ -179,13 +183,9 @@ impl InputArea {
             .width(Length::Fill);
 
         // Send button
-        let send_button = button(
-            text("Send")
-                .size(12.0)
-                .color(theme.get_text_color())
-        )
-        .on_press(InputAreaMessage::SendMessage(self.current_input.clone()))
-        .padding([6, 12]);
+        let send_button = button(text("Send").size(12.0).color(theme.get_text_color()))
+            .on_press(InputAreaMessage::SendMessage(self.current_input.clone()))
+            .padding([6, 12]);
 
         // Format indicators (if needed)
         let format_info = if self.current_input.starts_with('/') {
@@ -199,15 +199,18 @@ impl InputArea {
         // Completion hint
         let completion_hint = if !self.completion_candidates.is_empty() {
             let hint_text = if let Some(index) = self.completion_index {
-                format!("Tab: {} ({}/{})", 
-                    self.completion_candidates.get(index).unwrap_or(&String::new()),
+                format!(
+                    "Tab: {} ({}/{})",
+                    self.completion_candidates
+                        .get(index)
+                        .unwrap_or(&String::new()),
                     index + 1,
                     self.completion_candidates.len()
                 )
             } else {
                 format!("Tab: {} candidates", self.completion_candidates.len())
             };
-            
+
             text(hint_text)
                 .size(10.0)
                 .color(Color::from_rgb(0.6, 0.6, 0.6))
@@ -233,45 +236,45 @@ impl InputArea {
 
         let content = if self.multiline_mode {
             // Implement multiline input mode
-            let multiline_input = text_input("Type multiple lines... (Ctrl+Enter to send)", &self.current_input)
-                .on_input(InputAreaMessage::InputChanged)
-                .on_submit(InputAreaMessage::InputSubmitted(self.current_input.clone()))
-                .padding(8)
-                .width(Length::Fill);
-                
+            let multiline_input = text_input(
+                "Type multiple lines... (Ctrl+Enter to send)",
+                &self.current_input,
+            )
+            .on_input(InputAreaMessage::InputChanged)
+            .on_submit(InputAreaMessage::InputSubmitted(self.current_input.clone()))
+            .padding(8)
+            .width(Length::Fill);
+
             let send_button = button("Send")
                 .on_press(InputAreaMessage::InputSubmitted(self.current_input.clone()))
                 .padding([4, 8]);
-                
+
             let toggle_button = button("Single Line")
                 .on_press(InputAreaMessage::ToggleMultiline)
                 .padding([4, 8]);
-                
+
             column![
                 multiline_input,
-                row![
-                    send_button,
-                    toggle_button,
-                ].spacing(5).align_y(Alignment::Center),
+                row![send_button, toggle_button,]
+                    .spacing(5)
+                    .align_y(Alignment::Center),
                 Space::with_height(Length::Fixed(4.0)),
                 info_row
             ]
         } else {
-            column![
-                input_row,
-                Space::with_height(Length::Fixed(4.0)),
-                info_row
-            ]
+            column![input_row, Space::with_height(Length::Fixed(4.0)), info_row]
         };
 
-        container(content)
-            .padding(8)
-            .width(Length::Fill)
-            .into()
+        container(content).padding(8).width(Length::Fill).into()
     }
 
     /// Handle key press events with state-aware functionality
-    fn handle_key_press(&mut self, key: Key, modifiers: Modifiers, app_state: &AppState) -> Task<InputAreaMessage> {
+    fn handle_key_press(
+        &mut self,
+        key: Key,
+        modifiers: Modifiers,
+        app_state: &AppState,
+    ) -> Task<InputAreaMessage> {
         match key {
             Key::Named(iced::keyboard::key::Named::ArrowUp) if modifiers.control() => {
                 Task::done(InputAreaMessage::HistoryUp)
@@ -305,15 +308,21 @@ impl InputArea {
                     match &current_tab.tab_type {
                         TabType::Channel { .. } | TabType::PrivateMessage { .. } => {
                             if !self.current_input.trim().is_empty() {
-                                Task::done(InputAreaMessage::SendMessage(self.current_input.clone()))
+                                Task::done(InputAreaMessage::SendMessage(
+                                    self.current_input.clone(),
+                                ))
                             } else {
                                 Task::none()
                             }
                         }
                         TabType::Server | TabType::Private => {
                             // Server tabs only accept commands
-                            if self.current_input.starts_with('/') && !self.current_input.trim().is_empty() {
-                                Task::done(InputAreaMessage::SendMessage(self.current_input.clone()))
+                            if self.current_input.starts_with('/')
+                                && !self.current_input.trim().is_empty()
+                            {
+                                Task::done(InputAreaMessage::SendMessage(
+                                    self.current_input.clone(),
+                                ))
                             } else {
                                 Task::none()
                             }
@@ -341,7 +350,7 @@ impl InputArea {
                     Task::none()
                 }
             }
-            _ => Task::none()
+            _ => Task::none(),
         }
     }
 
@@ -361,10 +370,10 @@ impl InputArea {
         let words: Vec<&str> = self.current_input.split_whitespace().collect();
         if let Some(&last_word) = words.last() {
             self.completion_prefix = last_word.to_string();
-            
+
             // Get completion candidates
             self.completion_candidates = self.get_completion_candidates(last_word, app_state);
-            
+
             if !self.completion_candidates.is_empty() {
                 self.completion_index = Some(0);
                 self.apply_completion();
@@ -380,11 +389,28 @@ impl InputArea {
         // Task completion
         if prefix.starts_with('/') {
             let commands = [
-                "/join", "/part", "/quit", "/nick", "/msg", "/notice", "/me", "/topic",
-                "/kick", "/ban", "/unban", "/mode", "/whois", "/away", "/back",
-                "/connect", "/disconnect", "/server", "/clear", "/help"
+                "/join",
+                "/part",
+                "/quit",
+                "/nick",
+                "/msg",
+                "/notice",
+                "/me",
+                "/topic",
+                "/kick",
+                "/ban",
+                "/unban",
+                "/mode",
+                "/whois",
+                "/away",
+                "/back",
+                "/connect",
+                "/disconnect",
+                "/server",
+                "/clear",
+                "/help",
             ];
-            
+
             for &command in &commands {
                 if command.to_lowercase().starts_with(&lower_prefix) {
                     candidates.push(command.to_string());
@@ -393,11 +419,11 @@ impl InputArea {
         } else {
             // Nick completion
             if let Some(current_tab) = app_state.current_tab() {
-                for (nick, _user) in &current_tab.users {
+                for nick in current_tab.users.keys() {
                     if nick.to_lowercase().starts_with(&lower_prefix) {
                         // Add colon if it's the first word (mention)
                         let completion = if self.current_input.split_whitespace().count() <= 1 {
-                            format!("{}: ", nick)
+                            format!("{nick}: ")
                         } else {
                             nick.clone()
                         };
@@ -412,7 +438,7 @@ impl InputArea {
                 if let Some(current_tab) = app_state.current_tab() {
                     if let Some(current_server_id) = &current_tab.server_id {
                         if let Some(server_state) = app_state.servers.get(current_server_id) {
-                            for (channel_name, _channel_state) in &server_state.channels {
+                            for channel_name in server_state.channels.keys() {
                                 if channel_name.to_lowercase().starts_with(&lower_prefix) {
                                     candidates.push(channel_name.clone());
                                 }
@@ -423,7 +449,7 @@ impl InputArea {
                     // Fallback: if no current tab, search all servers
                     for (server_id, server_state) in &app_state.servers {
                         info!("Searching channels in server: {}", server_id);
-                        for (channel_name, _channel_state) in &server_state.channels {
+                        for channel_name in server_state.channels.keys() {
                             if channel_name.to_lowercase().starts_with(&lower_prefix) {
                                 candidates.push(channel_name.clone());
                             }
@@ -463,8 +489,11 @@ impl InputArea {
                 }
             } else {
                 // Index out of bounds - reset completion state
-                info!("Completion index {} out of bounds (max: {}), resetting", 
-                     index, self.completion_candidates.len());
+                info!(
+                    "Completion index {} out of bounds (max: {}), resetting",
+                    index,
+                    self.completion_candidates.len()
+                );
                 self.reset_completion();
             }
         }

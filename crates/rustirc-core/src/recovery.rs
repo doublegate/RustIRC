@@ -10,7 +10,7 @@
 use crate::connection::{ConnectionConfig, ConnectionState, IrcConnection};
 use crate::error::{Error, Result};
 use crate::events::{Event, EventBus};
-use crate::state::{StateManager, ServerState};
+use crate::state::{ServerState, StateManager};
 use rustirc_protocol::Command;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -112,9 +112,9 @@ impl Default for ReconnectConfig {
 /// Circuit breaker states
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CircuitState {
-    Closed,     // Normal operation
-    Open,       // Failing, not allowing connections
-    HalfOpen,   // Testing if service is back
+    Closed,   // Normal operation
+    Open,     // Failing, not allowing connections
+    HalfOpen, // Testing if service is back
 }
 
 /// Circuit breaker for connection failures
@@ -255,7 +255,10 @@ impl ConnectionRecovery {
     /// Calculate delay for next reconnection attempt
     fn calculate_delay(&self) -> Duration {
         let mut delay = self.config.initial_delay.as_millis() as f64
-            * self.config.backoff_multiplier.powi(self.current_attempt as i32);
+            * self
+                .config
+                .backoff_multiplier
+                .powi(self.current_attempt as i32);
 
         delay = delay.min(self.config.max_delay.as_millis() as f64);
 
@@ -340,9 +343,12 @@ impl RecoveryManager {
     /// Register a connection for recovery
     pub async fn register_connection(&self, connection_id: String, config: ReconnectConfig) {
         let recovery = ConnectionRecovery::new(connection_id.clone(), config);
-        self.connections.write().await.insert(connection_id, recovery);
+        self.connections
+            .write()
+            .await
+            .insert(connection_id, recovery);
     }
-    
+
     /// Create connection config from recovery data
     pub async fn create_connection_config(&self, connection_id: &str) -> Option<ConnectionConfig> {
         let connections = self.connections.read().await;
@@ -366,12 +372,12 @@ impl RecoveryManager {
         }
         None
     }
-    
+
     /// Check connection state for recovery decisions
     pub async fn check_connection_state(&self, connection_id: &str) -> Option<ConnectionState> {
         // Check the actual connection state from the state manager
         let client_state = self.state_manager.get_state().await;
-        
+
         // Check if this connection exists in our client state
         if client_state.servers.contains_key(connection_id) {
             // Check if we have recovery data for this connection
@@ -396,7 +402,9 @@ impl RecoveryManager {
                             }
                         }
                         // Check the server state for connection status
-                        if let Some(server_state) = self.state_manager.get_server_state(connection_id).await {
+                        if let Some(server_state) =
+                            self.state_manager.get_server_state(connection_id).await
+                        {
                             // Determine state based on server information
                             if server_state.connected {
                                 if server_state.registered {
@@ -411,7 +419,8 @@ impl RecoveryManager {
                 }
             } else {
                 // No recovery data, check server state directly
-                if let Some(server_state) = self.state_manager.get_server_state(connection_id).await {
+                if let Some(server_state) = self.state_manager.get_server_state(connection_id).await
+                {
                     if server_state.connected {
                         if server_state.registered {
                             return Some(ConnectionState::Registered);
@@ -423,18 +432,20 @@ impl RecoveryManager {
                 return Some(ConnectionState::Disconnected);
             }
         }
-        
+
         // Connection not found
         None
     }
-    
+
     /// Create new IRC connection from recovery data
-    pub async fn create_irc_connection(&self, connection_id: &str, event_bus: Arc<EventBus>) -> Option<IrcConnection> {
-        if let Some(config) = self.create_connection_config(connection_id).await {
-            Some(IrcConnection::new(config, event_bus))
-        } else {
-            None
-        }
+    pub async fn create_irc_connection(
+        &self,
+        connection_id: &str,
+        event_bus: Arc<EventBus>,
+    ) -> Option<IrcConnection> {
+        self.create_connection_config(connection_id)
+            .await
+            .map(|config| IrcConnection::new(config, event_bus))
     }
 
     /// Handle connection failure
@@ -472,7 +483,7 @@ impl RecoveryManager {
         let mut connections = self.connections.write().await;
         if let Some(recovery) = connections.get_mut(&connection_id) {
             recovery.record_success();
-            
+
             // Schedule state restoration
             self.recovery_tx
                 .send(RecoveryTask::RestoreState { connection_id })
@@ -537,12 +548,8 @@ impl RecoveryManager {
             loop {
                 interval.tick().await;
 
-                let connection_ids: Vec<String> = connections
-                    .read()
-                    .await
-                    .keys()
-                    .cloned()
-                    .collect();
+                let connection_ids: Vec<String> =
+                    connections.read().await.keys().cloned().collect();
 
                 for connection_id in connection_ids {
                     if recovery_tx
@@ -572,26 +579,29 @@ impl RecoveryManager {
                         server1: format!("health-check-{}", Instant::now().elapsed().as_secs()),
                         server2: None,
                     };
-                    
+
                     // Emit PING command through event bus
                     let event = Event::MessageSent {
                         connection_id: connection_id.clone(),
                         message: ping_cmd.to_message(),
                     };
                     self.event_bus.emit(event).await;
-                    
+
                     // Update last health check time in recovery data
                     let mut connections = self.connections.write().await;
                     if let Some(recovery) = connections.get_mut(&connection_id) {
                         recovery.last_attempt = Some(Instant::now());
                     }
-                    
+
                     info!("Health check PING sent for {}", connection_id);
                 }
                 ConnectionState::Disconnected | ConnectionState::Failed(_) => {
                     // Connection is down, trigger reconnection if needed
-                    warn!("Health check detected disconnected state for {}", connection_id);
-                    
+                    warn!(
+                        "Health check detected disconnected state for {}",
+                        connection_id
+                    );
+
                     // Schedule reconnection through recovery task
                     let _ = self.recovery_tx.send(RecoveryTask::ScheduleReconnect {
                         connection_id: connection_id.clone(),
@@ -666,13 +676,20 @@ pub async fn process_recovery_tasks(
                         sleep(delay).await;
                         // Signal that it's time to attempt reconnection
                         // This would be handled by the connection manager
-                        debug!("Recovery channel available for connection {}: {:?}", connection_id_clone, recovery_tx.is_closed());
+                        debug!(
+                            "Recovery channel available for connection {}: {:?}",
+                            connection_id_clone,
+                            recovery_tx.is_closed()
+                        );
                         debug!("Reconnection timer expired for {}", connection_id_clone);
                     });
                 }
             }
             RecoveryTask::RestoreState { connection_id } => {
-                if let Err(e) = recovery_manager.restore_connection_state(connection_id).await {
+                if let Err(e) = recovery_manager
+                    .restore_connection_state(connection_id)
+                    .await
+                {
                     error!("Failed to restore connection state: {}", e);
                 }
             }

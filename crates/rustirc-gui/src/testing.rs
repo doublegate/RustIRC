@@ -3,10 +3,10 @@
 //! Provides utilities for testing GUI components, user interactions,
 //! and integration with the IRC core engine.
 
-use crate::app::{RustIrcGui, Message};
+use crate::app::{Message, RustIrcGui};
 use crate::state::AppState;
 use crate::theme::Theme;
-use iced::{Element, Task, Size, Point};
+use iced::{Element, Point, Size, Task};
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
@@ -24,25 +24,25 @@ pub struct GuiTestHarness {
 pub enum TestEvent {
     /// Simulate text input
     TextInput(String),
-    
+
     /// Simulate key press
     KeyPress(TestKey),
-    
+
     /// Simulate mouse click at coordinates
     MouseClick(Point),
-    
+
     /// Simulate mouse scroll
     MouseScroll(f32),
-    
+
     /// Simulate window resize
     WindowResize(Size),
-    
+
     /// Wait for specified duration
     Wait(Duration),
-    
+
     /// Wait for specific message to appear
     WaitForMessage(String),
-    
+
     /// Wait for connection state change
     WaitForConnection(String),
 }
@@ -74,7 +74,7 @@ impl GuiTestHarness {
     /// Create a new test harness
     pub fn new() -> Self {
         let app = RustIrcGui::new();
-        
+
         Self {
             app,
             events: VecDeque::new(),
@@ -82,34 +82,34 @@ impl GuiTestHarness {
             start_time: Instant::now(),
         }
     }
-    
+
     /// Add a test event to the queue
     pub fn add_event(&mut self, event: TestEvent) {
         self.events.push_back(event);
     }
-    
+
     /// Add multiple test events
     pub fn add_events(&mut self, events: Vec<TestEvent>) {
         for event in events {
             self.events.push_back(event);
         }
     }
-    
+
     /// Run the test scenario with theme validation and async communication
     pub async fn run(&mut self) -> TestResult {
         let mut result = TestResult::new();
-        
+
         // Set up theme validation using Theme
         let test_theme = Theme::from_type(crate::theme::ThemeType::Dark);
         self.validate_theme_compatibility(&test_theme);
-        
+
         // Create async communication channel for test events
         let (event_tx, mut event_rx) = mpsc::unbounded_channel();
-        
+
         // Run events with async coordination
         let events_clone = self.events.clone();
         let event_tx_clone = event_tx.clone();
-        
+
         tokio::spawn(async move {
             for event in events_clone {
                 if event_tx_clone.send(event).is_err() {
@@ -117,7 +117,7 @@ impl GuiTestHarness {
                 }
             }
         });
-        
+
         while let Some(event) = event_rx.recv().await {
             match self.execute_event(event).await {
                 Ok(()) => result.passed_events += 1,
@@ -127,11 +127,11 @@ impl GuiTestHarness {
                 }
             }
         }
-        
+
         result.duration = self.start_time.elapsed();
         result
     }
-    
+
     /// Validate theme compatibility for testing
     fn validate_theme_compatibility(&self, theme: &Theme) {
         // Validate that all GUI elements can work with the provided theme
@@ -139,7 +139,7 @@ impl GuiTestHarness {
         let _ = theme.palette.text_primary;
         let _ = theme.palette.primary;
     }
-    
+
     /// Execute a single test event
     async fn execute_event(&mut self, event: TestEvent) -> Result<(), TestError> {
         match event {
@@ -147,42 +147,38 @@ impl GuiTestHarness {
                 self.simulate_text_input(&text);
                 Ok(())
             }
-            
+
             TestEvent::KeyPress(key) => {
                 self.simulate_key_press(key);
                 Ok(())
             }
-            
+
             TestEvent::MouseClick(point) => {
                 self.simulate_mouse_click(point);
                 Ok(())
             }
-            
+
             TestEvent::MouseScroll(delta) => {
                 self.simulate_mouse_scroll(delta);
                 Ok(())
             }
-            
+
             TestEvent::WindowResize(size) => {
                 self.simulate_window_resize(size);
                 Ok(())
             }
-            
+
             TestEvent::Wait(duration) => {
                 tokio::time::sleep(duration).await;
                 Ok(())
             }
-            
-            TestEvent::WaitForMessage(text) => {
-                self.wait_for_message(&text).await
-            }
-            
-            TestEvent::WaitForConnection(server) => {
-                self.wait_for_connection(&server).await
-            }
+
+            TestEvent::WaitForMessage(text) => self.wait_for_message(&text).await,
+
+            TestEvent::WaitForConnection(server) => self.wait_for_connection(&server).await,
         }
     }
-    
+
     /// Simulate text input
     fn simulate_text_input(&mut self, text: &str) {
         for ch in text.chars() {
@@ -190,7 +186,7 @@ impl GuiTestHarness {
             self.process_message(message);
         }
     }
-    
+
     /// Simulate key press
     fn simulate_key_press(&mut self, key: TestKey) {
         let message = match key {
@@ -206,16 +202,16 @@ impl GuiTestHarness {
             TestKey::Ctrl('v') => Message::PasteText,
             _ => return, // Not implemented for this test
         };
-        
+
         self.process_message(message);
     }
-    
+
     /// Simulate mouse click
     fn simulate_mouse_click(&mut self, _point: Point) {
         // Implementation would depend on hit testing
         // For now, just record the event
     }
-    
+
     /// Simulate mouse scroll
     fn simulate_mouse_scroll(&mut self, delta: f32) {
         if delta > 0.0 {
@@ -224,56 +220,57 @@ impl GuiTestHarness {
             self.process_message(Message::ScrollDown);
         }
     }
-    
+
     /// Simulate window resize
     fn simulate_window_resize(&mut self, size: Size) {
         let message = Message::WindowResized(size.width as u16, size.height as u16);
         self.process_message(message);
     }
-    
+
     /// Process a message through the app with Element validation and Task execution
     fn process_message(&mut self, message: Message) {
         let task = self.app.update(message.clone());
         self.messages.push_back(message);
-        
+
         // Validate that app state generates proper GUI elements
         self.validate_gui_elements();
-        
+
         // Process any resulting tasks with proper implementation
         self.execute_task_properly(task.into());
     }
-    
+
     /// Execute a Task with proper async handling for testing
     fn execute_task_properly(&mut self, task: iced::Task<Message>) {
         // Execute the task in the testing environment
-        
+
         // Try to get current runtime, or create one if not available
-        let runtime_handle = tokio::runtime::Handle::try_current()
-            .unwrap_or_else(|_| {
-                // Create a new runtime for testing if none exists
-                tokio::runtime::Runtime::new()
-                    .expect("Failed to create test runtime")
-                    .handle().clone()
-            });
-        
+        let runtime_handle = tokio::runtime::Handle::try_current().unwrap_or_else(|_| {
+            // Create a new runtime for testing if none exists
+            tokio::runtime::Runtime::new()
+                .expect("Failed to create test runtime")
+                .handle()
+                .clone()
+        });
+
         // Spawn the task and collect results for validation
         runtime_handle.spawn(async move {
             // Process task results and update test harness state if needed
             // Tasks in Iced are futures that produce messages
             // We collect these for test validation
             let _ = task;
-            
+
             // Log task execution for test tracking
             tracing::info!("Test task executed successfully");
-            
+
             // In a full implementation, we could collect and validate messages here
             // For now, successful spawning indicates the task is properly formed
         });
-        
+
         // Record the task execution in our event queue for test tracking
-        self.events.push_back(TestEvent::Wait(Duration::from_millis(1)));
+        self.events
+            .push_back(TestEvent::Wait(Duration::from_millis(1)));
     }
-    
+
     /// Validate that GUI elements are properly constructed
     fn validate_gui_elements(&self) {
         // Validate that Element type is available and properly imported
@@ -282,30 +279,31 @@ impl GuiTestHarness {
         let _test_element: Element<Message> = text("Test validation").into();
         // This validates that Element type is properly available
     }
-    
+
     /// Execute a Task (simulate async operations in testing)
+    #[allow(dead_code)]
     fn execute_task(&mut self, task: Task<Message>) {
         // Execute the task using the proper implementation
         self.execute_task_properly(task);
     }
-    
+
     /// Wait for a specific message to appear
     async fn wait_for_message(&self, _text: &str) -> Result<(), TestError> {
         // Implementation would check for message in chat history
         Ok(())
     }
-    
+
     /// Wait for connection to a server
     async fn wait_for_connection(&self, _server: &str) -> Result<(), TestError> {
         // Implementation would check connection state
         Ok(())
     }
-    
+
     /// Get current app state for assertions
     pub fn state(&self) -> &AppState {
         self.app.state()
     }
-    
+
     /// Check if text appears in current view
     pub fn contains_text(&self, text: &str) -> bool {
         // Search through recent messages for the text
@@ -315,7 +313,7 @@ impl GuiTestHarness {
                 _ => continue,
             }
         }
-        
+
         // Also check if text appears in app state
         if let Some(current_tab) = self.app.state().current_tab() {
             for display_msg in &current_tab.messages {
@@ -324,20 +322,20 @@ impl GuiTestHarness {
                 }
             }
         }
-        
+
         false
     }
-    
+
     /// Check if element is visible
     pub fn is_element_visible(&self, element_id: &str) -> bool {
         // Check if specific UI elements are visible based on app state
         let ui_state = &self.app.state().ui_state;
-        
+
         match element_id {
             "sidebar" | "server_tree" => ui_state.show_sidebar,
             "userlist" | "user_list" => ui_state.show_userlist,
-            "status_bar" => true, // Status bar is typically always visible
-            "input_area" => true, // Input area is typically always visible
+            "status_bar" => true,   // Status bar is typically always visible
+            "input_area" => true,   // Input area is typically always visible
             "message_view" => true, // Message view is typically always visible
             "tab_bar" => !self.app.state().tabs.is_empty(), // Visible if tabs exist
             _ => {
@@ -346,13 +344,13 @@ impl GuiTestHarness {
             }
         }
     }
-    
+
     /// Get list of recent messages
     pub fn recent_messages(&self) -> Vec<String> {
         // Implementation would return recent chat messages
         vec![]
     }
-    
+
     /// Take screenshot for visual testing
     pub fn screenshot(&self) -> TestScreenshot {
         TestScreenshot {
@@ -381,11 +379,11 @@ impl TestResult {
             duration: Duration::default(),
         }
     }
-    
+
     pub fn is_success(&self) -> bool {
         self.failed_events == 0
     }
-    
+
     pub fn total_events(&self) -> usize {
         self.passed_events + self.failed_events
     }
@@ -404,11 +402,11 @@ pub enum TestError {
 impl std::fmt::Display for TestError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TestError::Timeout(msg) => write!(f, "Timeout: {}", msg),
-            TestError::ElementNotFound(id) => write!(f, "Element not found: {}", id),
-            TestError::UnexpectedState(msg) => write!(f, "Unexpected state: {}", msg),
-            TestError::AssertionFailed(msg) => write!(f, "Assertion failed: {}", msg),
-            TestError::IOError(msg) => write!(f, "IO error: {}", msg),
+            TestError::Timeout(msg) => write!(f, "Timeout: {msg}"),
+            TestError::ElementNotFound(id) => write!(f, "Element not found: {id}"),
+            TestError::UnexpectedState(msg) => write!(f, "Unexpected state: {msg}"),
+            TestError::AssertionFailed(msg) => write!(f, "Assertion failed: {msg}"),
+            TestError::IOError(msg) => write!(f, "IO error: {msg}"),
         }
     }
 }
@@ -438,47 +436,49 @@ impl TestScenarioBuilder {
             description: None,
         }
     }
-    
+
     pub fn description(mut self, desc: &str) -> Self {
         self.description = Some(desc.to_string());
         self
     }
-    
+
     pub fn type_text(mut self, text: &str) -> Self {
         self.events.push(TestEvent::TextInput(text.to_string()));
         self
     }
-    
+
     pub fn press_key(mut self, key: TestKey) -> Self {
         self.events.push(TestEvent::KeyPress(key));
         self
     }
-    
+
     pub fn click(mut self, x: f32, y: f32) -> Self {
         self.events.push(TestEvent::MouseClick(Point::new(x, y)));
         self
     }
-    
+
     pub fn scroll(mut self, delta: f32) -> Self {
         self.events.push(TestEvent::MouseScroll(delta));
         self
     }
-    
+
     pub fn wait(mut self, duration: Duration) -> Self {
         self.events.push(TestEvent::Wait(duration));
         self
     }
-    
+
     pub fn wait_for_message(mut self, text: &str) -> Self {
-        self.events.push(TestEvent::WaitForMessage(text.to_string()));
+        self.events
+            .push(TestEvent::WaitForMessage(text.to_string()));
         self
     }
-    
+
     pub fn wait_for_connection(mut self, server: &str) -> Self {
-        self.events.push(TestEvent::WaitForConnection(server.to_string()));
+        self.events
+            .push(TestEvent::WaitForConnection(server.to_string()));
         self
     }
-    
+
     pub fn build(self) -> TestScenario {
         TestScenario {
             name: self.name,
@@ -515,22 +515,22 @@ impl IntegrationTestRunner {
             scenarios: Vec::new(),
         }
     }
-    
+
     pub fn add_scenario(&mut self, scenario: TestScenario) {
         self.scenarios.push(scenario);
     }
-    
+
     pub async fn run_all(&self) -> Vec<(String, TestResult)> {
         let mut results = Vec::new();
-        
+
         for scenario in &self.scenarios {
             let result = scenario.run().await;
             results.push((scenario.name.clone(), result));
         }
-        
+
         results
     }
-    
+
     pub async fn run_scenario(&self, name: &str) -> Option<TestResult> {
         if let Some(scenario) = self.scenarios.iter().find(|s| s.name == name) {
             Some(scenario.run().await)
@@ -543,7 +543,7 @@ impl IntegrationTestRunner {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_basic_input() {
         let scenario = TestScenarioBuilder::new("basic_input")
@@ -552,11 +552,11 @@ mod tests {
             .press_key(TestKey::Enter)
             .wait(Duration::from_millis(100))
             .build();
-            
+
         let result = scenario.run().await;
         assert!(result.is_success());
     }
-    
+
     #[tokio::test]
     async fn test_tab_completion() {
         let scenario = TestScenarioBuilder::new("tab_completion")
@@ -565,11 +565,11 @@ mod tests {
             .press_key(TestKey::Tab)
             .wait(Duration::from_millis(50))
             .build();
-            
+
         let result = scenario.run().await;
         assert!(result.is_success());
     }
-    
+
     #[tokio::test]
     async fn test_keyboard_navigation() {
         let scenario = TestScenarioBuilder::new("keyboard_navigation")
@@ -578,102 +578,112 @@ mod tests {
             .press_key(TestKey::Tab)
             .press_key(TestKey::Enter)
             .build();
-            
+
         let result = scenario.run().await;
         assert!(result.is_success());
     }
-    
+
     #[tokio::test]
     async fn test_execute_task_connection() {
         let mut harness = GuiTestHarness::new();
-        
+
         // Test connecting to a server using execute_task
         let connect_task = iced::Task::done(Message::ConnectToServer(
             "irc.libera.chat".to_string(),
             6697,
         ));
-        
+
         // Execute the task through our test harness
         harness.execute_task(connect_task);
-        
+
         // Wait for connection
         harness.add_event(TestEvent::WaitForConnection("irc.libera.chat".to_string()));
         let result = harness.run().await;
         assert!(result.is_success(), "Connection task execution failed");
     }
-    
+
     #[tokio::test]
     async fn test_execute_task_channel_operations() {
         let mut harness = GuiTestHarness::new();
-        
+
         // Test joining a channel using execute_task
         let join_task = iced::Task::done(Message::JoinChannel(
             "test_server".to_string(),
             "#test".to_string(),
         ));
-        
+
         harness.execute_task(join_task);
         harness.add_event(TestEvent::Wait(Duration::from_millis(100)));
-        
+
         // Test sending a message
         let send_task = iced::Task::done(Message::SendMessage(
             "test_server".to_string(),
             "#test".to_string(),
             "Hello from test!".to_string(),
         ));
-        
+
         harness.execute_task(send_task);
         harness.add_event(TestEvent::WaitForMessage("Hello from test!".to_string()));
-        
+
         let result = harness.run().await;
-        assert!(result.is_success(), "Channel operations task execution failed");
+        assert!(
+            result.is_success(),
+            "Channel operations task execution failed"
+        );
     }
-    
+
     #[tokio::test]
     async fn test_execute_task_ui_updates() {
         let mut harness = GuiTestHarness::new();
-        
+
         // Test UI update tasks
         let theme_task = iced::Task::done(Message::ThemeChanged(crate::theme::ThemeType::Light));
         harness.execute_task(theme_task);
-        
+
         let toggle_timestamps_task = iced::Task::done(Message::MenuViewToggleTimestamps);
         harness.execute_task(toggle_timestamps_task);
-        
+
         let toggle_userlist_task = iced::Task::done(Message::MenuViewToggleUserLists);
         harness.execute_task(toggle_userlist_task);
-        
+
         // Verify UI state changes
         harness.add_event(TestEvent::Wait(Duration::from_millis(50)));
         let result = harness.run().await;
-        
+
         assert!(result.is_success(), "UI update tasks failed");
         // Verify state changes were applied
-        assert!(harness.state().ui_state.show_userlist == false || harness.state().ui_state.show_userlist == true, "Toggle should work");
+        assert!(
+            harness.state().ui_state.show_userlist == false
+                || harness.state().ui_state.show_userlist == true,
+            "Toggle should work"
+        );
     }
-    
+
     #[tokio::test]
     async fn test_execute_task_error_handling() {
         let mut harness = GuiTestHarness::new();
-        
+
         // Test error handling with invalid connection
         let error_task = iced::Task::done(Message::ConnectToServer(
             "invalid.server.that.does.not.exist".to_string(),
             6667,
         ));
-        
+
         harness.execute_task(error_task);
         harness.add_event(TestEvent::Wait(Duration::from_secs(2)));
-        
+
         let result = harness.run().await;
         // Even with connection failure, task execution should succeed
-        assert!(result.is_success(), "Task execution should handle errors gracefully");
+        assert!(
+            result.is_success(),
+            "Task execution should handle errors gracefully"
+        );
     }
-    
+
     #[tokio::test]
     async fn test_execute_task_batch_operations() {
         let mut harness = GuiTestHarness::new();
-        
+
         // Test executing multiple tasks in sequence
         let tasks = vec![
             iced::Task::done(Message::TabSelected("tab1".to_string())),
@@ -682,118 +692,120 @@ mod tests {
             iced::Task::done(Message::ScrollUp),
             iced::Task::done(Message::ScrollDown),
         ];
-        
+
         for task in tasks {
             harness.execute_task(task);
         }
-        
+
         harness.add_event(TestEvent::Wait(Duration::from_millis(200)));
         let result = harness.run().await;
-        
+
         assert!(result.is_success(), "Batch task execution failed");
         assert!(harness.state().tabs.len() >= 1, "Tabs should exist");
     }
-    
+
     #[tokio::test]
     async fn test_execute_task_async_operations() {
         let mut harness = GuiTestHarness::new();
-        
+
         // Test async dialog operations
         let show_prefs_task = iced::Task::done(Message::ShowPreferencesDialog);
         harness.execute_task(show_prefs_task);
-        
+
         // Test async dialog hide
         let hide_prefs_task = iced::Task::done(Message::HidePreferencesDialog);
         harness.execute_task(hide_prefs_task);
-        
+
         // Test show about dialog
         let show_about_task = iced::Task::done(Message::ShowAboutDialog);
         harness.execute_task(show_about_task);
-        
+
         harness.add_event(TestEvent::Wait(Duration::from_millis(500)));
         let result = harness.run().await;
-        
+
         assert!(result.is_success(), "Async operation tasks failed");
     }
-    
+
     #[tokio::test]
     async fn test_execute_task_clipboard_operations() {
         let mut harness = GuiTestHarness::new();
-        
+
         // Test clipboard operations through tasks
         let copy_task = iced::Task::done(Message::CopySelection);
         harness.execute_task(copy_task);
-        
+
         harness.add_event(TestEvent::Wait(Duration::from_millis(50)));
-        
+
         let paste_task = iced::Task::done(Message::PasteText);
         harness.execute_task(paste_task);
-        
+
         harness.add_event(TestEvent::Wait(Duration::from_millis(50)));
         let result = harness.run().await;
-        
+
         assert!(result.is_success(), "Clipboard operation tasks failed");
     }
-    
+
     #[tokio::test]
     async fn test_execute_task_menu_operations() {
         let mut harness = GuiTestHarness::new();
-        
+
         // Test menu-triggered tasks
         let show_about_task = iced::Task::done(Message::ShowAboutDialog);
         harness.execute_task(show_about_task);
-        
+
         let show_preferences_task = iced::Task::done(Message::ShowPreferencesDialog);
         harness.execute_task(show_preferences_task);
-        
+
         let show_help_task = iced::Task::done(Message::ShowHelp);
         harness.execute_task(show_help_task);
-        
+
         harness.add_event(TestEvent::Wait(Duration::from_millis(100)));
         let result = harness.run().await;
-        
+
         assert!(result.is_success(), "Menu operation tasks failed");
     }
-    
+
     #[tokio::test]
     async fn test_execute_task_complex_scenario() {
         let mut harness = GuiTestHarness::new();
-        
+
         // Complex scenario: Connect, join, send message, disconnect
-        let connect_task = iced::Task::done(Message::ConnectToServer(
-            "irc.test.local".to_string(),
-            6667,
-        ));
-        
+        let connect_task =
+            iced::Task::done(Message::ConnectToServer("irc.test.local".to_string(), 6667));
+
         harness.execute_task(connect_task);
         harness.add_event(TestEvent::Wait(Duration::from_millis(500)));
-        
+
         let join_task = iced::Task::done(Message::JoinChannel(
             "irc.test.local".to_string(),
             "#testing".to_string(),
         ));
-        
+
         harness.execute_task(join_task);
         harness.add_event(TestEvent::Wait(Duration::from_millis(200)));
-        
+
         let message_task = iced::Task::done(Message::SendMessage(
             "irc.test.local".to_string(),
             "#testing".to_string(),
             "Automated test message".to_string(),
         ));
-        
+
         harness.execute_task(message_task);
-        harness.add_event(TestEvent::WaitForMessage("Automated test message".to_string()));
-        
-        let disconnect_task = iced::Task::done(Message::DisconnectFromServer(
-            "irc.test.local".to_string(),
+        harness.add_event(TestEvent::WaitForMessage(
+            "Automated test message".to_string(),
         ));
-        
+
+        let disconnect_task =
+            iced::Task::done(Message::DisconnectFromServer("irc.test.local".to_string()));
+
         harness.execute_task(disconnect_task);
         harness.add_event(TestEvent::Wait(Duration::from_millis(200)));
-        
+
         let result = harness.run().await;
-        assert!(result.is_success(), "Complex scenario task execution failed");
+        assert!(
+            result.is_success(),
+            "Complex scenario task execution failed"
+        );
     }
 }
 

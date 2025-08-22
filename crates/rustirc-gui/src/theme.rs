@@ -7,8 +7,9 @@ use iced::{font, Color};
 use serde::{Deserialize, Serialize};
 
 /// Available theme types
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum ThemeType {
+    #[default]
     Dark,
     Light,
     Dracula,
@@ -30,12 +31,6 @@ pub enum ThemeType {
     Moonfly,
     Nightfly,
     Oxocarbon,
-}
-
-impl Default for ThemeType {
-    fn default() -> Self {
-        ThemeType::Dark
-    }
 }
 
 /// Complete theme configuration
@@ -62,12 +57,12 @@ impl Theme {
     pub fn get_irc_color(&self, code: u8) -> Color {
         self.palette.get_irc_color(code)
     }
-    
+
     /// Get primary color
     pub fn get_primary_color(&self) -> Color {
         self.palette.primary
     }
-    
+
     /// Get text color
     pub fn get_text_color(&self) -> Color {
         self.palette.text_primary
@@ -90,22 +85,22 @@ pub struct ColorPalette {
     pub primary: Color,
     pub secondary: Color,
     pub accent: Color,
-    
+
     // Text colors
     pub text_primary: Color,
     pub text_secondary: Color,
     pub text_disabled: Color,
-    
+
     // IRC specific colors
     pub nick_colors: Vec<Color>,
     pub irc_colors: [Color; 16],
-    
+
     // Status colors
     pub success: Color,
     pub warning: Color,
     pub error: Color,
     pub info: Color,
-    
+
     // UI element colors
     pub border: Color,
     pub border_focused: Color,
@@ -132,11 +127,11 @@ impl ColorPalette {
             primary: Color::from_rgb(0.4, 0.7, 1.0),
             secondary: Color::from_rgb(0.6, 0.6, 0.6),
             accent: Color::from_rgb(1.0, 0.4, 0.4),
-            
+
             text_primary: Color::WHITE,
             text_secondary: Color::from_rgb(0.8, 0.8, 0.8),
             text_disabled: Color::from_rgb(0.5, 0.5, 0.5),
-            
+
             nick_colors: vec![
                 Color::from_rgb(1.0, 0.4, 0.4), // Red
                 Color::from_rgb(0.4, 1.0, 0.4), // Green
@@ -145,10 +140,10 @@ impl ColorPalette {
                 Color::from_rgb(1.0, 0.4, 1.0), // Magenta
                 Color::from_rgb(0.4, 1.0, 1.0), // Cyan
             ],
-            
+
             irc_colors: [
-                Color::WHITE,                    // 0: White
-                Color::BLACK,                    // 1: Black
+                Color::WHITE,                   // 0: White
+                Color::BLACK,                   // 1: Black
                 Color::from_rgb(0.0, 0.0, 0.5), // 2: Blue
                 Color::from_rgb(0.0, 0.5, 0.0), // 3: Green
                 Color::from_rgb(1.0, 0.0, 0.0), // 4: Red
@@ -164,12 +159,12 @@ impl ColorPalette {
                 Color::from_rgb(0.5, 0.5, 0.5), // 14: Grey
                 Color::from_rgb(0.8, 0.8, 0.8), // 15: Light Grey
             ],
-            
+
             success: Color::from_rgb(0.0, 0.8, 0.0),
             warning: Color::from_rgb(1.0, 0.6, 0.0),
             error: Color::from_rgb(1.0, 0.2, 0.2),
             info: Color::from_rgb(0.2, 0.6, 1.0),
-            
+
             border: Color::from_rgb(0.3, 0.3, 0.3),
             border_focused: Color::from_rgb(0.4, 0.7, 1.0),
             selection: Color::from_rgba(0.4, 0.7, 1.0, 0.3),
@@ -185,11 +180,11 @@ impl ColorPalette {
             primary: Color::from_rgb(0.2, 0.4, 0.8),
             secondary: Color::from_rgb(0.4, 0.4, 0.4),
             accent: Color::from_rgb(0.8, 0.2, 0.2),
-            
+
             text_primary: Color::BLACK,
             text_secondary: Color::from_rgb(0.2, 0.2, 0.2),
             text_disabled: Color::from_rgb(0.5, 0.5, 0.5),
-            
+
             nick_colors: vec![
                 Color::from_rgb(0.8, 0.2, 0.2), // Red
                 Color::from_rgb(0.2, 0.6, 0.2), // Green
@@ -198,10 +193,10 @@ impl ColorPalette {
                 Color::from_rgb(0.6, 0.2, 0.8), // Purple
                 Color::from_rgb(0.2, 0.6, 0.8), // Cyan
             ],
-            
+
             irc_colors: [
-                Color::BLACK,                    // 0: White (inverted for light theme)
-                Color::WHITE,                    // 1: Black (inverted for light theme)
+                Color::BLACK,                   // 0: White (inverted for light theme)
+                Color::WHITE,                   // 1: Black (inverted for light theme)
                 Color::from_rgb(0.0, 0.0, 0.8), // 2: Blue
                 Color::from_rgb(0.0, 0.6, 0.0), // 3: Green
                 Color::from_rgb(0.8, 0.0, 0.0), // 4: Red
@@ -217,12 +212,12 @@ impl ColorPalette {
                 Color::from_rgb(0.4, 0.4, 0.4), // 14: Grey
                 Color::from_rgb(0.6, 0.6, 0.6), // 15: Light Grey
             ],
-            
+
             success: Color::from_rgb(0.0, 0.6, 0.0),
             warning: Color::from_rgb(0.8, 0.5, 0.0),
             error: Color::from_rgb(0.8, 0.0, 0.0),
             info: Color::from_rgb(0.0, 0.4, 0.8),
-            
+
             border: Color::from_rgb(0.7, 0.7, 0.7),
             border_focused: Color::from_rgb(0.2, 0.4, 0.8),
             selection: Color::from_rgba(0.2, 0.4, 0.8, 0.3),
@@ -238,20 +233,20 @@ impl ColorPalette {
             primary: Color::from_rgb(0.74, 0.58, 0.98),
             secondary: Color::from_rgb(0.63, 0.69, 0.75),
             accent: Color::from_rgb(1.0, 0.47, 0.78),
-            
+
             text_primary: Color::from_rgb(0.95, 0.95, 0.95),
             text_secondary: Color::from_rgb(0.75, 0.75, 0.75),
             text_disabled: Color::from_rgb(0.5, 0.5, 0.5),
-            
+
             nick_colors: vec![
-                Color::from_rgb(1.0, 0.34, 0.33), // Red
+                Color::from_rgb(1.0, 0.34, 0.33),  // Red
                 Color::from_rgb(0.31, 0.98, 0.48), // Green
                 Color::from_rgb(0.74, 0.58, 0.98), // Purple
-                Color::from_rgb(1.0, 0.73, 0.42), // Orange
+                Color::from_rgb(1.0, 0.73, 0.42),  // Orange
                 Color::from_rgb(0.50, 0.89, 1.0),  // Cyan
                 Color::from_rgb(1.0, 0.47, 0.78),  // Pink
             ],
-            
+
             irc_colors: [
                 Color::from_rgb(0.95, 0.95, 0.95), // 0: White
                 Color::from_rgb(0.16, 0.16, 0.21), // 1: Black
@@ -270,12 +265,12 @@ impl ColorPalette {
                 Color::from_rgb(0.63, 0.69, 0.75), // 14: Grey
                 Color::from_rgb(0.75, 0.75, 0.75), // 15: Light Grey
             ],
-            
+
             success: Color::from_rgb(0.31, 0.98, 0.48),
             warning: Color::from_rgb(0.95, 0.98, 0.31),
             error: Color::from_rgb(1.0, 0.34, 0.33),
             info: Color::from_rgb(0.50, 0.89, 1.0),
-            
+
             border: Color::from_rgb(0.35, 0.36, 0.42),
             border_focused: Color::from_rgb(0.74, 0.58, 0.98),
             selection: Color::from_rgba(0.74, 0.58, 0.98, 0.3),
@@ -291,11 +286,11 @@ impl ColorPalette {
             primary: Color::from_rgb(0.53, 0.75, 0.82),
             secondary: Color::from_rgb(0.60, 0.68, 0.75),
             accent: Color::from_rgb(0.75, 0.38, 0.42),
-            
+
             text_primary: Color::from_rgb(0.93, 0.94, 0.96),
             text_secondary: Color::from_rgb(0.73, 0.75, 0.78),
             text_disabled: Color::from_rgb(0.53, 0.55, 0.58),
-            
+
             nick_colors: vec![
                 Color::from_rgb(0.75, 0.38, 0.42), // Red
                 Color::from_rgb(0.64, 0.75, 0.54), // Green
@@ -304,7 +299,7 @@ impl ColorPalette {
                 Color::from_rgb(0.70, 0.56, 0.68), // Purple
                 Color::from_rgb(0.55, 0.77, 0.71), // Cyan
             ],
-            
+
             irc_colors: [
                 Color::from_rgb(0.93, 0.94, 0.96), // 0: White
                 Color::from_rgb(0.18, 0.20, 0.25), // 1: Black
@@ -323,12 +318,12 @@ impl ColorPalette {
                 Color::from_rgb(0.53, 0.55, 0.58), // 14: Grey
                 Color::from_rgb(0.73, 0.75, 0.78), // 15: Light Grey
             ],
-            
+
             success: Color::from_rgb(0.64, 0.75, 0.54),
             warning: Color::from_rgb(0.92, 0.80, 0.55),
             error: Color::from_rgb(0.75, 0.38, 0.42),
             info: Color::from_rgb(0.53, 0.75, 0.82),
-            
+
             border: Color::from_rgb(0.35, 0.38, 0.45),
             border_focused: Color::from_rgb(0.53, 0.75, 0.82),
             selection: Color::from_rgba(0.53, 0.75, 0.82, 0.3),
@@ -337,7 +332,10 @@ impl ColorPalette {
     }
 
     pub fn get_irc_color(&self, code: u8) -> Color {
-        self.irc_colors.get(code as usize % 16).copied().unwrap_or(self.text_primary)
+        self.irc_colors
+            .get(code as usize % 16)
+            .copied()
+            .unwrap_or(self.text_primary)
     }
 }
 

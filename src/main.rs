@@ -38,7 +38,6 @@ struct Args {
     /// Run in CLI mode for testing
     #[arg(long)]
     cli: bool,
-
 }
 
 fn main() -> Result<()> {
@@ -61,16 +60,11 @@ fn main() -> Result<()> {
 }
 
 fn init_logging(debug: bool) -> Result<()> {
-    let filter = if debug {
-        "debug"
-    } else {
-        "info"
-    };
+    let filter = if debug { "debug" } else { "info" };
 
     tracing_subscriber::registry()
         .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| filter.into()),
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| filter.into()),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
@@ -80,89 +74,90 @@ fn init_logging(debug: bool) -> Result<()> {
 
 fn run_gui(args: Args) -> Result<()> {
     info!("Starting full-featured GUI mode with Iced (widgets, themes, resizable panes)");
-    
+
     // Use configuration from args if provided
     if let Some(config_path) = args.config {
         info!("Loading configuration from: {}", config_path);
         // In the future, load and apply configuration from the specified file
         // For now, we log it to show it's being used
     }
-    
+
     // Use full-featured GUI as the only GUI option - complete with all widgets and themes
     use rustirc_gui::RustIrcGui;
-    
+
     // Run the full-featured GUI application with all advanced features
-    RustIrcGui::run()
-        .map_err(|e| anyhow::anyhow!("GUI error: {}", e))?;
-    
+    RustIrcGui::run().map_err(|e| anyhow::anyhow!("GUI error: {}", e))?;
+
     Ok(())
 }
 
 fn run_tui(args: Args) -> Result<()> {
     info!("Starting TUI mode with Ratatui");
-    
+
     // Initialize TUI application
     use rustirc_tui::TuiApp;
-    
+
     // Load configuration from args for TUI
     let config = load_config(args.config.as_deref())?;
-    info!("TUI configuration loaded from: {:?}", args.config.as_deref().unwrap_or("default"));
-    
+    info!(
+        "TUI configuration loaded from: {:?}",
+        args.config.as_deref().unwrap_or("default")
+    );
+
     // Create TUI app with configuration and run it
     let mut app = TuiApp::new()?;
-    
+
     // Apply config settings to TUI app when TuiApp supports configuration
     if let Some(first_server) = config.servers.first() {
-        info!("TUI using config: server={}:{}, tls={}", first_server.address, first_server.port, first_server.use_tls);
+        info!(
+            "TUI using config: server={}:{}, tls={}",
+            first_server.address, first_server.port, first_server.use_tls
+        );
     } else {
         info!("TUI using config: no servers configured, using default settings");
     }
-    
+
     // Apply configuration settings to TUI app
     if let Some(server) = &args.server {
         info!("TUI will connect to server: {}", server);
         // Note: Server connection configuration for TUI
     }
-    
+
     if args.debug {
         info!("Debug mode enabled for TUI");
         // Note: Debug logging configuration already handled in main()
     }
-    
+
     if args.tls {
         info!("TLS connection enabled for TUI");
         // Note: TLS configuration for TUI
     }
-    
+
     info!("TUI connecting to port: {}", args.port);
-    
+
     // Run TUI in async runtime
-    tokio::runtime::Runtime::new()?.block_on(async {
-        app.run().await
-    })?;
-    
+    tokio::runtime::Runtime::new()?.block_on(async { app.run().await })?;
+
     Ok(())
 }
 
 fn run_cli(args: Args) -> Result<()> {
     info!("Starting CLI mode for testing");
-    
+
     // Initialize CLI application
     use rustirc_core::run_cli_prototype;
-    
+
     let config = load_config(args.config.as_deref())?;
-    
+
     // Run CLI prototype (blocking)
-    tokio::runtime::Runtime::new()?.block_on(async {
-        run_cli_prototype(config).await
-    })?;
-    
+    tokio::runtime::Runtime::new()?.block_on(async { run_cli_prototype(config).await })?;
+
     Ok(())
 }
 
 fn load_config(config_path: Option<&str>) -> Result<rustirc_core::Config> {
     use rustirc_core::Config;
-    
+
     if let Some(path) = config_path {
         info!("Loading config from: {}", path);
         // Load from file when implemented

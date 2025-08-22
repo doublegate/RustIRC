@@ -7,31 +7,34 @@
 //! - Plugin/script integration points
 //! - Rate limiting and flood protection
 
-use crate::events::{Event, EventBus};
 use crate::error::{Error, Result};
+use crate::events::{Event, EventBus};
 use crate::state::{StateManager, User};
 use rustirc_protocol::{Command, Message, Numeric, Prefix};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::{mpsc, RwLock};
-use tracing::{debug, warn, error, info};
+use tracing::{debug, error, info, warn};
 
 /// Message handler trait for processing different types of IRC messages
 #[async_trait::async_trait]
 pub trait MessageHandler: Send + Sync {
     /// Handle an IRC message
     async fn handle_message(&self, context: &MessageContext, message: &Message) -> Result<()>;
-    
+
     /// Get the priority of this handler (higher = processed first)
-    fn priority(&self) -> i32 { 0 }
-    
+    fn priority(&self) -> i32 {
+        0
+    }
+
     /// Get the message types this handler can process
     fn message_types(&self) -> Vec<String>;
-    
+
     /// Check if this handler should process the message
     fn should_handle(&self, message: &Message) -> bool {
-        self.message_types().contains(&message.command.to_uppercase())
+        self.message_types()
+            .contains(&message.command.to_uppercase())
     }
 }
 
@@ -70,11 +73,11 @@ impl MessageContext {
         self.is_own_message = true;
         self
     }
-    
+
     /// Extract user information from message prefix
     pub fn from_message_prefix(connection_id: String, prefix: &Option<Prefix>) -> Self {
         let mut context = Self::new(connection_id);
-        
+
         if let Some(prefix) = prefix {
             match prefix {
                 Prefix::User { nick, user, host } => {
@@ -109,7 +112,7 @@ impl MessageContext {
                 }
             }
         }
-        
+
         context
     }
 }
@@ -151,7 +154,7 @@ impl RateLimitState {
 
     fn check_rate_limit(&mut self, config: &RateLimitConfig) -> bool {
         let now = Instant::now();
-        
+
         // Check if still in penalty period
         if let Some(penalty_until) = self.penalty_until {
             if now < penalty_until {
@@ -229,7 +232,7 @@ impl MessageRouter {
 
         // Create message context
         let mut context = MessageContext::new(connection_id.clone());
-        
+
         // Extract user information from prefix
         if let Some(prefix) = &message.prefix {
             context.source_user = Some(User::from_prefix(prefix));
@@ -247,7 +250,10 @@ impl MessageRouter {
             _ => {}
         }
 
-        debug!("Routing message: {} from {}", message.command, connection_id);
+        debug!(
+            "Routing message: {} from {}",
+            message.command, connection_id
+        );
 
         // Route to handlers
         let handlers = self.handlers.read().await;
@@ -268,11 +274,19 @@ impl MessageRouter {
 
         Ok(())
     }
-    
+
     /// Handle numeric responses from IRC server
-    pub async fn handle_numeric_response(&self, connection_id: String, numeric: Numeric, params: Vec<String>) -> Result<()> {
-        info!("Handling numeric response {} for connection {}", numeric as u16, connection_id);
-        
+    pub async fn handle_numeric_response(
+        &self,
+        connection_id: String,
+        numeric: Numeric,
+        params: Vec<String>,
+    ) -> Result<()> {
+        info!(
+            "Handling numeric response {} for connection {}",
+            numeric as u16, connection_id
+        );
+
         // Process common numeric responses
         match numeric {
             Numeric::RplWelcome => {
@@ -310,16 +324,21 @@ impl MessageRouter {
                 error!("Erroneous nickname: {}", params.join(" "));
             }
             _ => {
-                debug!("Unhandled numeric response: {} - {}", numeric as u16, params.join(" "));
+                debug!(
+                    "Unhandled numeric response: {} - {}",
+                    numeric as u16,
+                    params.join(" ")
+                );
             }
         }
-        
+
         Ok(())
     }
 
     /// Send a command to a specific connection
     pub async fn send_command(&self, connection_id: String, command: Command) -> Result<()> {
-        self.command_queue.send((connection_id.clone(), command.clone()))
+        self.command_queue
+            .send((connection_id.clone(), command.clone()))
             .map_err(|_| Error::ConnectionClosed)?;
 
         // Emit event
@@ -336,9 +355,10 @@ impl MessageRouter {
     /// Check rate limits for a connection
     async fn check_rate_limit(&self, connection_id: &str) -> bool {
         let mut rate_limits = self.rate_limits.write().await;
-        let state = rate_limits.entry(connection_id.to_string())
+        let state = rate_limits
+            .entry(connection_id.to_string())
             .or_insert_with(RateLimitState::new);
-        
+
         state.check_rate_limit(&self.rate_limit_config)
     }
 
@@ -346,17 +366,17 @@ impl MessageRouter {
     fn register_builtin_handlers(&mut self) {
         // Will be implemented with specific handlers
     }
-    
+
     /// Get current client state via state manager
     pub async fn get_client_state(&self) -> crate::state::ClientState {
         self.state_manager.get_state().await
     }
-    
+
     /// Get server state for a connection
     pub async fn get_server_state(&self, connection_id: &str) -> Option<crate::state::ServerState> {
         self.state_manager.get_server_state(connection_id).await
     }
-    
+
     /// Apply events to state management
     pub async fn process_state_event(&self, event: &crate::events::Event) -> Result<()> {
         self.state_manager.apply_event(event).await
@@ -383,7 +403,9 @@ impl MessageHandler for PingHandler {
                     server1: server.clone(),
                     server2: None,
                 };
-                self.router.send_command(context.connection_id.clone(), pong_cmd).await?;
+                self.router
+                    .send_command(context.connection_id.clone(), pong_cmd)
+                    .await?;
                 debug!("Responded to PING from {}", server);
             }
         }
@@ -407,7 +429,7 @@ impl MessageHandler for NumericHandler {
     async fn handle_message(&self, context: &MessageContext, message: &Message) -> Result<()> {
         if let Ok(numeric) = message.command.parse::<u16>() {
             match numeric {
-                001 => {
+                1 => {
                     // RPL_WELCOME - Registration successful
                     info!("Registration successful for {}", context.connection_id);
                     // Emit registration event
@@ -448,9 +470,9 @@ impl MessageHandler for NumericHandler {
 
     fn message_types(&self) -> Vec<String> {
         // Return all numeric codes as strings
-        (1..=999).map(|n| format!("{:03}", n)).collect()
+        (1..=999).map(|n| format!("{n:03}")).collect()
     }
-    
+
     fn should_handle(&self, message: &Message) -> bool {
         message.command.parse::<u16>().is_ok()
     }
@@ -479,9 +501,13 @@ impl MessageHandler for ChannelHandler {
             "PART" => {
                 if let Some(channel) = message.params.first() {
                     let reason = message.params.get(1).cloned();
-                    info!("User left {}: {:?} ({})", channel, context.source_user, 
-                          reason.as_deref().unwrap_or("no reason"));
-                    
+                    info!(
+                        "User left {}: {:?} ({})",
+                        channel,
+                        context.source_user,
+                        reason.as_deref().unwrap_or("no reason")
+                    );
+
                     // Emit channel part event
                     if let Some(event_bus) = self.get_event_bus(context).await {
                         let event = Event::ChannelLeft {
@@ -495,15 +521,18 @@ impl MessageHandler for ChannelHandler {
             "QUIT" => {
                 if let Some(user) = &context.source_user {
                     let reason = message.params.first().cloned();
-                    info!("User quit: {} ({})", user.nickname, 
-                          reason.as_deref().unwrap_or("no reason"));
+                    info!(
+                        "User quit: {} ({})",
+                        user.nickname,
+                        reason.as_deref().unwrap_or("no reason")
+                    );
                 }
             }
             "NICK" => {
                 if let Some(new_nick) = message.params.first() {
                     if let Some(user) = &context.source_user {
                         info!("Nick change: {} -> {}", user.nickname, new_nick);
-                        
+
                         // Emit nick change event
                         if let Some(event_bus) = self.get_event_bus(context).await {
                             let event = Event::NickChanged {
@@ -521,7 +550,7 @@ impl MessageHandler for ChannelHandler {
                     let channel = &message.params[0];
                     let topic = &message.params[1];
                     info!("Topic changed in {}: {}", channel, topic);
-                    
+
                     // Emit topic change event
                     if let Some(event_bus) = self.get_event_bus(context).await {
                         let event = Event::TopicChanged {
@@ -588,20 +617,18 @@ impl MessageHandler for MessageHandler_ {
         if message.params.len() >= 2 {
             let target = &message.params[0];
             let text = &message.params[1];
-            
+
             let is_private = !target.starts_with('#') && !target.starts_with('&');
             let is_highlighted = self.is_highlighted(text);
-            
+
             match message.command.as_str() {
                 "PRIVMSG" => {
                     if is_private {
                         info!("Private message from {:?}: {}", context.source_user, text);
+                    } else if is_highlighted {
+                        info!("Highlighted message in {}: {}", target, text);
                     } else {
-                        if is_highlighted {
-                            info!("Highlighted message in {}: {}", target, text);
-                        } else {
-                            debug!("Channel message in {}: {}", target, text);
-                        }
+                        debug!("Channel message in {}: {}", target, text);
                     }
                 }
                 "NOTICE" => {
@@ -645,17 +672,19 @@ impl CommandProcessor {
     /// Process a user command (from UI input)
     pub async fn process_command(&self, connection_id: String, input: &str) -> Result<()> {
         let input = input.trim();
-        
+
         if input.is_empty() {
             return Ok(());
         }
 
-        if input.starts_with('/') {
+        if let Some(stripped) = input.strip_prefix('/') {
             // Command
-            self.process_slash_command(connection_id, &input[1..]).await
+            self.process_slash_command(connection_id, stripped).await
         } else {
             // Regular message - needs target context
-            Err(Error::Protocol("No target specified for message".to_string()))
+            Err(Error::Protocol(
+                "No target specified for message".to_string(),
+            ))
         }
     }
 
@@ -722,7 +751,9 @@ impl CommandProcessor {
                         text: args[1..].join(" "),
                     })
                 } else {
-                    return Err(Error::Protocol("MSG requires target and message".to_string()));
+                    return Err(Error::Protocol(
+                        "MSG requires target and message".to_string(),
+                    ));
                 }
             }
             "notice" => {
@@ -732,7 +763,9 @@ impl CommandProcessor {
                         text: args[1..].join(" "),
                     })
                 } else {
-                    return Err(Error::Protocol("NOTICE requires target and message".to_string()));
+                    return Err(Error::Protocol(
+                        "NOTICE requires target and message".to_string(),
+                    ));
                 }
             }
             "topic" => {
@@ -795,7 +828,8 @@ impl CommandProcessor {
     fn setup_default_aliases(&mut self) {
         self.aliases.insert("j".to_string(), "join".to_string());
         self.aliases.insert("leave".to_string(), "part".to_string());
-        self.aliases.insert("msg".to_string(), "privmsg".to_string());
+        self.aliases
+            .insert("msg".to_string(), "privmsg".to_string());
         self.aliases.insert("q".to_string(), "quit".to_string());
         self.aliases.insert("wii".to_string(), "whois".to_string());
     }
