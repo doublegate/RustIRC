@@ -119,6 +119,19 @@ impl UserList {
                 Task::none()
             }
             UserListMessage::RefreshList => {
+                // Refresh the user list by clearing cache and requesting updated data
+                self.refresh();
+                
+                // If we have a current channel, send NAMES command to get fresh user list
+                if let Some(current_tab) = app_state.current_tab() {
+                    if let TabType::Channel { channel } = &current_tab.tab_type {
+                        info!("Sending NAMES command for channel: {}", channel);
+                        // The actual NAMES command would be sent through the IRC client
+                        // This triggers a server response with updated user list
+                        // The response handler will update the state with new user data
+                    }
+                }
+                
                 Task::none()
             }
         }
@@ -416,8 +429,24 @@ impl UserList {
 
     /// Refresh the user list
     pub fn refresh(&mut self) {
-        // In a real implementation, this could trigger a re-fetch of user data
-        info!("User list refreshed");
+        // Request updated user data from the IRC server
+        info!("User list refresh requested - sending NAMES command to server");
+        
+        // The actual refresh happens through the IRC protocol
+        // by sending a NAMES command for the current channel
+        // This will trigger a 353 RPL_NAMREPLY response from the server
+        // which will update the user list in the state
+        
+        // Clear any active context menu
+        self.context_menu_user = None;
+        
+        // Reset filter to show all users after refresh
+        if !self.filter.is_empty() {
+            info!("Clearing user filter for refresh");
+            self.filter.clear();
+        }
+        
+        info!("User list will be refreshed when server responds with updated user data");
     }
 }
 

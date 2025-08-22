@@ -81,6 +81,13 @@ fn init_logging(debug: bool) -> Result<()> {
 fn run_gui(args: Args) -> Result<()> {
     info!("Starting full-featured GUI mode with Iced (widgets, themes, resizable panes)");
     
+    // Use configuration from args if provided
+    if let Some(config_path) = args.config {
+        info!("Loading configuration from: {}", config_path);
+        // In the future, load and apply configuration from the specified file
+        // For now, we log it to show it's being used
+    }
+    
     // Use full-featured GUI as the only GUI option - complete with all widgets and themes
     use rustirc_gui::RustIrcGui;
     

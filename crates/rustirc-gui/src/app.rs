@@ -264,6 +264,36 @@ impl RustIrcGui {
         &self.app_state
     }
     
+    /// Connect an IRC message receiver for testing purposes
+    /// This allows test harnesses to inject IRC messages directly
+    pub fn connect_irc_receiver(&mut self, receiver: tokio::sync::mpsc::UnboundedReceiver<Message>) {
+        self.irc_message_receiver = Some(receiver);
+        info!("Connected IRC message receiver for testing");
+    }
+    
+    /// Poll the instance IRC message receiver (used in testing)
+    /// Returns true if a message was processed
+    pub fn poll_irc_receiver(&mut self) -> bool {
+        if let Some(ref mut receiver) = self.irc_message_receiver {
+            match receiver.try_recv() {
+                Ok(message) => {
+                    info!("Received test IRC message: {:?}", message);
+                    // Process the message through the normal update path
+                    let _ = self.update(message);
+                    return true;
+                }
+                Err(tokio::sync::mpsc::error::TryRecvError::Empty) => {
+                    // No message available
+                }
+                Err(tokio::sync::mpsc::error::TryRecvError::Disconnected) => {
+                    warn!("Test IRC message channel disconnected");
+                    self.irc_message_receiver = None;
+                }
+            }
+        }
+        false
+    }
+    
     /// Update function for Iced 0.13.1 functional approach
     pub fn update(&mut self, message: Message) -> impl Into<Task<Message>> {
         match message {
@@ -1120,10 +1150,13 @@ impl RustIrcGui {
                                 // Update channel user list
                                 if let Some(server) = self.app_state.servers.get_mut(&connection_id) {
                                     if let Some(channel_info) = server.channels.get_mut(channel) {
-                                        channel_info.users = users;
+                                        channel_info.users = users.clone();
                                         channel_info.user_count = channel_info.users.len();
                                     }
                                 }
+                                
+                                // Update the GUI user list display
+                                self.update_user_list(users);
                             }
                         }
                     }
@@ -1665,6 +1698,7 @@ impl RustIrcGui {
             Message::MenuViewToggleUserLists => {
                 self.active_menu = None; // Close menu
                 self.message_view.toggle_user_lists();
+                self.toggle_user_list(); // Also toggle the actual user list pane visibility
             }
             Message::MenuViewToggleJoinsParts => {
                 self.active_menu = None; // Close menu
@@ -1970,8 +2004,9 @@ impl RustIrcGui {
 
     /// Subscription function for receiving IRC events
     fn subscription(&self) -> iced::Subscription<Message> {
-        // For now, use a simple time-based subscription to poll for events
-        // In a production implementation, this would be replaced with a proper event stream
+        // Poll for IRC events from the global receiver
+        // The instance receiver (irc_message_receiver) is used for testing
+        // and is polled separately in the update() method when needed
         iced::time::every(std::time::Duration::from_millis(100))
             .map(|_| {
                 // Try to receive IRC events from the global receiver
@@ -1992,6 +2027,11 @@ impl RustIrcGui {
                         }
                     }
                 }
+                
+                // Note: The instance irc_message_receiver is connected for testing scenarios
+                // It allows test harnesses to inject IRC messages directly into the GUI
+                // without going through the global event system
+                
                 Message::None
             })
     }
