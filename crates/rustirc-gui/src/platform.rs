@@ -9,7 +9,23 @@
 #![allow(clippy::disallowed_types)] // Platform integration requires system commands
 
 use anyhow::Result;
+use thiserror::Error;
+
+#[cfg(target_os = "linux")]
 use std::path::Path;
+
+/// Platform-specific errors
+#[derive(Error, Debug)]
+pub enum PlatformError {
+    #[error("Platform operation failed: {0}")]
+    PlatformError(String),
+    #[error("IO error: {0}")]
+    IoError(#[from] std::io::Error),
+    #[error("Environment variable error: {0}")]
+    VarError(#[from] std::env::VarError),
+    #[error("UTF-8 conversion error: {0}")]
+    Utf8Error(#[from] std::ffi::NulError),
+}
 
 /// Platform notification system
 pub struct NotificationManager {
@@ -323,12 +339,12 @@ impl SystemTray {
     fn set_windows_tooltip(&self, tooltip: &str) -> Result<()> {
         // Windows system tray tooltip implementation using Win32 API
         use std::ffi::CString;
-        use std::ptr;
+        // Note: ptr import removed as it was unused
 
         // Store tooltip for Windows tray icon
         let tooltip_cstr = match CString::new(tooltip) {
             Ok(s) => s,
-            Err(_) => return Err(Error::PlatformError("Invalid tooltip string".to_string())),
+            Err(_) => return Err(PlatformError::PlatformError("Invalid tooltip string".to_string()).into()),
         };
 
         // Write to Windows registry or temp file for tray icon to read

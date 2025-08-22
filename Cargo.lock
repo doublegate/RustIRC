@@ -3429,6 +3429,7 @@ dependencies = [
  "rustirc-core",
  "rustirc-protocol",
  "serde",
+ "thiserror 2.0.14",
  "tokio",
  "tracing",
 ]

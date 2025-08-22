@@ -2146,7 +2146,7 @@ impl RustIrcGui {
     }
 
     /// View function for Iced 0.13.1 functional approach
-    fn view(&self) -> Element<Message> {
+    fn view(&self) -> Element<'_, Message> {
         let pane_grid = pane_grid::PaneGrid::new(&self.panes, |_pane, pane_type, _is_maximized| {
             self.pane_content(*pane_type)
         })
@@ -2478,7 +2478,7 @@ impl RustIrcGui {
         }
     }
 
-    fn render_menu_bar(&self) -> Element<Message> {
+    fn render_menu_bar(&self) -> Element<'_, Message> {
         // Get current filter states for checkmarks
         let (show_system, show_user_lists, show_motd, show_joins_parts, show_timestamps) =
             self.message_view.get_filter_state();
@@ -2652,12 +2652,12 @@ impl RustIrcGui {
         mouse_area(menu_content).on_press(Message::MenuClose).into()
     }
 
-    fn render_tab_bar(&self) -> Element<Message> {
+    fn render_tab_bar(&self) -> Element<'_, Message> {
         // Use the actual TabBar widget
         self.tab_bar.view(&self.app_state).map(Message::TabBar)
     }
 
-    fn pane_content(&self, pane_type: PaneType) -> pane_grid::Content<Message> {
+    fn pane_content(&self, pane_type: PaneType) -> pane_grid::Content<'_, Message> {
         let content = match pane_type {
             PaneType::ServerTree => self.render_server_tree(),
             PaneType::MessageView => self.render_message_view(),
@@ -2683,14 +2683,14 @@ impl RustIrcGui {
         pane_grid::Content::new(bordered_content)
     }
 
-    fn render_server_tree(&self) -> Element<Message> {
+    fn render_server_tree(&self) -> Element<'_, Message> {
         // Use the actual ServerTree widget
         self.server_tree
             .view(&self.app_state)
             .map(Message::ServerTree)
     }
 
-    fn render_message_view(&self) -> Element<Message> {
+    fn render_message_view(&self) -> Element<'_, Message> {
         let content: Element<Message> = if let Some(current_tab_id) = &self.app_state.current_tab_id
         {
             if let Some(tab) = self.app_state.tabs.get(current_tab_id) {
@@ -2738,7 +2738,7 @@ impl RustIrcGui {
         scrollable(content).into()
     }
 
-    fn render_user_list(&self) -> Element<Message> {
+    fn render_user_list(&self) -> Element<'_, Message> {
         let mut content =
             column![] as iced::widget::Column<'_, Message, iced::Theme, iced::Renderer>;
         content = content.spacing(5).padding(10);
@@ -2783,7 +2783,7 @@ impl RustIrcGui {
         scrollable(content).into()
     }
 
-    fn render_input_area(&self) -> Element<Message> {
+    fn render_input_area(&self) -> Element<'_, Message> {
         let input = text_input("Type a message...", &self.input_buffer)
             .on_input(Message::InputChanged)
             .on_submit(Message::InputSubmitted)

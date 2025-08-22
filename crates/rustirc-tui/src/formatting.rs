@@ -262,7 +262,7 @@ fn detect_urls(spans: &mut Vec<FormattedSpan>) {
 }
 
 /// Convert formatted spans to ratatui Line
-pub fn spans_to_line(spans: &[FormattedSpan]) -> Line {
+pub fn spans_to_line(spans: &[FormattedSpan]) -> Line<'_> {
     let ratatui_spans: Vec<Span> = spans
         .iter()
         .map(|span| {

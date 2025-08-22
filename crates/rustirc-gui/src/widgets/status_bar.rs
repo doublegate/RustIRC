@@ -64,7 +64,7 @@ impl StatusBar {
     }
 
     /// Render the status bar
-    pub fn view(&self, app_state: &AppState) -> Element<StatusBarMessage> {
+    pub fn view(&self, app_state: &AppState) -> Element<'_, StatusBarMessage> {
         // Create theme instance and duration for theming support
         let theme = Theme::default();
         let update_duration = Duration::from_secs(1);
@@ -286,7 +286,7 @@ impl StatusBar {
     }
 
     /// Render topic bar if applicable
-    fn render_topic_bar(&self, app_state: &AppState) -> Option<Element<StatusBarMessage>> {
+    fn render_topic_bar(&self, app_state: &AppState) -> Option<Element<'_, StatusBarMessage>> {
         let current_tab = app_state.current_tab()?;
 
         if let TabType::Channel { channel } = &current_tab.tab_type {

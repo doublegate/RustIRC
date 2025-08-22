@@ -93,7 +93,7 @@ impl ServerTree {
     }
 
     /// Render the server tree
-    pub fn view(&self, app_state: &AppState) -> Element<ServerTreeMessage> {
+    pub fn view(&self, app_state: &AppState) -> Element<'_, ServerTreeMessage> {
         let mut content = column![];
 
         for (server_id, server_state) in &app_state.servers {

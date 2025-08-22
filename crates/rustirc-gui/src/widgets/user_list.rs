@@ -144,7 +144,7 @@ impl UserList {
     }
 
     /// Render the user list
-    pub fn view(&self, app_state: &AppState) -> Element<UserListMessage> {
+    pub fn view(&self, app_state: &AppState) -> Element<'_, UserListMessage> {
         // Create theme instance for theming support
         let theme = Theme::default();
         let current_tab = app_state.current_tab();
@@ -176,7 +176,7 @@ impl UserList {
         &self,
         tab: &crate::state::Tab,
         _app_state: &AppState,
-    ) -> Element<UserListMessage> {
+    ) -> Element<'_, UserListMessage> {
         // Get user statistics using HashMap operations
         let (total_users, away_users, privileged_users) = self.get_user_statistics(&tab.users);
         info!(
@@ -229,7 +229,7 @@ impl UserList {
     }
 
     /// Render user entry
-    fn render_user_entry(&self, nick: &str, user: &UserInfo) -> Element<UserListMessage> {
+    fn render_user_entry(&self, nick: &str, user: &UserInfo) -> Element<'_, UserListMessage> {
         // Privilege symbol
         let privilege_symbol = get_privilege_symbol(user);
         let privilege_color = get_privilege_color(user);
@@ -293,7 +293,7 @@ impl UserList {
         &self,
         nick: &str,
         _app_state: &AppState,
-    ) -> Element<UserListMessage> {
+    ) -> Element<'_, UserListMessage> {
         let content = column![
             text("Private Message")
                 .size(12.0)
@@ -312,7 +312,7 @@ impl UserList {
     }
 
     /// Render server info
-    fn render_server_info(&self, _app_state: &AppState) -> Element<UserListMessage> {
+    fn render_server_info(&self, _app_state: &AppState) -> Element<'_, UserListMessage> {
         let content = column![
             text("Server")
                 .size(12.0)

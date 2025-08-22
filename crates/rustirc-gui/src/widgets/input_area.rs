@@ -156,7 +156,7 @@ impl InputArea {
     }
 
     /// Render the input area
-    pub fn view(&self, app_state: &AppState) -> Element<InputAreaMessage> {
+    pub fn view(&self, app_state: &AppState) -> Element<'_, InputAreaMessage> {
         // Create theme instance for theming support
         let theme = Theme::default();
 

@@ -247,7 +247,7 @@ impl MenuBar {
         }
     }
 
-    pub fn view(&self, app_state: &AppState) -> Element<MenuMessage> {
+    pub fn view(&self, app_state: &AppState) -> Element<'_, MenuMessage> {
         // Create menu bar with active menu rendering
 
         // File menu button
@@ -382,7 +382,7 @@ impl MenuBar {
         .into()
     }
 
-    fn render_file_menu(&self, app_state: &AppState) -> Element<MenuMessage> {
+    fn render_file_menu(&self, app_state: &AppState) -> Element<'_, MenuMessage> {
         // Show connection status in menu
         let connected = app_state
             .servers
@@ -407,7 +407,7 @@ impl MenuBar {
         .into()
     }
 
-    fn render_edit_menu(&self, app_state: &AppState) -> Element<MenuMessage> {
+    fn render_edit_menu(&self, app_state: &AppState) -> Element<'_, MenuMessage> {
         // Check if there's selected text to enable/disable copy
         let has_selection = app_state
             .current_tab()
@@ -430,7 +430,7 @@ impl MenuBar {
         .into()
     }
 
-    fn render_view_menu(&self, app_state: &AppState) -> Element<MenuMessage> {
+    fn render_view_menu(&self, app_state: &AppState) -> Element<'_, MenuMessage> {
         // Get current UI state for toggle indicators
         let show_sidebar = app_state.ui_state.show_sidebar;
         let show_userlist = app_state.ui_state.show_userlist;
@@ -461,7 +461,7 @@ impl MenuBar {
         .into()
     }
 
-    fn render_server_menu(&self, app_state: &AppState) -> Element<MenuMessage> {
+    fn render_server_menu(&self, app_state: &AppState) -> Element<'_, MenuMessage> {
         // Get current server information
         let current_server = app_state
             .current_tab()
@@ -496,7 +496,7 @@ impl MenuBar {
         .into()
     }
 
-    fn render_channel_menu(&self, app_state: &AppState) -> Element<MenuMessage> {
+    fn render_channel_menu(&self, app_state: &AppState) -> Element<'_, MenuMessage> {
         // Get current channel information
         let current_channel = app_state.current_tab().and_then(|tab| {
             if let TabType::Channel { channel } = &tab.tab_type {
@@ -541,7 +541,7 @@ impl MenuBar {
         .into()
     }
 
-    fn render_tools_menu(&self, app_state: &AppState) -> Element<MenuMessage> {
+    fn render_tools_menu(&self, app_state: &AppState) -> Element<'_, MenuMessage> {
         // Get current settings for display
         let theme_name = app_state.settings().theme.as_str();
 
@@ -568,7 +568,7 @@ impl MenuBar {
         .into()
     }
 
-    fn render_help_menu(&self, _app_state: &AppState) -> Element<MenuMessage> {
+    fn render_help_menu(&self, _app_state: &AppState) -> Element<'_, MenuMessage> {
         // Help menu doesn't need app state, but we accept it for consistency
         const VERSION: &str = env!("CARGO_PKG_VERSION");
 

@@ -344,7 +344,7 @@ impl DialogManager {
         }
     }
 
-    pub fn view(&self, app_state: &AppState) -> Option<Element<DialogMessage>> {
+    pub fn view(&self, app_state: &AppState) -> Option<Element<'_, DialogMessage>> {
         match self.current_dialog {
             DialogType::None => None,
             DialogType::Connection => Some(self.connection_dialog.view()),
@@ -407,7 +407,7 @@ impl ConnectionDialog {
         }
     }
 
-    pub fn view(&self) -> Element<DialogMessage> {
+    pub fn view(&self) -> Element<'_, DialogMessage> {
         // Use Size for proper dialog dimensions
         let min_size = Size::new(400.0, 300.0);
         let max_size = Size::new(600.0, 500.0);
@@ -514,7 +514,7 @@ impl JoinChannelDialog {
         }
     }
 
-    pub fn view(&self) -> Element<DialogMessage> {
+    pub fn view(&self) -> Element<'_, DialogMessage> {
         let content = column![
             text("Join Channel").size(20),
             vertical_space().height(10),
@@ -606,7 +606,7 @@ impl PreferencesDialog {
         settings.compact_mode = self.compact_mode;
     }
 
-    pub fn view(&self) -> Element<DialogMessage> {
+    pub fn view(&self) -> Element<'_, DialogMessage> {
         let theme_options = vec![
             "Dark".to_string(),
             "Light".to_string(),
@@ -667,7 +667,7 @@ impl PreferencesDialog {
             .into()
     }
 
-    pub fn view_with_state(&self, app_state: &AppState) -> Element<DialogMessage> {
+    pub fn view_with_state(&self, app_state: &AppState) -> Element<'_, DialogMessage> {
         // Create a preferences view that reflects current app state
         let settings = app_state.settings();
 
@@ -749,7 +749,7 @@ impl AboutDialog {
         Self
     }
 
-    pub fn view(&self) -> Element<DialogMessage> {
+    pub fn view(&self) -> Element<'_, DialogMessage> {
         let content = column![
             text("RustIRC").size(24),
             text("Modern IRC Client").size(16),
@@ -800,7 +800,7 @@ impl FindDialog {
         }
     }
 
-    pub fn view(&self) -> Element<DialogMessage> {
+    pub fn view(&self) -> Element<'_, DialogMessage> {
         let content = column![
             text("Find").size(20),
             vertical_space().height(10),
@@ -873,7 +873,7 @@ impl NetworkListDialog {
         }
     }
 
-    pub fn view(&self) -> Element<DialogMessage> {
+    pub fn view(&self) -> Element<'_, DialogMessage> {
         let network_list = scrollable(column(
             self.networks
                 .iter()

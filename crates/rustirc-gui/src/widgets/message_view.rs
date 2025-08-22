@@ -157,7 +157,7 @@ impl MessageView {
     }
 
     /// Render the message view
-    pub fn view(&self, app_state: &AppState) -> Element<MessageViewMessage> {
+    pub fn view(&self, app_state: &AppState) -> Element<'_, MessageViewMessage> {
         // Create theme instance for theming support
         let theme = Theme::default();
         let current_tab = app_state.current_tab();
@@ -267,7 +267,7 @@ impl MessageView {
         message: &DisplayMessage,
         index: usize,
         app_state: &AppState,
-    ) -> Element<MessageViewMessage> {
+    ) -> Element<'_, MessageViewMessage> {
         let is_selected = self.selected_messages.contains(&index);
         let is_highlight = message.is_highlight;
         let is_own_message = message.is_own_message;
@@ -367,7 +367,7 @@ impl MessageView {
     }
 
     /// Render formatted text content with IRC formatting
-    fn render_formatted_content(&self, content: &str) -> Element<MessageViewMessage> {
+    fn render_formatted_content(&self, content: &str) -> Element<'_, MessageViewMessage> {
         // First replace emoticons in the raw content
         let content_with_emoticons = replace_emoticons(content);
 

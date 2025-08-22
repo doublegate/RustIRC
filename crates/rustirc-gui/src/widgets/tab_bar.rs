@@ -188,7 +188,7 @@ impl TabBar {
     }
 
     /// Render the tab bar
-    pub fn view(&self, app_state: &AppState) -> Element<TabBarMessage> {
+    pub fn view(&self, app_state: &AppState) -> Element<'_, TabBarMessage> {
         // Create theme instance for theming support
         let theme = Theme::default();
         let tabs = &app_state.tabs;
@@ -270,7 +270,7 @@ impl TabBar {
         tab: &Tab,
         is_active: bool,
         app_state: &AppState,
-    ) -> Element<TabBarMessage> {
+    ) -> Element<'_, TabBarMessage> {
         // Get tab icon and title
         let (icon, title) = self.get_tab_display(tab);
 
