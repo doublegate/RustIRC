@@ -231,6 +231,11 @@ Pipfile.lock
 .rustc_info.json
 rust-project.json
 
+# Development toolchain files (keep our optimized configs)
+# rustfmt.toml - Keep our stable-only configuration
+# rust-toolchain.toml - Keep our enhanced component configuration
+# clippy.toml - Keep our lint configuration
+
 # Local notes and drafts (but keep project docs)
 /notes/
 /drafts/
