@@ -392,7 +392,7 @@ impl IrcConnection {
                         debug!("Received: {}", message_text);
 
                         // Parse IRC message
-                        match Parser::parse(&message_text) {
+                        match Parser::parse_message(&message_text) {
                             Ok(message) => {
                                 // Handle PING specially
                                 if message.command == "PING" {

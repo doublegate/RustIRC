@@ -17,13 +17,15 @@ pub mod config;
 pub mod connection;
 pub mod error;
 pub mod events;
+pub mod mock_server;
 pub mod recovery;
 pub mod router;
 pub mod state;
 pub mod ui;
 
 pub use auth::{
-    AuthState, ExternalMechanism, PlainMechanism, SaslAuthenticator, SaslCredentials, SaslMechanism,
+    AuthState, ExternalMechanism, PlainMechanism, SaslAuthenticator, SaslCredentials,
+    SaslMechanism, SecureString,
 };
 pub use cli::{run_cli_prototype, CliClient};
 pub use client::IrcClient;
@@ -31,6 +33,7 @@ pub use config::Config;
 pub use connection::{ConnectionConfig, ConnectionManager, ConnectionState, IrcConnection};
 pub use error::{Error, Result};
 pub use events::{Event, EventHandler};
+pub use mock_server::{MockClient, MockIrcServer, MockServerConfig};
 pub use recovery::{ReconnectConfig, RecoveryManager, RecoveryStats};
 pub use router::{CommandProcessor, MessageContext, MessageHandler, MessageRouter};
 pub use state::{

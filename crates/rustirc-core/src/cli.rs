@@ -628,7 +628,7 @@ impl CliClient {
         // Create test credentials
         let credentials = SaslCredentials {
             username: "testuser".to_string(),
-            password: "testpass".to_string(),
+            password: "testpass".to_string().into(),
             authzid: None,
         };
 

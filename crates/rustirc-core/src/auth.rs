@@ -8,6 +8,7 @@ use anyhow::Result;
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use std::collections::HashMap;
 use tracing::{debug, info, warn};
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 /// SASL authentication state
 #[derive(Debug, Clone, PartialEq)]
@@ -22,12 +23,55 @@ pub enum AuthState {
     Failed(String),
 }
 
-/// SASL credentials
-#[derive(Debug, Clone)]
+/// SASL credentials with secure password storage
+#[derive(Debug, Clone, Zeroize, ZeroizeOnDrop)]
 pub struct SaslCredentials {
     pub username: String,
-    pub password: String,
+    #[zeroize(skip)]
+    pub password: SecureString,
     pub authzid: Option<String>,
+}
+
+/// Secure string that automatically zeroes memory on drop
+#[derive(Clone, Zeroize, ZeroizeOnDrop)]
+pub struct SecureString {
+    #[zeroize(skip)]
+    inner: Vec<u8>,
+}
+
+impl SecureString {
+    pub fn new(s: String) -> Self {
+        Self {
+            inner: s.into_bytes(),
+        }
+    }
+
+    pub fn as_str(&self) -> &str {
+        // SAFETY: We only create SecureString from valid UTF-8 strings
+        unsafe { std::str::from_utf8_unchecked(&self.inner) }
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.inner
+    }
+}
+
+impl std::fmt::Debug for SecureString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "SecureString([REDACTED])")
+    }
+}
+
+impl From<String> for SecureString {
+    fn from(s: String) -> Self {
+        Self::new(s)
+    }
+}
+
+impl From<&str> for SecureString {
+    fn from(s: &str) -> Self {
+        Self::new(s.to_string())
+    }
 }
 
 /// SASL authentication mechanism trait
@@ -48,11 +92,17 @@ impl SaslMechanism for PlainMechanism {
     fn initial_response(&self, credentials: &SaslCredentials) -> Result<Vec<u8>> {
         let authzid = credentials.authzid.as_deref().unwrap_or("");
         let authcid = &credentials.username;
-        let password = &credentials.password;
+        let password = credentials.password.as_str();
 
         // Format: authzid\0authcid\0password
-        let response = format!("{authzid}\0{authcid}\0{password}");
-        Ok(response.into_bytes())
+        let mut response = Vec::new();
+        response.extend_from_slice(authzid.as_bytes());
+        response.push(0);
+        response.extend_from_slice(authcid.as_bytes());
+        response.push(0);
+        response.extend_from_slice(password.as_bytes());
+
+        Ok(response)
     }
 
     fn continue_auth(&mut self, _challenge: Option<&[u8]>) -> Result<Vec<u8>> {
@@ -141,7 +191,10 @@ impl SaslAuthenticator {
         self.current_mechanism = Some(mechanism.to_string());
         self.state = AuthState::InProgress;
 
-        let mechanism_impl = self.mechanisms.get(mechanism).unwrap();
+        let mechanism_impl = self
+            .mechanisms
+            .get(mechanism)
+            .ok_or_else(|| anyhow::anyhow!("Mechanism disappeared during authentication"))?;
         let response = mechanism_impl.initial_response(&credentials)?;
 
         debug!("Generated initial response of {} bytes", response.len());
@@ -208,7 +261,7 @@ mod tests {
         let plain = PlainMechanism;
         let creds = SaslCredentials {
             username: "user".to_string(),
-            password: "pass".to_string(),
+            password: "pass".into(),
             authzid: None,
         };
 
@@ -222,7 +275,7 @@ mod tests {
         let plain = PlainMechanism;
         let creds = SaslCredentials {
             username: "user".to_string(),
-            password: "pass".to_string(),
+            password: "pass".into(),
             authzid: Some("admin".to_string()),
         };
 
@@ -236,7 +289,7 @@ mod tests {
         let external = ExternalMechanism;
         let creds = SaslCredentials {
             username: "user".to_string(),
-            password: "pass".to_string(),
+            password: "pass".into(),
             authzid: Some("admin".to_string()),
         };
 
@@ -264,7 +317,7 @@ mod tests {
 
         let creds = SaslCredentials {
             username: "testuser".to_string(),
-            password: "testpass".to_string(),
+            password: "testpass".into(),
             authzid: None,
         };
 

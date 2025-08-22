@@ -265,8 +265,8 @@ impl ConnectionRecovery {
         // Add jitter if enabled
         if self.config.jitter {
             use rand::Rng;
-            let mut rng = rand::thread_rng();
-            let jitter_factor = rng.gen_range(0.8..1.2);
+            let mut rng = rand::rng();
+            let jitter_factor = rng.random_range(0.8..1.2);
             delay *= jitter_factor;
         }
 

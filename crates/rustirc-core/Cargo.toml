@@ -18,12 +18,18 @@ async-trait = "0.1"
 rustls = "0.23"
 tokio-rustls = "0.26"
 rustls-pki-types = "1.0"
-webpki-roots = "0.26"
-rand = "0.8"
+webpki-roots = "1.0"
+rand = "0.9"
 base64 = "0.22"
+zeroize = { version = "1.8", features = ["zeroize_derive"] }
 
 rustirc-protocol = { path = "../rustirc-protocol" }
 
 [dev-dependencies]
 tokio-test = { workspace = true }
 pretty_assertions = { workspace = true }
+criterion = { workspace = true }
+
+[[bench]]
+name = "state_bench"
+harness = false

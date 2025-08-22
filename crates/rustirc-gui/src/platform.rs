@@ -344,7 +344,11 @@ impl SystemTray {
         // Store tooltip for Windows tray icon
         let tooltip_cstr = match CString::new(tooltip) {
             Ok(s) => s,
-            Err(_) => return Err(PlatformError::PlatformError("Invalid tooltip string".to_string()).into()),
+            Err(_) => {
+                return Err(
+                    PlatformError::PlatformError("Invalid tooltip string".to_string()).into(),
+                )
+            }
         };
 
         // Write to Windows registry or temp file for tray icon to read
