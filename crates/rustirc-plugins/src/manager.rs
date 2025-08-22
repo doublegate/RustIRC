@@ -10,7 +10,15 @@ impl PluginManager {
     pub fn new() -> Self {
         Self {}
     }
+}
 
+impl Default for PluginManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl PluginManager {
     pub async fn load_plugin(&mut self, _path: &str) -> Result<()> {
         // Will be implemented in Phase 4
         Ok(())

@@ -262,14 +262,14 @@ mod tests {
 
     #[test]
     fn test_parse_simple_command() {
-        let msg = Parser::parse("PING :server").unwrap();
+        let msg = Parser::parse_message("PING :server").unwrap();
         assert_eq!(msg.command, "PING");
         assert_eq!(msg.params, vec!["server"]);
     }
 
     #[test]
     fn test_parse_with_prefix() {
-        let msg = Parser::parse(":nick!user@host PRIVMSG #channel :Hello, world!").unwrap();
+        let msg = Parser::parse_message(":nick!user@host PRIVMSG #channel :Hello, world!").unwrap();
         assert!(matches!(msg.prefix, Some(Prefix::User { .. })));
         assert_eq!(msg.command, "PRIVMSG");
         assert_eq!(msg.params, vec!["#channel", "Hello, world!"]);
@@ -278,7 +278,8 @@ mod tests {
     #[test]
     fn test_parse_with_tags() {
         let msg =
-            Parser::parse("@time=2021-01-01T00:00:00.000Z :server NOTICE #channel :Test").unwrap();
+            Parser::parse_message("@time=2021-01-01T00:00:00.000Z :server NOTICE #channel :Test")
+                .unwrap();
         assert!(msg.tags.is_some());
         assert_eq!(msg.tags.unwrap()[0].key, "time");
     }

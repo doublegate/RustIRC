@@ -879,7 +879,7 @@ mod tests {
     fn test_cli_creation() {
         let config = Config::default();
         let cli = CliClient::new(config);
-        assert!(!cli.connected);
+        assert!(cli.servers.is_empty());
     }
 
     #[test]
@@ -887,6 +887,6 @@ mod tests {
         // Test that CLI can handle basic commands without panicking
         let config = Config::default();
         let cli = CliClient::new(config);
-        assert!(!cli.connected);
+        assert!(cli.servers.is_empty());
     }
 }

@@ -443,7 +443,7 @@ mod tests {
         // Invalid commands
         assert!(validator.validate_command("").is_err());
         assert!(validator.validate_command("PRIV MSG").is_err()); // Space
-        assert!(validator.validate_command("123").is_err()); // Not 3 digits
+        assert!(validator.validate_command("123").is_ok()); // Valid numeric command
         assert!(validator.validate_command("12").is_err()); // Too short
         assert!(validator.validate_command("PRIV123").is_err()); // Mixed
     }

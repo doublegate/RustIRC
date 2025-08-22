@@ -4,12 +4,12 @@ use anyhow::Result;
 use mlua::Lua;
 
 pub struct ScriptEngine {
-    lua: Lua,
+    _lua: Lua, // Will be used in Phase 4 implementation
 }
 
 impl ScriptEngine {
     pub fn new() -> Result<Self> {
-        Ok(Self { lua: Lua::new() })
+        Ok(Self { _lua: Lua::new() })
     }
 
     pub async fn load_script(&self, _name: &str, _code: &str) -> Result<()> {

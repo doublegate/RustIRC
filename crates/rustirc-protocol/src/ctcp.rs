@@ -369,7 +369,7 @@ mod tests {
         let response = response.unwrap();
         assert_eq!(response.command, "NOTICE");
         assert_eq!(response.params[0], "pinger");
-        assert!(response.params[1].contains(ping_token));
+        assert!(response.params[1].contains(&ping_token));
     }
 
     #[test]
