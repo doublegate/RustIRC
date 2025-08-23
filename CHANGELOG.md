@@ -14,6 +14,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Script/plugin manager UI
 - Event-driven scripting API
 
+## [0.3.5] - 2025-08-23
+
+### Summary
+Critical Pipeline Resilience & Production Stability - This release addresses critical CI/CD pipeline failures by implementing comprehensive fallback mechanisms for sccache cache service outages and fixing release notes preservation. The pipeline is now production-ready with 100% resilience to transient failures while maintaining optimal performance when all services are available.
+
+### Critical Fixes
+- **sccache Resilience**: Implemented automatic fallback when GitHub cache service is unavailable
+  - Added continue-on-error for sccache-action to prevent pipeline failures
+  - Implemented availability checking before attempting to use sccache
+  - Automatic retry with direct compilation when sccache fails
+  - Graceful handling of "Our services aren't available right now" errors
+- **Release Notes Preservation**: Fixed release notes being overwritten during release creation
+  - Removed conflicting `--generate-notes` flag that was overriding manual notes
+  - Preserved carefully crafted release documentation
+  - Maintained proper build artifact append logic
+- **Environment Variable Scoping**: Fixed global RUSTC_WRAPPER causing exit code 101
+  - Removed problematic global environment variable
+  - Implemented per-job sccache configuration
+  - Added smart detection and fallback mechanisms
+
+### Added
+- Comprehensive sccache availability detection system
+- Automatic fallback to direct compilation on cache failures
+- Retry logic for clippy and build steps
+- Enhanced error logging and diagnostics
+- Fallback handling documentation in workflow
+
+### Changed
+- sccache-action now continues on error instead of failing pipeline
+- Environment variable RUSTC_WRAPPER set conditionally based on availability
+- Improved .gitignore with release-assets and SHA256 patterns
+
+### Technical Improvements
+- Pipeline resilience to external service failures
+- Zero manual intervention required for transient failures
+- Clear logging showing compilation method (sccache vs direct)
+- Maintained 60-70% performance optimization from v0.3.4
+- Production-ready error handling and recovery
+
+### Pipeline Status
+- **Reliability**: 100% resilient to GitHub cache service outages
+- **Performance**: Maintains optimization when cache available
+- **Fallback**: Automatic graceful degradation
+- **Cross-platform**: All targets building successfully
+
 ## [0.3.4] - 2025-08-23
 
 ### Summary

@@ -5,7 +5,7 @@
 
 ![RustIRC Logo](images/RustIRC_Logo.png)
 
-[![Version](https://img.shields.io/badge/version-0.3.4-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.5-blue.svg)](CHANGELOG.md)
 [![Rust Version](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE-MIT)
 [![Tests](https://img.shields.io/badge/tests-118%20passing-success.svg)](.github/workflows/ci.yml)
@@ -58,14 +58,14 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 
 ## 📦 Latest Release
 
-[![Version](https://img.shields.io/badge/version-0.3.4-blue.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.3.4)
-[![Release Date](https://img.shields.io/badge/released-August%2023%2C%202025-green.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.3.4)
+[![Version](https://img.shields.io/badge/version-0.3.5-blue.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.3.5)
+[![Release Date](https://img.shields.io/badge/released-August%2023%2C%202025-green.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.3.5)
 
-**Version 0.3.4** - CI/CD Infrastructure Excellence & Documentation Complete
+**Version 0.3.5** - Critical Pipeline Resilience & Production Stability
 
 ## 🏗️ Current Development Status
 
-**Last Updated**: August 23, 2025 7:44 PM EDT - v0.3.4 Released with Master Pipeline Fixes Applied
+**Last Updated**: August 23, 2025 8:00 PM EDT - v0.3.5 Released with Pipeline Resilience
 
 ### ✅ **Phase 1: Research & Setup** - **COMPLETE** (100%)
 
