@@ -36,6 +36,8 @@ env:
   RUST_BACKTRACE: 1
   SCCACHE_GHA_ENABLED: "true"
   # RUSTC_WRAPPER set per-job after sccache installation
+  # Note: sccache may fail when GitHub cache service is unavailable
+  # The workflow includes fallback to direct compilation when this occurs
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -60,17 +62,31 @@ jobs:
       with:
         components: rustfmt, clippy
     
-    # Setup sccache for faster compilation
+    # Setup sccache for faster compilation (with fallback on failure)
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.5
+      continue-on-error: true
+      id: sccache
+    
+    - name: Configure sccache
+      id: configure_sccache
+      run: |
+        # Check if sccache is available and working
+        if command -v sccache &> /dev/null && sccache --version &> /dev/null 2>&1; then
+          echo "sccache_available=true" >> $GITHUB_OUTPUT
+          echo "rustc_wrapper=sccache" >> $GITHUB_OUTPUT
+          echo "sccache is available and will be used"
+        else
+          echo "sccache_available=false" >> $GITHUB_OUTPUT
+          echo "rustc_wrapper=" >> $GITHUB_OUTPUT
+          echo "sccache is not available, falling back to direct compilation"
+        fi
     
     - name: Generate cache key
       id: cache
       run: |
         cache_key="shared-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}-${{ github.run_id }}"
         echo "cache_key=$cache_key" >> $GITHUB_OUTPUT
-      env:
-        RUSTC_WRAPPER: "sccache"
     
     - uses: Swatinem/rust-cache@v2
       with:
@@ -81,18 +97,42 @@ jobs:
     - name: Format check
       run: cargo fmt --all -- --check
       env:
-        RUSTC_WRAPPER: "sccache"
+        RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
     
     - name: Clippy check
-      run: cargo clippy --all-targets --all-features -- -D warnings
+      run: |
+        # Try with sccache first if available
+        if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
+          echo "Running clippy with sccache..."
+          if ! cargo clippy --all-targets --all-features -- -D warnings; then
+            echo "Clippy failed with sccache, retrying without sccache..."
+            unset RUSTC_WRAPPER
+            cargo clippy --all-targets --all-features -- -D warnings
+          fi
+        else
+          echo "Running clippy without sccache..."
+          cargo clippy --all-targets --all-features -- -D warnings
+        fi
       env:
-        RUSTC_WRAPPER: "sccache"
+        RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
     
     # Build once here to populate the cache for all subsequent jobs
     - name: Build all targets
-      run: cargo build --all-features --all-targets --release
+      run: |
+        # Try with sccache first if available
+        if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
+          echo "Building with sccache..."
+          if ! cargo build --all-features --all-targets --release; then
+            echo "Build failed with sccache, retrying without sccache..."
+            unset RUSTC_WRAPPER
+            cargo build --all-features --all-targets --release
+          fi
+        else
+          echo "Building without sccache..."
+          cargo build --all-features --all-targets --release
+        fi
       env:
-        RUSTC_WRAPPER: "sccache"
+        RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
     
     # Upload build artifacts for other jobs to use
     - name: Upload build artifacts
