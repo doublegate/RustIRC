@@ -119,7 +119,14 @@ jobs:
         cargo nextest run -p rustirc-scripting --release --all-features || cargo test -p rustirc-scripting --release --all-features
         cargo nextest run -p rustirc-gui --lib --release --all-features || cargo test -p rustirc-gui --lib --release --all-features
     - name: Run doctests
-      run: cargo test --doc --all-features || echo "No doctests found"
+      run: |
+        echo "Running doctests for library packages..."
+        cargo test --doc -p rustirc-core --all-features || echo "No doctests in rustirc-core"
+        cargo test --doc -p rustirc-protocol --all-features || echo "No doctests in rustirc-protocol"
+        cargo test --doc -p rustirc-gui --all-features || echo "No doctests in rustirc-gui"
+        cargo test --doc -p rustirc-tui --all-features || echo "No doctests in rustirc-tui"
+        cargo test --doc -p rustirc-scripting --all-features || echo "No doctests in rustirc-scripting"
+        cargo test --doc -p rustirc-plugins --all-features || echo "No doctests in rustirc-plugins"
     - name: Set test result
       id: test_result
       if: always()
