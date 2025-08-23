@@ -1,10 +1,58 @@
 //! IRC Commands
+//!
+//! This module provides strongly-typed IRC commands for client-server communication.
+//!
+//! # Examples
+//!
+//! ```
+//! use rustirc_protocol::command::Command;
+//!
+//! // Create a PRIVMSG command
+//! let cmd = Command::PrivMsg {
+//!     target: "#rust".to_string(),
+//!     text: "Hello, Rustaceans!".to_string(),
+//! };
+//!
+//! // Create a JOIN command
+//! let cmd = Command::Join {
+//!     channels: vec!["#rust".to_string(), "#rust-beginners".to_string()],
+//!     keys: vec![],
+//! };
+//! ```
 
 use serde::{Deserialize, Serialize};
 
+/// Strongly-typed IRC commands
+///
+/// # Examples
+///
+/// ```
+/// use rustirc_protocol::command::Command;
+///
+/// // Connection example
+/// let nick = Command::Nick {
+///     nickname: "RustBot".to_string(),
+/// };
+///
+/// // Channel join example
+/// let join = Command::Join {
+///     channels: vec!["#rust".to_string()],
+///     keys: vec![],
+/// };
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Command {
-    // Connection commands
+    /// NICK command - set or change nickname
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rustirc_protocol::command::Command;
+    ///
+    /// let cmd = Command::Nick {
+    ///     nickname: "NewNick".to_string(),
+    /// };
+    /// ```
     Nick {
         nickname: String,
     },

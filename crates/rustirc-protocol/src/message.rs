@@ -1,24 +1,91 @@
-//! IRC message types
+//! IRC message types and parsing
+//!
+//! This module provides the core IRC message types and utilities for parsing
+//! and constructing IRC protocol messages according to RFC 1459/2812 and IRCv3.
+//!
+//! # Examples
+//!
+//! ```
+//! use rustirc_protocol::message::{Message, Prefix};
+//!
+//! // Parse a simple IRC message
+//! let msg = Message {
+//!     tags: None,
+//!     prefix: Some(Prefix::Server("irc.example.com".to_string())),
+//!     command: "PRIVMSG".to_string(),
+//!     params: vec!["#channel".to_string(), "Hello, world!".to_string()],
+//! };
+//!
+//! assert_eq!(msg.command, "PRIVMSG");
+//! assert_eq!(msg.params[0], "#channel");
+//! ```
 
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+/// Represents a complete IRC message with optional tags and prefix
+///
+/// # Examples
+///
+/// ```
+/// use rustirc_protocol::message::Message;
+///
+/// let msg = Message {
+///     tags: None,
+///     prefix: None,
+///     command: "PING".to_string(),
+///     params: vec!["irc.server.com".to_string()],
+/// };
+///
+/// assert_eq!(msg.command, "PING");
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Message {
+    /// Optional IRCv3 message tags
     pub tags: Option<Vec<Tag>>,
+    /// Optional message prefix (server or user)
     pub prefix: Option<Prefix>,
+    /// IRC command (e.g., "PRIVMSG", "JOIN", "001")
     pub command: String,
+    /// Command parameters
     pub params: Vec<String>,
 }
 
+/// IRCv3 message tag
+///
+/// # Examples
+///
+/// ```
+/// use rustirc_protocol::message::Tag;
+///
+/// // Create a tag with a value
+/// let tag = Tag::new("account", Some("alice"));
+/// assert_eq!(tag.key, "account");
+///
+/// // Create a tag without a value
+/// let tag = Tag::new("typing", None::<&str>);
+/// assert_eq!(tag.value, None);
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Tag {
+    /// The tag key
     pub key: String,
+    /// The optional tag value (escaped according to IRCv3)
     pub value: Option<String>,
 }
 
 impl Tag {
     /// Create a new tag with escaped value
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustirc_protocol::message::Tag;
+    ///
+    /// let tag = Tag::new("msgid", Some("123"));
+    /// assert_eq!(tag.key, "msgid");
+    /// assert!(tag.value.is_some());
+    /// ```
     pub fn new(key: impl Into<String>, value: Option<impl Into<String>>) -> Self {
         Self {
             key: key.into(),

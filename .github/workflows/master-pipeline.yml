@@ -141,7 +141,7 @@ jobs:
         echo "  Release: $should_run_release"
         echo "  Release Tag: $release_tag"
 
-  # Phase 2: Parallel execution of tests and security
+  # Phase 2: Parallel execution of tests, security, and documentation
   test-matrix:
     name: Test Matrix
     needs: quick-checks
@@ -157,6 +157,101 @@ jobs:
       skip_tests: false
       cache_key: ${{ needs.quick-checks.outputs.cache_key }}
     secrets: inherit
+
+  documentation:
+    name: Documentation
+    needs: quick-checks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rust-docs
+    
+    - uses: Swatinem/rust-cache@v2
+      with:
+        key: ${{ needs.quick-checks.outputs.cache_key }}
+        shared-key: "master-pipeline"
+    
+    - name: Build documentation
+      run: cargo doc --all-features --no-deps --document-private-items
+      env:
+        RUSTDOCFLAGS: "-D warnings"
+    
+    - name: Run doctests
+      run: |
+        # Run doctests for library crates (skip binary crates)
+        cargo test --doc --all-features --package rustirc-core
+        cargo test --doc --all-features --package rustirc-protocol  
+        cargo test --doc --all-features --package rustirc-gui
+        cargo test --doc --all-features --package rustirc-tui
+        cargo test --doc --all-features --package rustirc-scripting
+        cargo test --doc --all-features --package rustirc-plugins
+    
+    - name: Generate documentation index
+      run: |
+        cat > target/doc/index.html << 'EOF'
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="utf-8">
+            <title>RustIRC Documentation</title>
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 40px; }
+                h1 { color: #333; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+                .crate { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+                .crate h2 { margin-top: 0; color: #0969da; }
+                a { color: #0969da; text-decoration: none; }
+                a:hover { text-decoration: underline; }
+                .description { color: #656d76; font-style: italic; margin-top: 5px; }
+            </style>
+        </head>
+        <body>
+            <h1>RustIRC Documentation</h1>
+            <p>Modern IRC client written in Rust</p>
+            
+            <div class="crate">
+                <h2><a href="rustirc_core/index.html">rustirc-core</a></h2>
+                <div class="description">Core functionality and shared components</div>
+            </div>
+            
+            <div class="crate">
+                <h2><a href="rustirc_protocol/index.html">rustirc-protocol</a></h2>
+                <div class="description">IRC protocol implementation with parsing and validation</div>
+            </div>
+            
+            <div class="crate">
+                <h2><a href="rustirc_gui/index.html">rustirc-gui</a></h2>
+                <div class="description">Modern graphical user interface using Iced</div>
+            </div>
+            
+            <div class="crate">
+                <h2><a href="rustirc_tui/index.html">rustirc-tui</a></h2>
+                <div class="description">Terminal-based user interface using ratatui</div>
+            </div>
+            
+            <div class="crate">
+                <h2><a href="rustirc_scripting/index.html">rustirc-scripting</a></h2>
+                <div class="description">Lua and Python scripting engine</div>
+            </div>
+            
+            <div class="crate">
+                <h2><a href="rustirc_plugins/index.html">rustirc-plugins</a></h2>
+                <div class="description">Plugin system for extensions</div>
+            </div>
+        </body>
+        </html>
+        EOF
+    
+    - name: Upload documentation artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: documentation
+        path: target/doc/
+        retention-days: 30
 
   security-audit:
     name: Security Audit
@@ -368,7 +463,7 @@ jobs:
   pipeline-status:
     name: Pipeline Status
     if: always()
-    needs: [quick-checks, test-matrix, security-audit, coverage, build-artifacts, release]
+    needs: [quick-checks, test-matrix, security-audit, documentation, coverage, build-artifacts, release]
     runs-on: ubuntu-latest
     steps:
     - name: Report pipeline status
@@ -380,6 +475,7 @@ jobs:
         echo "| Quick Checks | ${{ needs.quick-checks.result }} | - |"
         echo "| Tests | ${{ needs.test-matrix.result || 'skipped' }} | - |"
         echo "| Security | ${{ needs.security-audit.result || 'skipped' }} | - |"
+        echo "| Documentation | ${{ needs.documentation.result || 'skipped' }} | - |"
         echo "| Coverage | ${{ needs.coverage.result || 'skipped' }} | - |"
         echo "| Build Artifacts | ${{ needs.build-artifacts.result || 'skipped' }} | - |"
         echo "| Release | ${{ needs.release.result || 'skipped' }} | - |"

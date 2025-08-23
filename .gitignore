@@ -129,6 +129,9 @@ coverage/
 htmlcov/
 .pytest_cache/
 .hypothesis/
+cobertura.xml
+tarpaulin-report.html
+*.profraw
 
 # Benchmarking
 *.bench
@@ -139,6 +142,8 @@ perf.data*
 docs/_build/
 docs/.doctrees/
 site/
+/target/doc/
+*.rustdoc
 
 # Configuration
 # Local configuration files
@@ -230,6 +235,9 @@ Pipfile.lock
 # .cargo/config.toml - Include our build config for gcc linker
 .rustc_info.json
 rust-project.json
+.cargo-ok
+.fingerprint/
+incremental/
 
 # Development toolchain files (keep our optimized configs)
 # rustfmt.toml - Keep our stable-only configuration
@@ -241,5 +249,16 @@ rust-project.json
 /drafts/
 TODO.personal.md
 NOTES.personal.md
+CLAUDE.local.md
 !docs/
 !to-dos/
+
+# CI/CD artifacts
+.github/workflows/*.local.yml
+artifacts/
+dist/
+
+# Screenshot files (keep only the first one)
+images/Screenshot_[2-9].png
+images/Screenshot_[0-9][0-9].png
+images/Screenshot_[0-9][0-9][0-9].png

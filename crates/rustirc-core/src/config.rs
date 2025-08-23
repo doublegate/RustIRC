@@ -1,8 +1,35 @@
-//! Configuration management
+//! Configuration management for RustIRC
+//!
+//! This module provides configuration structures for all aspects of the IRC client,
+//! including user settings, server connections, UI preferences, and scripting options.
+//!
+//! # Examples
+//!
+//! ```
+//! use rustirc_core::config::{Config, UserConfig};
+//!
+//! let config = Config::default();
+//! assert_eq!(config.user.nickname, "RustIRC");
+//!
+//! // Or create a custom configuration
+//! let mut custom_config = Config::default();
+//! custom_config.user.nickname = "MyBot".to_string();
+//! assert_eq!(custom_config.user.nickname, "MyBot");
+//! ```
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+/// Main configuration structure for the IRC client
+///
+/// # Examples
+///
+/// ```
+/// use rustirc_core::config::Config;
+///
+/// let config = Config::default();
+/// assert_eq!(config.user.nickname, "RustIRC");
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub user: UserConfig,
@@ -13,6 +40,23 @@ pub struct Config {
     pub custom_settings: HashMap<String, String>,
 }
 
+/// User configuration settings
+///
+/// # Examples
+///
+/// ```
+/// use rustirc_core::config::UserConfig;
+///
+/// let user = UserConfig {
+///     nickname: "Alice".to_string(),
+///     alternative_nicknames: vec!["Alice_".to_string(), "Alice__".to_string()],
+///     username: "alice".to_string(),
+///     realname: "Alice Smith".to_string(),
+///     quit_message: "See you later!".to_string(),
+/// };
+///
+/// assert_eq!(user.nickname, "Alice");
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserConfig {
     pub nickname: String,
@@ -22,6 +66,33 @@ pub struct UserConfig {
     pub quit_message: String,
 }
 
+/// IRC server connection configuration
+///
+/// # Examples
+///
+/// ```
+/// use rustirc_core::config::{ServerConfig, ChannelConfig};
+///
+/// let server = ServerConfig {
+///     name: "Libera Chat".to_string(),
+///     address: "irc.libera.chat".to_string(),
+///     port: 6697,
+///     use_tls: true,
+///     password: None,
+///     auto_connect: true,
+///     channels: vec![
+///         ChannelConfig {
+///             name: "#rust".to_string(),
+///             key: None,
+///             auto_join: true,
+///         }
+///     ],
+///     sasl: None,
+/// };
+///
+/// assert_eq!(server.port, 6697);
+/// assert!(server.use_tls);
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerConfig {
     pub name: String,

@@ -62,6 +62,16 @@ impl Default for IrcValidator {
 
 impl IrcValidator {
     /// Create a new validator with default settings
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use rustirc_protocol::validation::IrcValidator;
+    ///
+    /// let validator = IrcValidator::new();
+    /// assert!(validator.validate_nickname("alice").is_ok());
+    /// assert!(validator.validate_channel_name("#general").is_ok());
+    /// ```
     pub fn new() -> Self {
         Self {
             max_nickname_length: 30,   // Most servers use 30
@@ -72,6 +82,18 @@ impl IrcValidator {
     }
 
     /// Create a strict RFC-compliant validator
+    ///
+    /// Uses RFC 1459 limits and strict validation rules.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use rustirc_protocol::validation::IrcValidator;
+    ///
+    /// let validator = IrcValidator::strict();
+    /// // 10-character nicknames fail in strict mode (RFC 1459 limit is 9)
+    /// assert!(validator.validate_nickname("verylongname").is_err());
+    /// ```
     pub fn strict() -> Self {
         Self {
             max_nickname_length: 9, // RFC 1459 limit
@@ -81,7 +103,32 @@ impl IrcValidator {
         }
     }
 
-    /// Validate an IRC nickname
+    /// Validate an IRC nickname according to RFC standards
+    ///
+    /// Nicknames must start with a letter or special character and contain
+    /// only valid IRC nickname characters. Length limits depend on validator settings.
+    ///
+    /// # Arguments
+    ///
+    /// * `nickname` - The nickname to validate
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use rustirc_protocol::validation::IrcValidator;
+    ///
+    /// let validator = IrcValidator::new();
+    ///
+    /// // Valid nicknames
+    /// assert!(validator.validate_nickname("alice").is_ok());
+    /// assert!(validator.validate_nickname("Bob123").is_ok());
+    /// assert!(validator.validate_nickname("[guest]").is_ok());
+    ///
+    /// // Invalid nicknames
+    /// assert!(validator.validate_nickname("123user").is_err()); // Starts with number
+    /// assert!(validator.validate_nickname("user@host").is_err()); // Contains @
+    /// assert!(validator.validate_nickname("").is_err()); // Empty
+    /// ```
     pub fn validate_nickname(&self, nickname: &str) -> Result<(), ValidationError> {
         if nickname.is_empty() {
             return Err(ValidationError::EmptyParameter);
@@ -130,6 +177,30 @@ impl IrcValidator {
     }
 
     /// Validate an IRC channel name
+    ///
+    /// Channel names must start with # or & and contain only valid characters.
+    ///
+    /// # Arguments
+    ///
+    /// * `channel` - The channel name to validate
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use rustirc_protocol::validation::IrcValidator;
+    ///
+    /// let validator = IrcValidator::new();
+    ///
+    /// // Valid channels
+    /// assert!(validator.validate_channel_name("#general").is_ok());
+    /// assert!(validator.validate_channel_name("&localchan").is_ok());
+    /// assert!(validator.validate_channel_name("#rust-lang").is_ok());
+    ///
+    /// // Invalid channels
+    /// assert!(validator.validate_channel_name("general").is_err()); // No # or &
+    /// assert!(validator.validate_channel_name("#chan,nel").is_err()); // Contains comma
+    /// assert!(validator.validate_channel_name("#chan nel").is_err()); // Contains space
+    /// ```
     pub fn validate_channel_name(&self, channel: &str) -> Result<(), ValidationError> {
         if channel.is_empty() {
             return Err(ValidationError::EmptyParameter);
@@ -332,6 +403,25 @@ impl IrcValidator {
     }
 
     /// Sanitize a string by removing/replacing problematic characters
+    ///
+    /// Removes null bytes, carriage returns, and line feeds that could
+    /// break IRC protocol parsing. Also truncates to maximum parameter length.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use rustirc_protocol::validation::IrcValidator;
+    ///
+    /// let validator = IrcValidator::new();
+    ///
+    /// // Remove problematic characters
+    /// let result = validator.sanitize_parameter("hello\0world\r\n");
+    /// assert_eq!(result, "helloworld");
+    ///
+    /// // Preserve normal text
+    /// let result = validator.sanitize_parameter("Hello, world!");
+    /// assert_eq!(result, "Hello, world!");
+    /// ```
     pub fn sanitize_parameter(&self, input: &str) -> String {
         input
             .chars()
@@ -341,6 +431,27 @@ impl IrcValidator {
     }
 
     /// Sanitize a nickname to make it valid
+    ///
+    /// Removes invalid characters and ensures the nickname meets IRC requirements.
+    /// If the result would be empty, returns "Guest".
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use rustirc_protocol::validation::IrcValidator;
+    ///
+    /// let validator = IrcValidator::new();
+    ///
+    /// // Remove invalid characters
+    /// assert_eq!(validator.sanitize_nickname("user@host"), "userhost");
+    /// assert_eq!(validator.sanitize_nickname("nick with spaces"), "nickwithspaces");
+    ///
+    /// // Fix invalid start character
+    /// assert_eq!(validator.sanitize_nickname("123user"), "_123user");
+    ///
+    /// // Handle empty input
+    /// assert_eq!(validator.sanitize_nickname(""), "Guest");
+    /// ```
     pub fn sanitize_nickname(&self, input: &str) -> String {
         let sanitized: String = input
             .chars()

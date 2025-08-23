@@ -22,7 +22,33 @@ use tokio::time::{interval, sleep, timeout};
 use tokio_rustls::{client::TlsStream, TlsConnector};
 use tracing::{debug, error, info, warn};
 
-/// Connection state
+/// Connection state for IRC connections
+///
+/// Represents the current state of an IRC connection throughout its lifecycle.
+///
+/// # State Transitions
+///
+/// ```text
+/// Disconnected -> Connecting -> Connected -> Authenticating -> Registered
+///      ^                                           |
+///      |                                           v
+///      +-- Reconnecting <-- Failed <--------------+
+/// ```
+///
+/// # Examples
+///
+/// ```rust
+/// use rustirc_core::connection::ConnectionState;
+///
+/// let state = ConnectionState::Disconnected;
+/// assert_eq!(state, ConnectionState::Disconnected);
+///
+/// let failed_state = ConnectionState::Failed("DNS resolution failed".to_string());
+/// match failed_state {
+///     ConnectionState::Failed(reason) => println!("Connection failed: {}", reason),
+///     _ => {},
+/// }
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConnectionState {
     Disconnected,
@@ -34,7 +60,34 @@ pub enum ConnectionState {
     Failed(String),
 }
 
-/// Connection configuration
+/// Configuration for IRC server connections
+///
+/// Contains all settings needed to establish and maintain an IRC connection,
+/// including server details, authentication, and behavior parameters.
+///
+/// # Examples
+///
+/// ```rust
+/// use rustirc_core::connection::ConnectionConfig;
+/// use std::time::Duration;
+///
+/// // Use default configuration
+/// let config = ConnectionConfig::default();
+/// assert_eq!(config.server, "irc.libera.chat");
+/// assert_eq!(config.port, 6697);
+/// assert!(config.use_tls);
+///
+/// // Create custom configuration
+/// let config = ConnectionConfig {
+///     server: "irc.example.com".to_string(),
+///     port: 6667,
+///     use_tls: false,
+///     nickname: "MyBot".to_string(),
+///     username: "mybot".to_string(),
+///     realname: "My IRC Bot".to_string(),
+///     ..Default::default()
+/// };
+/// ```
 #[derive(Debug, Clone)]
 pub struct ConnectionConfig {
     pub server: String,
@@ -70,7 +123,35 @@ impl Default for ConnectionConfig {
     }
 }
 
-/// IRC connection handle
+/// IRC connection handle with async networking and event support
+///
+/// Manages a single IRC server connection with automatic reconnection,
+/// message parsing, and event emission. Supports both TLS and plain connections.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use rustirc_core::connection::{IrcConnection, ConnectionConfig};
+/// use rustirc_core::events::EventBus;
+/// use rustirc_protocol::Command;
+/// use std::sync::Arc;
+///
+/// # tokio_test::block_on(async {
+/// let event_bus = Arc::new(EventBus::new());
+/// let config = ConnectionConfig::default();
+/// let connection = IrcConnection::new(config, event_bus);
+///
+/// // Connect to server
+/// connection.connect().await.unwrap();
+///
+/// // Send a message
+/// let command = Command::PrivMsg {
+///     target: "#channel".to_string(),
+///     text: "Hello, world!".to_string(),
+/// };
+/// connection.send_command(command).await.unwrap();
+/// # });
+/// ```
 #[derive(Clone)]
 pub struct IrcConnection {
     config: ConnectionConfig,
@@ -83,6 +164,29 @@ pub struct IrcConnection {
 }
 
 impl IrcConnection {
+    /// Create a new IRC connection with the given configuration
+    ///
+    /// The connection starts in `Disconnected` state. Call `connect()` to establish
+    /// the connection to the IRC server.
+    ///
+    /// # Arguments
+    ///
+    /// * `config` - Connection configuration (server, port, credentials, etc.)
+    /// * `event_bus` - Event bus for publishing connection and message events
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use rustirc_core::connection::{IrcConnection, ConnectionConfig};
+    /// use rustirc_core::events::EventBus;
+    /// use std::sync::Arc;
+    ///
+    /// let event_bus = Arc::new(EventBus::new());
+    /// let config = ConnectionConfig::default();
+    /// let connection = IrcConnection::new(config, event_bus);
+    ///
+    /// assert_eq!(connection.id(), "irc.libera.chat:6697");
+    /// ```
     pub fn new(config: ConnectionConfig, event_bus: Arc<EventBus>) -> Self {
         let connection_id = format!("{}:{}", config.server, config.port);
         let (state_broadcast, _) = broadcast::channel(100);
@@ -98,7 +202,26 @@ impl IrcConnection {
         }
     }
 
-    /// Get current connection state
+    /// Get the current connection state
+    ///
+    /// Returns a snapshot of the current connection state. The state may change
+    /// immediately after this call due to concurrent operations.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use rustirc_core::connection::{IrcConnection, ConnectionConfig, ConnectionState};
+    /// use rustirc_core::events::EventBus;
+    /// use std::sync::Arc;
+    ///
+    /// # tokio_test::block_on(async {
+    /// let event_bus = Arc::new(EventBus::new());
+    /// let config = ConnectionConfig::default();
+    /// let connection = IrcConnection::new(config, event_bus);
+    ///
+    /// assert_eq!(connection.state().await, ConnectionState::Disconnected);
+    /// # });
+    /// ```
     pub async fn state(&self) -> ConnectionState {
         self.state.read().await.clone()
     }
@@ -113,7 +236,41 @@ impl IrcConnection {
         self.state_broadcast.subscribe()
     }
 
-    /// Start connection with automatic reconnection
+    /// Connect to the IRC server with automatic reconnection
+    ///
+    /// Attempts to establish a connection to the configured IRC server.
+    /// If the initial connection fails, will retry up to `reconnect_attempts` times
+    /// with exponential backoff.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(())` when successfully connected and registered, or an error
+    /// if all connection attempts fail.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// use rustirc_core::connection::{IrcConnection, ConnectionConfig};
+    /// use rustirc_core::events::EventBus;
+    /// use std::sync::Arc;
+    ///
+    /// # tokio_test::block_on(async {
+    /// let event_bus = Arc::new(EventBus::new());
+    /// let config = ConnectionConfig {
+    ///     server: "irc.libera.chat".to_string(),
+    ///     port: 6697,
+    ///     nickname: "testbot".to_string(),
+    ///     ..Default::default()
+    /// };
+    ///
+    /// let connection = IrcConnection::new(config, event_bus);
+    /// connection.connect().await.expect("Failed to connect");
+    /// # });
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns `Error::ConnectionFailed` if unable to connect after all retry attempts.
     pub async fn connect(&self) -> Result<()> {
         self.set_state(ConnectionState::Connecting).await;
 
@@ -535,7 +692,50 @@ impl IrcConnection {
         })
     }
 
-    /// Send command through the connection
+    /// Send an IRC command through the connection
+    ///
+    /// Validates the command and sends it to the IRC server. The command is
+    /// converted to a properly formatted IRC message before transmission.
+    ///
+    /// # Arguments
+    ///
+    /// * `command` - IRC command to send (JOIN, PRIVMSG, etc.)
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// use rustirc_core::connection::{IrcConnection, ConnectionConfig};
+    /// use rustirc_core::events::EventBus;
+    /// use rustirc_protocol::Command;
+    /// use std::sync::Arc;
+    ///
+    /// # tokio_test::block_on(async {
+    /// let event_bus = Arc::new(EventBus::new());
+    /// let connection = IrcConnection::new(ConnectionConfig::default(), event_bus);
+    ///
+    /// // connection.connect().await.unwrap(); // Connect first
+    ///
+    /// // Join a channel
+    /// let join_cmd = Command::Join {
+    ///     channels: vec!["#rust".to_string()],
+    ///     keys: vec![],
+    /// };
+    /// // connection.send_command(join_cmd).await.unwrap();
+    ///
+    /// // Send a message
+    /// let msg_cmd = Command::PrivMsg {
+    ///     target: "#rust".to_string(),
+    ///     text: "Hello, Rust!".to_string(),
+    /// };
+    /// // connection.send_command(msg_cmd).await.unwrap();
+    /// # });
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if:
+    /// - Connection is not established (`Error::ConnectionClosed`)
+    /// - Command generates a message that's too long (`Error::Protocol`)
     pub async fn send_command(&self, command: Command) -> Result<()> {
         // Validate message length before sending
         let message = command.to_message();
@@ -644,13 +844,69 @@ impl IrcConnection {
     }
 }
 
-/// Multi-server connection manager
+/// Manager for multiple IRC server connections
+///
+/// Handles multiple simultaneous IRC connections with centralized management.
+/// Each connection is identified by a unique string ID and can be controlled
+/// independently.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use rustirc_core::connection::{ConnectionManager, ConnectionConfig};
+/// use rustirc_core::events::EventBus;
+/// use std::sync::Arc;
+///
+/// # tokio_test::block_on(async {
+/// let event_bus = Arc::new(EventBus::new());
+/// let manager = ConnectionManager::new(event_bus);
+///
+/// // Add connections
+/// let config1 = ConnectionConfig {
+///     server: "irc.libera.chat".to_string(),
+///     port: 6697,
+///     ..Default::default()
+/// };
+///
+/// let config2 = ConnectionConfig {
+///     server: "irc.example.com".to_string(),
+///     port: 6667,
+///     ..Default::default()
+/// };
+///
+/// let conn1 = manager.add_connection("libera".to_string(), config1).await.unwrap();
+/// let conn2 = manager.add_connection("example".to_string(), config2).await.unwrap();
+///
+/// // Connect all
+/// manager.connect_all().await.unwrap();
+///
+/// // Get connection by ID
+/// let conn = manager.get_connection("libera").await;
+/// assert!(conn.is_some());
+/// # });
+/// ```
 pub struct ConnectionManager {
     connections: Arc<RwLock<std::collections::HashMap<String, Arc<IrcConnection>>>>,
     event_bus: Arc<EventBus>,
 }
 
 impl ConnectionManager {
+    /// Create a new connection manager
+    ///
+    /// # Arguments
+    ///
+    /// * `event_bus` - Shared event bus for all managed connections
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use rustirc_core::connection::ConnectionManager;
+    /// use rustirc_core::events::EventBus;
+    /// use std::sync::Arc;
+    ///
+    /// let event_bus = Arc::new(EventBus::new());
+    /// let manager = ConnectionManager::new(event_bus);
+    /// ```
     pub fn new(event_bus: Arc<EventBus>) -> Self {
         Self {
             connections: Arc::new(RwLock::new(std::collections::HashMap::new())),

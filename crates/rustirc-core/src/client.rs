@@ -1,4 +1,22 @@
 //! IRC Client implementation
+//!
+//! The main IRC client that manages connections, state, and message handling.
+//!
+//! # Examples
+//!
+//! ```no_run
+//! use rustirc_core::client::IrcClient;
+//! use rustirc_core::config::Config;
+//!
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! let config = Config::default();
+//! let client = IrcClient::new(config);
+//!
+//! // Connect to a server
+//! client.connect("irc.libera.chat", 6697).await?;
+//! # Ok(())
+//! # }
+//! ```
 
 use crate::config::Config;
 use crate::connection::{ConnectionConfig, ConnectionManager};
@@ -9,6 +27,19 @@ use rustirc_protocol::{Command, Message};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
+/// The main IRC client
+///
+/// Manages connections to IRC servers, handles messages, and maintains client state.
+///
+/// # Examples
+///
+/// ```
+/// use rustirc_core::client::IrcClient;
+/// use rustirc_core::config::Config;
+///
+/// let config = Config::default();
+/// let client = IrcClient::new(config);
+/// ```
 pub struct IrcClient {
     config: Config,
     state: Arc<RwLock<ClientState>>,
@@ -17,6 +48,16 @@ pub struct IrcClient {
 }
 
 impl IrcClient {
+    /// Create a new IRC client with the given configuration
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustirc_core::client::IrcClient;
+    /// use rustirc_core::config::Config;
+    ///
+    /// let client = IrcClient::new(Config::default());
+    /// ```
     pub fn new(config: Config) -> Self {
         let event_bus = Arc::new(EventBus::new());
         let connection_manager = Arc::new(ConnectionManager::new(event_bus.clone()));
