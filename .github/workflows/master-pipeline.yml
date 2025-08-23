@@ -45,12 +45,12 @@ jobs:
     name: Quick Checks & Setup
     runs-on: ubuntu-latest
     outputs:
-      cache-key: ${{ steps.cache.outputs.cache-key }}
-      should-run-tests: ${{ steps.config.outputs.should-run-tests }}
-      should-run-security: ${{ steps.config.outputs.should-run-security }}
-      should-run-coverage: ${{ steps.config.outputs.should-run-coverage }}
-      should-run-release: ${{ steps.config.outputs.should-run-release }}
-      release-tag: ${{ steps.config.outputs.release-tag }}
+      cache_key: ${{ steps.cache.outputs.cache_key }}
+      should_run_tests: ${{ steps.config.outputs.should_run_tests }}
+      should_run_security: ${{ steps.config.outputs.should_run_security }}
+      should_run_coverage: ${{ steps.config.outputs.should_run_coverage }}
+      should_run_release: ${{ steps.config.outputs.should_run_release }}
+      release_tag: ${{ steps.config.outputs.release_tag }}
     steps:
     - uses: actions/checkout@v4
     
@@ -62,7 +62,7 @@ jobs:
       id: cache
       run: |
         cache_key="shared-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}-${{ github.run_id }}"
-        echo "cache-key=$cache_key" >> $GITHUB_OUTPUT
+        echo "cache_key=$cache_key" >> $GITHUB_OUTPUT
     
     - uses: Swatinem/rust-cache@v2
       with:
@@ -128,11 +128,11 @@ jobs:
           should_run_coverage="true"
         fi
         
-        echo "should-run-tests=$should_run_tests" >> $GITHUB_OUTPUT
-        echo "should-run-security=$should_run_security" >> $GITHUB_OUTPUT  
-        echo "should-run-coverage=$should_run_coverage" >> $GITHUB_OUTPUT
-        echo "should-run-release=$should_run_release" >> $GITHUB_OUTPUT
-        echo "release-tag=$release_tag" >> $GITHUB_OUTPUT
+        echo "should_run_tests=$should_run_tests" >> $GITHUB_OUTPUT
+        echo "should_run_security=$should_run_security" >> $GITHUB_OUTPUT  
+        echo "should_run_coverage=$should_run_coverage" >> $GITHUB_OUTPUT
+        echo "should_run_release=$should_run_release" >> $GITHUB_OUTPUT
+        echo "release_tag=$release_tag" >> $GITHUB_OUTPUT
         
         echo "Pipeline Configuration:"
         echo "  Tests: $should_run_tests"
