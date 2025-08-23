@@ -145,7 +145,7 @@ jobs:
   test-matrix:
     name: Test Matrix
     needs: quick-checks
-    if: needs.quick-checks.outputs.should-run-tests == 'true'
+    if: needs.quick-checks.outputs.should_run_tests == 'true'
     permissions:
       contents: read
       id-token: write  # Required for codecov OIDC
@@ -155,13 +155,13 @@ jobs:
     with:
       rust_version: ${{ inputs.rust_version || 'stable' }}
       skip_tests: false
-      cache_key: ${{ needs.quick-checks.outputs.cache-key }}
+      cache_key: ${{ needs.quick-checks.outputs.cache_key }}
     secrets: inherit
 
   security-audit:
     name: Security Audit
     needs: quick-checks
-    if: needs.quick-checks.outputs.should-run-security == 'true'
+    if: needs.quick-checks.outputs.should_run_security == 'true'
     permissions:
       contents: read
       issues: write
@@ -180,7 +180,7 @@ jobs:
     needs: [quick-checks, test-matrix]
     if: |
       always() && 
-      needs.quick-checks.outputs.should-run-coverage == 'true' &&
+      needs.quick-checks.outputs.should_run_coverage == 'true' &&
       needs.test-matrix.result == 'success'
     runs-on: ubuntu-latest
     permissions:
@@ -216,7 +216,7 @@ jobs:
     needs: [quick-checks, test-matrix, security-audit]
     if: |
       always() &&
-      needs.quick-checks.outputs.should-run-release == 'true' &&
+      needs.quick-checks.outputs.should_run_release == 'true' &&
       needs.test-matrix.result == 'success' &&
       (needs.security-audit.result == 'success' || needs.security-audit.result == 'skipped')
     strategy:
@@ -275,7 +275,7 @@ jobs:
     needs: [quick-checks, test-matrix, security-audit, build-artifacts]
     if: |
       always() &&
-      needs.quick-checks.outputs.should-run-release == 'true' &&
+      needs.quick-checks.outputs.should_run_release == 'true' &&
       needs.test-matrix.result == 'success' &&
       (needs.security-audit.result == 'success' || needs.security-audit.result == 'skipped') &&
       needs.build-artifacts.result == 'success'
@@ -311,7 +311,7 @@ jobs:
     
     - name: Create or update release
       run: |
-        tag_name="${{ needs.quick-checks.outputs.release-tag }}"
+        tag_name="${{ needs.quick-checks.outputs.release_tag }}"
         
         # Check if release already exists
         if gh release view "$tag_name" >/dev/null 2>&1; then
