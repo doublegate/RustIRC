@@ -392,17 +392,21 @@ jobs:
     - name: Prepare release assets
       run: |
         mkdir -p release-assets
-        find artifacts -name "*.tar.gz" -o -name "*.zip" | while read file; do
+        # Find only files (not directories) with proper parentheses for OR condition
+        find artifacts -type f \( -name "*.tar.gz" -o -name "*.zip" \) | while read file; do
+          echo "Processing: $file"
           cp "$file" release-assets/
           # Generate checksums
           cd release-assets
+          filename="$(basename "$file")"
           if command -v shasum >/dev/null; then
-            shasum -a 256 "$(basename "$file")" > "$(basename "$file").sha256"
+            shasum -a 256 "$filename" > "$filename.sha256"
           else
-            sha256sum "$(basename "$file")" > "$(basename "$file").sha256"
+            sha256sum "$filename" > "$filename.sha256"
           fi
           cd ..
         done
+        echo "Release assets prepared:"
         ls -la release-assets/
     
     - name: Create or update release
