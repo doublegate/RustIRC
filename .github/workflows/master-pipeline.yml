@@ -35,7 +35,7 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
   SCCACHE_GHA_ENABLED: "true"
-  RUSTC_WRAPPER: "sccache"
+  # RUSTC_WRAPPER set per-job after sccache installation
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -69,6 +69,8 @@ jobs:
       run: |
         cache_key="shared-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}-${{ github.run_id }}"
         echo "cache_key=$cache_key" >> $GITHUB_OUTPUT
+      env:
+        RUSTC_WRAPPER: "sccache"
     
     - uses: Swatinem/rust-cache@v2
       with:
@@ -78,13 +80,19 @@ jobs:
     
     - name: Format check
       run: cargo fmt --all -- --check
+      env:
+        RUSTC_WRAPPER: "sccache"
     
     - name: Clippy check
       run: cargo clippy --all-targets --all-features -- -D warnings
+      env:
+        RUSTC_WRAPPER: "sccache"
     
     # Build once here to populate the cache for all subsequent jobs
     - name: Build all targets
       run: cargo build --all-features --all-targets --release
+      env:
+        RUSTC_WRAPPER: "sccache"
     
     # Upload build artifacts for other jobs to use
     - name: Upload build artifacts
@@ -201,6 +209,7 @@ jobs:
       run: cargo doc --all-features --no-deps --document-private-items
       env:
         RUSTDOCFLAGS: "--warn missing-docs"
+        RUSTC_WRAPPER: ""  # Disable sccache for documentation builds
     
     # Note: Doctests are run in the test-matrix job to avoid duplication
     # They run on all platforms as part of the comprehensive test suite
@@ -326,6 +335,8 @@ jobs:
     
     - name: Generate coverage report
       run: cargo tarpaulin --out Xml --all-features --timeout 300 --skip-clean
+      env:
+        RUSTC_WRAPPER: ""  # Disable sccache for coverage to avoid conflicts
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
@@ -394,6 +405,8 @@ jobs:
         else
           cargo build --release --target ${{ matrix.target }} --bin rustirc
         fi
+      env:
+        RUSTC_WRAPPER: ""  # Disable sccache for cross-platform builds to avoid conflicts
     
     - name: Package artifact (Unix)
       if: runner.os != 'Windows'
@@ -504,13 +517,19 @@ jobs:
         3. Run the client: \`./rustirc\` (Unix) or \`rustirc.exe\` (Windows)
         
         For detailed usage instructions, see the [README](https://github.com/doublegate/RustIRC#readme).
+        
+        ---
+        
+        **Build Information:**
+        - Pipeline Run: [${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+        - Commit: [${{ github.sha }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
+        - Build Date: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
         EOF
           
-          # Create the new release
+          # Create the new release with manual notes only
           gh release create "$tag_name" \
             --title "RustIRC $tag_name" \
             --notes-file release_notes.md \
-            --generate-notes \
             release-assets/*
         fi
       env:

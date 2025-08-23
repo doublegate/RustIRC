@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.4] - 2025-08-23
 
 ### Summary
-CI/CD Pipeline Optimization & Documentation Excellence - This release delivers a 60-70% performance improvement in the CI/CD pipeline through comprehensive optimization, adds ARM64 build support, and fixes critical release asset preparation. Additionally, complete documentation with 65+ working doctests and per-crate READMEs was implemented.
+CI/CD Pipeline Optimization & Documentation Excellence - This release delivers a 60-70% performance improvement in the CI/CD pipeline through comprehensive optimization, adds ARM64 build support, and fixes critical release asset preparation. Additionally, complete documentation with 65+ working doctests and per-crate READMEs was implemented. Post-release fixes applied to resolve sccache configuration issues and release notes preservation.
 
 ### Major Performance Optimizations
 - **60-70% Pipeline Performance Improvement**: Through artifact sharing, tool caching, and parallel execution
