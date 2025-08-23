@@ -36,9 +36,8 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+# Concurrency handled by calling workflow (Master Pipeline)
+# to prevent deadlocks when used with workflow_call
 
 jobs:
   security-audit:

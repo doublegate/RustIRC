@@ -44,9 +44,8 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+# Concurrency handled by calling workflow (Master Pipeline)
+# to prevent deadlocks when used with workflow_call
 
 jobs:
   fmt:
