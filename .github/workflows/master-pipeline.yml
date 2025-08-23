@@ -165,6 +165,7 @@ jobs:
     permissions:
       contents: read
       issues: write
+      pull-requests: write
       security-events: write
       actions: read
     uses: ./.github/workflows/security-audit.yml
