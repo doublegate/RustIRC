@@ -1,0 +1,55 @@
+# Dependency Review Configuration
+# Documentation: https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/configuring-dependency-review
+
+# Fail the action on critical and high severity vulnerabilities
+fail-on-severity: high
+
+# Allow specific licenses
+allow-licenses:
+  - MIT
+  - Apache-2.0
+  - BSD-2-Clause
+  - BSD-3-Clause
+  - ISC
+  - CC0-1.0
+  - Unlicense
+  - 0BSD
+
+# Deny specific licenses that are incompatible with project goals
+deny-licenses:
+  - GPL-2.0
+  - GPL-3.0
+  - LGPL-2.0
+  - LGPL-2.1
+  - LGPL-3.0
+  - AGPL-3.0
+  - CC-BY-SA-4.0
+  - CDDL-1.0
+  - EPL-1.0
+  - EPL-2.0
+  - MPL-2.0
+
+# Allow specific packages even if they fail other checks
+allow-dependencies-licenses:
+  # Core Rust ecosystem crates that are essential
+  - package-name: "serde"
+  - package-name: "serde_json"
+  - package-name: "tokio"
+  - package-name: "clap"
+
+# Deny specific packages
+deny-packages:
+  # Example of denying packages with known issues
+  - package-name: "openssl-sys"
+    reason: "Prefer rustls for pure Rust TLS implementation"
+
+# Allow vulnerabilities for specific advisories (temporary exceptions)
+allow-ghsas:
+  # Example: Allow specific GitHub Security Advisories temporarily
+  # - "GHSA-xxxx-xxxx-xxxx"
+
+# Configuration for comment behavior
+comment-summary-in-pr: auto
+warn-only: false
+vulnerability-check: true
+license-check: true

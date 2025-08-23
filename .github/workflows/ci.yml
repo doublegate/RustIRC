@@ -5,10 +5,30 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      rust_version:
+        description: 'Rust version to test'
+        required: false
+        default: 'stable'
+        type: choice
+        options:
+          - stable
+          - beta
+          - nightly
+      skip_tests:
+        description: 'Skip running tests'
+        required: false
+        default: false
+        type: boolean
 
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   fmt:
@@ -19,6 +39,9 @@ jobs:
     - uses: dtolnay/rust-toolchain@stable
       with:
         components: rustfmt
+    - uses: Swatinem/rust-cache@v2
+      with:
+        key: fmt-${{ runner.os }}
     - name: Check formatting
       run: cargo fmt --all -- --check
 
@@ -36,44 +59,75 @@ jobs:
 
   test:
     name: Test
+    if: ${{ !inputs.skip_tests }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         rust: [stable, beta]
+        exclude:
+          # Reduce matrix size by skipping beta on Windows/macOS for faster CI
+          - os: windows-latest
+            rust: beta
+          - os: macos-latest
+            rust: beta
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@master
       with:
-        toolchain: ${{ matrix.rust }}
+        toolchain: ${{ inputs.rust_version || matrix.rust }}
     - uses: Swatinem/rust-cache@v2
+      with:
+        key: test-${{ runner.os }}-${{ matrix.rust }}
+        cache-directories: |
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+    - name: Install cargo-nextest
+      run: cargo install cargo-nextest --locked
     - name: Build
-      run: cargo build --all-features
-    - name: Run tests
-      run: cargo test --all-features
+      run: cargo build --all-features --all-targets
+    - name: Run tests with nextest
+      run: cargo nextest run --all-features
+    - name: Run doctests
+      run: cargo test --doc --all-features
     
   coverage:
     name: Code Coverage
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # Required for OIDC
     steps:
     - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@stable
     - uses: Swatinem/rust-cache@v2
+      with:
+        key: coverage-${{ runner.os }}
     - name: Install tarpaulin
-      run: cargo install cargo-tarpaulin
+      run: cargo install cargo-tarpaulin --locked
     - name: Generate coverage
-      run: cargo tarpaulin --out Xml --all-features
+      run: cargo tarpaulin --out Xml --all-features --timeout 300
     - name: Upload coverage
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v5
       with:
         files: ./cobertura.xml
+        use_oidc: true
+        fail_ci_if_error: true
+        verbose: true
 
   security-audit:
     name: Security Audit
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      security-events: write
     steps:
     - uses: actions/checkout@v4
-    - uses: rustsec/audit-check@v1.4.1
+    - uses: rustsec/audit-check@v2.0.0
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         # Allow unmaintained dependencies that are indirect through GUI frameworks

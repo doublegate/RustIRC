@@ -4,68 +4,202 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g., v1.0.0)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Mark as prerelease'
+        required: false
+        default: false
+        type: boolean
 
 env:
   CARGO_TERM_COLOR: always
 
-jobs:
-  create-release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-    steps:
-    - uses: actions/checkout@v4
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: RustIRC ${{ github.ref }}
-        draft: false
-        prerelease: false
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: false
 
+jobs:
   build-release:
-    name: Build Release
-    needs: create-release
+    name: Build Release Artifacts
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact_name: rustirc
             asset_name: rustirc-linux-amd64
+            compress: tar.gz
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            artifact_name: rustirc
+            asset_name: rustirc-linux-arm64
+            compress: tar.gz
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact_name: rustirc.exe
             asset_name: rustirc-windows-amd64.exe
+            compress: zip
           - os: macos-latest
             target: x86_64-apple-darwin
             artifact_name: rustirc
             asset_name: rustirc-macos-amd64
+            compress: tar.gz
           - os: macos-latest
             target: aarch64-apple-darwin
             artifact_name: rustirc
             asset_name: rustirc-macos-arm64
+            compress: tar.gz
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
     - uses: dtolnay/rust-toolchain@stable
       with:
         targets: ${{ matrix.target }}
+    
     - uses: Swatinem/rust-cache@v2
-    
-    - name: Build
-      run: cargo build --release --target ${{ matrix.target }}
-    
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
-        asset_name: ${{ matrix.asset_name }}
-        asset_content_type: application/octet-stream
+        key: release-${{ matrix.target }}
+    
+    - name: Install cross-compilation tools (Linux ARM64)
+      if: matrix.target == 'aarch64-unknown-linux-gnu'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-aarch64-linux-gnu
+        echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+    
+    - name: Build release binary
+      run: cargo build --release --target ${{ matrix.target }} --bin rustirc
+    
+    - name: Compress artifact (Unix)
+      if: matrix.compress == 'tar.gz'
+      run: |
+        cd target/${{ matrix.target }}/release
+        tar -czf ${{ matrix.asset_name }}.tar.gz ${{ matrix.artifact_name }}
+        echo "ASSET_PATH=target/${{ matrix.target }}/release/${{ matrix.asset_name }}.tar.gz" >> $GITHUB_ENV
+        echo "ASSET_NAME=${{ matrix.asset_name }}.tar.gz" >> $GITHUB_ENV
+    
+    - name: Compress artifact (Windows)
+      if: matrix.compress == 'zip'
+      run: |
+        cd target/${{ matrix.target }}/release
+        7z a ${{ matrix.asset_name }}.zip ${{ matrix.artifact_name }}
+        echo "ASSET_PATH=target/${{ matrix.target }}/release/${{ matrix.asset_name }}.zip" >> $GITHUB_ENV
+        echo "ASSET_NAME=${{ matrix.asset_name }}.zip" >> $GITHUB_ENV
+      shell: pwsh
+    
+    - name: Generate checksums
+      run: |
+        if [ "${{ runner.os }}" = "Windows" ]; then
+          certutil -hashfile "$ASSET_PATH" SHA256 | findstr /v "hash" | findstr /v "CertUtil" > "$ASSET_PATH.sha256"
+        else
+          shasum -a 256 "$ASSET_PATH" > "$ASSET_PATH.sha256"
+        fi
+      shell: bash
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.asset_name }}
+        path: |
+          ${{ env.ASSET_PATH }}
+          ${{ env.ASSET_PATH }}.sha256
+        retention-days: 30
+
+  create-release:
+    name: Create Release
+    needs: build-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      discussions: write
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+    
+    - name: Set release variables
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "TAG_NAME=${{ inputs.tag }}" >> $GITHUB_ENV
+          echo "PRERELEASE=${{ inputs.prerelease }}" >> $GITHUB_ENV
+        else
+          echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          echo "PRERELEASE=false" >> $GITHUB_ENV
+        fi
+    
+    - name: Check if release exists
+      id: check_release
+      run: |
+        if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+          echo "Release $TAG_NAME already exists"
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+          echo "Release $TAG_NAME does not exist"
+        fi
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Generate changelog
+      if: steps.check_release.outputs.exists == 'false'
+      run: |
+        cat > release_notes.md << 'EOF'
+        ## Release ${{ env.TAG_NAME }}
+        
+        ### Downloads
+        
+        Choose the appropriate binary for your platform:
+        
+        - **Linux x86_64**: `rustirc-linux-amd64.tar.gz`
+        - **Linux ARM64**: `rustirc-linux-arm64.tar.gz` 
+        - **macOS x86_64**: `rustirc-macos-amd64.tar.gz`
+        - **macOS ARM64**: `rustirc-macos-arm64.tar.gz`
+        - **Windows x86_64**: `rustirc-windows-amd64.exe.zip`
+        
+        ### Verification
+        
+        All binaries include SHA256 checksums for verification.
+        
+        ### Installation
+        
+        1. Download the appropriate binary for your platform
+        2. Extract the archive (except Windows .exe.zip)
+        3. Make the binary executable: `chmod +x rustirc` (Unix/Linux/macOS)
+        4. Run the client: `./rustirc`
+        
+        For detailed installation and usage instructions, see the [README](https://github.com/doublegate/RustIRC#readme).
+        EOF
+    
+    - name: Create new release
+      if: steps.check_release.outputs.exists == 'false'
+      run: |
+        gh release create "$TAG_NAME" \
+          --title "RustIRC $TAG_NAME" \
+          --notes-file release_notes.md \
+          ${{ env.PRERELEASE == 'true' && '--prerelease' || '' }} \
+          --generate-notes
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Upload release assets
+      run: |
+        # Find and upload all artifacts
+        find artifacts -type f \( -name "*.tar.gz" -o -name "*.zip" -o -name "*.sha256" \) -exec gh release upload "$TAG_NAME" {} --clobber \;
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }
