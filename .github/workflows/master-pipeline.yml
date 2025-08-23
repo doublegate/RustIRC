@@ -146,6 +146,11 @@ jobs:
     name: Test Matrix
     needs: quick-checks
     if: needs.quick-checks.outputs.should-run-tests == 'true'
+    permissions:
+      contents: read
+      id-token: write  # Required for codecov OIDC
+      issues: write    # Required for security audit
+      security-events: write  # Required for security audit
     uses: ./.github/workflows/ci.yml
     with:
       rust_version: ${{ inputs.rust_version || 'stable' }}
@@ -157,6 +162,11 @@ jobs:
     name: Security Audit
     needs: quick-checks
     if: needs.quick-checks.outputs.should-run-security == 'true'
+    permissions:
+      contents: read
+      issues: write
+      security-events: write
+      actions: read
     uses: ./.github/workflows/security-audit.yml
     with:
       ignore_advisories: 'RUSTSEC-2024-0384,RUSTSEC-2024-0436'
