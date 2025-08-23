@@ -109,13 +109,15 @@ jobs:
     - name: Build
       run: cargo build --all-features --all-targets
     - name: Run tests with nextest
+      env:
+        CI: true
       run: |
-        cargo nextest run -p rustirc-core --all-features || cargo test -p rustirc-core --all-features
-        cargo nextest run -p rustirc-protocol --all-features || cargo test -p rustirc-protocol --all-features  
-        cargo nextest run -p rustirc-tui --all-features || cargo test -p rustirc-tui --all-features
-        cargo nextest run -p rustirc-plugins --all-features || cargo test -p rustirc-plugins --all-features
-        cargo nextest run -p rustirc-scripting --all-features || cargo test -p rustirc-scripting --all-features
-        cargo nextest run -p rustirc-gui --lib --all-features || cargo test -p rustirc-gui --lib --all-features
+        cargo nextest run -p rustirc-core --release --all-features || cargo test -p rustirc-core --release --all-features
+        cargo nextest run -p rustirc-protocol --release --all-features || cargo test -p rustirc-protocol --release --all-features  
+        cargo nextest run -p rustirc-tui --release --all-features || cargo test -p rustirc-tui --release --all-features
+        cargo nextest run -p rustirc-plugins --release --all-features || cargo test -p rustirc-plugins --release --all-features
+        cargo nextest run -p rustirc-scripting --release --all-features || cargo test -p rustirc-scripting --release --all-features
+        cargo nextest run -p rustirc-gui --lib --release --all-features || cargo test -p rustirc-gui --lib --release --all-features
     - name: Run doctests
       run: cargo test --doc --all-features || echo "No doctests found"
     - name: Set test result
