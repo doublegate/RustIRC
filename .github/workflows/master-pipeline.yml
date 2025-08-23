@@ -308,12 +308,26 @@ jobs:
         done
         ls -la release-assets/
     
-    - name: Create release
+    - name: Create or update release
       run: |
         tag_name="${{ needs.quick-checks.outputs.release-tag }}"
         
-        # Create release notes
-        cat > release_notes.md << EOF
+        # Check if release already exists
+        if gh release view "$tag_name" >/dev/null 2>&1; then
+          echo "Release $tag_name already exists. Uploading new artifacts only..."
+          
+          # Upload artifacts to existing release (will replace if they exist)
+          for file in release-assets/*; do
+            if [[ -f "$file" ]]; then
+              echo "Uploading $file to existing release..."
+              gh release upload "$tag_name" "$file" --clobber
+            fi
+          done
+        else
+          echo "Creating new release $tag_name..."
+          
+          # Create release notes for new release
+          cat > release_notes.md << EOF
         ## Release $tag_name
         
         ### What's Changed
@@ -338,13 +352,14 @@ jobs:
         
         For detailed usage instructions, see the [README](https://github.com/doublegate/RustIRC#readme).
         EOF
-        
-        # Create the release
-        gh release create "$tag_name" \
-          --title "RustIRC $tag_name" \
-          --notes-file release_notes.md \
-          --generate-notes \
-          release-assets/*
+          
+          # Create the new release
+          gh release create "$tag_name" \
+            --title "RustIRC $tag_name" \
+            --notes-file release_notes.md \
+            --generate-notes \
+            release-assets/*
+        fi
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
