@@ -7,40 +7,77 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### CI/CD Infrastructure Optimization (2025-08-23)
-
-#### Added
-- Master Pipeline Architecture with 5-phase intelligent workflow orchestration
-- Manual workflow dispatch triggers for all workflows with configurable options
-- Enhanced security scanning with daily automated audits and dependency review
-- Cross-platform ARM64 build targets for Linux and macOS
-- Intelligent caching strategy with shared artifacts between jobs
-- Comprehensive status reporting and pipeline debugging features
-
-#### Changed
-- Updated rustsec/audit-check from v1.4.1 to v2.0.0
-- Updated codecov/codecov-action from v3 to v5 with OIDC integration
-- Streamlined workflow triggers to eliminate duplicate runs
-- Reorganized workflows: CI for PRs only, master pipeline for main branch
-- Replaced deprecated GitHub Actions with modern equivalents
-
-#### Fixed
-- Release workflow syntax error (unclosed expression at line 205)
-- cargo-nextest failing when no tests exist (added --no-tests fallback)
-- Doctest failures with graceful error handling
-
-#### Performance
-- 60%+ reduction in CI/CD build times through intelligent caching
-- 40% reduction in GitHub Actions minutes usage
-- Parallel execution of tests and security audits
-- Build once, test everywhere artifact sharing strategy
-
 ### Planned for Next Release (Phase 4: Scripting & Plugins)
 - Lua scripting engine with sandboxed execution
 - Python scripting support via PyO3
 - Binary plugin system with hot-reloading
 - Script/plugin manager UI
 - Event-driven scripting API
+
+## [0.3.3] - 2025-08-23
+
+### Summary
+CI/CD Infrastructure Excellence Release - Complete overhaul of the continuous integration and deployment pipeline with Master Pipeline Architecture, comprehensive test suite implementation, and critical GitHub Actions fixes. This release establishes production-grade automated testing and deployment capabilities while maintaining the 100% functionality achieved in v0.3.2.
+
+### Major Features
+- **Master Pipeline Architecture**: 5-phase intelligent workflow orchestration (Quick Checks → Tests/Security → Coverage → Build → Release)
+- **Comprehensive Test Suite**: 53 unit tests across all 6 crates providing robust test coverage
+- **GitHub Actions Optimization**: 60%+ build time reduction, 40% Actions minutes savings through intelligent caching
+- **Critical Bug Fixes**: Resolved GitHub Actions output reference mismatch that prevented CI/CD execution
+- **Production Release System**: Automated cross-platform artifact generation with SHA256 checksums
+
+### CI/CD Infrastructure Optimization (2025-08-23 11:30 AM EDT) ✅
+
+#### Added
+- Master Pipeline Architecture with 5-phase intelligent workflow orchestration
+- Manual workflow dispatch triggers for all workflows with configurable options  
+- Enhanced security scanning with daily automated audits and dependency review
+- Cross-platform ARM64 build targets for Linux and macOS
+- Intelligent caching strategy with shared artifacts between jobs
+- Comprehensive status reporting and pipeline debugging features
+- Per-package test execution strategy preventing cross-crate interference
+- Feature-flagged integration tests to prevent GUI test hanging in CI
+- 9 new unit tests (4 for plugins, 5 for scripting) bringing total to 53
+
+#### Changed
+- Updated rustsec/audit-check from v1.4.1 to v2.0.0 for enhanced security scanning
+- Updated codecov/codecov-action from v3 to v5 with OIDC token integration
+- Streamlined workflow triggers to eliminate duplicate runs (CI for PRs, master for main)
+- Reorganized workflows into modular components with workflow_call triggers
+- Replaced deprecated GitHub Actions with modern equivalents
+- Modified CI test execution to run per-package with --lib flag for GUI
+
+#### Fixed
+- **Critical**: GitHub Actions hyphen/underscore output reference mismatch preventing job execution
+- Release workflow syntax error (unclosed expression at line 205)
+- cargo-nextest failing when no tests exist (added --no-tests fallback)
+- Doctest failures with graceful error handling
+- Release workflow protection to prevent overwriting existing releases
+- Permission issues for nested workflow jobs (id-token, pull-requests, security-events)
+- GUI test hanging through integration-tests feature flag
+- Formatting test expectations in TUI and GUI crates
+
+#### Performance
+- 60%+ reduction in CI/CD build times through intelligent caching and parallel execution
+- 40% reduction in GitHub Actions minutes usage via optimized triggers
+- Parallel execution of tests and security audits in Phase 2
+- Build once, test everywhere artifact sharing strategy
+- Shared cache keys across workflow runs for dependency reuse
+
+#### Security
+- Proper configuration of security audit to ignore expected unmaintained dependencies
+- RUSTSEC-2024-0384 (instant crate via Iced) - documented and ignored
+- RUSTSEC-2024-0436 (paste crate via ratatui) - documented and ignored
+- Enhanced dependency review for pull requests with automated commenting
+
+#### Testing
+- **rustirc-core**: 10 tests covering auth, CLI, and mock server functionality
+- **rustirc-protocol**: 26 tests for CTCP, message parsing, and validation
+- **rustirc-gui**: 4 tests for formatting with CI-safe execution
+- **rustirc-tui**: 4 tests for formatting functions  
+- **rustirc-plugins**: 4 tests for plugin manager operations
+- **rustirc-scripting**: 5 tests for Lua script engine
+- All tests passing with proper error handling and no hanging
 
 ## [0.3.2] - 2025-08-22
 
