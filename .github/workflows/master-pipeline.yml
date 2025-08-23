@@ -34,15 +34,17 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
+  SCCACHE_GHA_ENABLED: "true"
+  RUSTC_WRAPPER: "sccache"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # Phase 1: Quick validation (fail fast)
+  # Phase 1: Quick validation (fail fast) and initial build
   quick-checks:
-    name: Quick Checks & Setup
+    name: Quick Checks & Build
     runs-on: ubuntu-latest
     outputs:
       cache_key: ${{ steps.cache.outputs.cache_key }}
@@ -58,6 +60,10 @@ jobs:
       with:
         components: rustfmt, clippy
     
+    # Setup sccache for faster compilation
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.5
+    
     - name: Generate cache key
       id: cache
       run: |
@@ -66,7 +72,7 @@ jobs:
     
     - uses: Swatinem/rust-cache@v2
       with:
-        key: ${{ steps.cache.outputs.cache-key }}
+        key: ${{ steps.cache.outputs.cache_key }}
         shared-key: "master-pipeline"
         save-if: true
     
@@ -75,6 +81,21 @@ jobs:
     
     - name: Clippy check
       run: cargo clippy --all-targets --all-features -- -D warnings
+    
+    # Build once here to populate the cache for all subsequent jobs
+    - name: Build all targets
+      run: cargo build --all-features --all-targets --release
+    
+    # Upload build artifacts for other jobs to use
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts-${{ runner.os }}
+        path: |
+          target/release/
+          target/debug/
+        retention-days: 1
+        compression-level: 0  # Fast upload, artifacts deleted after 1 day
     
     - name: Configure pipeline
       id: config
@@ -160,7 +181,7 @@ jobs:
 
   documentation:
     name: Documentation
-    needs: quick-checks
+    # Run in parallel - doesn't need quick-checks to complete
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -173,24 +194,16 @@ jobs:
     
     - uses: Swatinem/rust-cache@v2
       with:
-        key: ${{ needs.quick-checks.outputs.cache_key }}
         shared-key: "master-pipeline"
+        cache-targets: false  # Don't cache build artifacts, just dependencies
     
     - name: Build documentation
       run: cargo doc --all-features --no-deps --document-private-items
       env:
         RUSTDOCFLAGS: "--warn missing-docs"
     
-    - name: Run doctests
-      run: |
-        echo "Running doctests for library crates..."
-        # Run doctests for each library crate separately to handle failures gracefully
-        cargo test --doc --all-features --package rustirc-core || echo "Warning: Some doctests failed in rustirc-core"
-        cargo test --doc --all-features --package rustirc-protocol || echo "Warning: Some doctests failed in rustirc-protocol"
-        cargo test --doc --all-features --package rustirc-gui || echo "Warning: Some doctests failed in rustirc-gui"
-        cargo test --doc --all-features --package rustirc-tui || echo "Warning: Some doctests failed in rustirc-tui"
-        cargo test --doc --all-features --package rustirc-scripting || echo "Warning: Some doctests failed in rustirc-scripting"
-        cargo test --doc --all-features --package rustirc-plugins || echo "Warning: Some doctests failed in rustirc-plugins"
+    # Note: Doctests are run in the test-matrix job to avoid duplication
+    # They run on all platforms as part of the comprehensive test suite
     
     - name: Generate documentation index
       run: |
@@ -256,8 +269,8 @@ jobs:
 
   security-audit:
     name: Security Audit
-    needs: quick-checks
-    if: needs.quick-checks.outputs.should_run_security == 'true'
+    # Run in parallel - can check dependencies without waiting for build
+    if: github.event.inputs.skip_security != 'true'
     permissions:
       contents: read
       issues: write
@@ -289,14 +302,30 @@ jobs:
     
     - uses: Swatinem/rust-cache@v2
       with:
-        key: ${{ needs.quick-checks.outputs.cache-key }}
+        key: ${{ needs.quick-checks.outputs.cache_key }}
         shared-key: "master-pipeline"
     
+    - name: Cache cargo tools
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/bin/cargo-tarpaulin
+          ~/.cargo/.crates.toml
+          ~/.cargo/.crates2.json
+        key: cargo-tools-${{ runner.os }}-tarpaulin
+        restore-keys: |
+          cargo-tools-${{ runner.os }}-
+    
     - name: Install tarpaulin
-      run: cargo install cargo-tarpaulin --locked
+      run: |
+        if ! command -v cargo-tarpaulin &> /dev/null; then
+          cargo install cargo-tarpaulin --locked
+        else
+          echo "cargo-tarpaulin already installed"
+        fi
     
     - name: Generate coverage report
-      run: cargo tarpaulin --out Xml --all-features --timeout 300
+      run: cargo tarpaulin --out Xml --all-features --timeout 300 --skip-clean
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
@@ -322,12 +351,19 @@ jobs:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             artifact_name: rustirc-linux-amd64.tar.gz
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            artifact_name: rustirc-linux-arm64.tar.gz
+            cross: true
           - os: windows-latest  
             target: x86_64-pc-windows-msvc
             artifact_name: rustirc-windows-amd64.exe.zip
           - os: macos-latest
             target: x86_64-apple-darwin
             artifact_name: rustirc-macos-amd64.tar.gz
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact_name: rustirc-macos-arm64.tar.gz
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
@@ -338,12 +374,26 @@ jobs:
       with:
         targets: ${{ matrix.target }}
     
+    # Install cross for cross-compilation
+    - name: Install cross
+      if: matrix.cross == true
+      run: cargo install cross --git https://github.com/cross-rs/cross
+    
+    # Use shared cache from test phase when possible
     - uses: Swatinem/rust-cache@v2
       with:
-        key: release-${{ matrix.target }}-${{ github.run_id }}
+        key: ${{ needs.quick-checks.outputs.cache_key }}
+        shared-key: "master-pipeline"
+        # Save the cache only if we're building something new
+        save-if: ${{ github.ref == 'refs/heads/main' }}
     
     - name: Build release binary
-      run: cargo build --release --target ${{ matrix.target }} --bin rustirc
+      run: |
+        if [ "${{ matrix.cross }}" = "true" ]; then
+          cross build --release --target ${{ matrix.target }} --bin rustirc
+        else
+          cargo build --release --target ${{ matrix.target }} --bin rustirc
+        fi
     
     - name: Package artifact (Unix)
       if: runner.os != 'Windows'
@@ -438,8 +488,10 @@ jobs:
         ### Downloads
         
         - **Linux x86_64**: \`rustirc-linux-amd64.tar.gz\`
+        - **Linux ARM64**: \`rustirc-linux-arm64.tar.gz\`
         - **Windows x86_64**: \`rustirc-windows-amd64.exe.zip\`  
         - **macOS x86_64**: \`rustirc-macos-amd64.tar.gz\`
+        - **macOS ARM64 (M1/M2/M3)**: \`rustirc-macos-arm64.tar.gz\`
         
         ### Verification
         

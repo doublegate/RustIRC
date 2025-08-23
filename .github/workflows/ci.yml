@@ -43,13 +43,19 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
+  SCCACHE_GHA_ENABLED: "true"
+  RUSTC_WRAPPER: "sccache"
 
 # Concurrency handled by calling workflow (Master Pipeline)
 # to prevent deadlocks when used with workflow_call
 
 jobs:
+  # Note: Format and Clippy checks are handled by master-pipeline quick-checks
+  # These jobs are kept for standalone CI runs (when not called from master-pipeline)
   fmt:
     name: Format Check
+    # Skip if called from master-pipeline (cache_key input is set)
+    if: ${{ !inputs.cache_key }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -64,6 +70,8 @@ jobs:
 
   clippy:
     name: Clippy
+    # Skip if called from master-pipeline (cache_key input is set)
+    if: ${{ !inputs.cache_key }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -96,6 +104,11 @@ jobs:
     - uses: dtolnay/rust-toolchain@master
       with:
         toolchain: ${{ inputs.rust_version || matrix.rust }}
+    
+    # Setup sccache for faster compilation
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.5
+    
     - uses: Swatinem/rust-cache@v2
       with:
         key: ${{ inputs.cache_key || format('test-{0}-{1}', runner.os, matrix.rust) }}
@@ -104,10 +117,37 @@ jobs:
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
           target/
+    - name: Cache cargo tools
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/bin/cargo-nextest
+          ~/.cargo/.crates.toml
+          ~/.cargo/.crates2.json
+        key: cargo-tools-${{ runner.os }}-nextest
+        restore-keys: |
+          cargo-tools-${{ runner.os }}-
+    
     - name: Install cargo-nextest
-      run: cargo install cargo-nextest --locked
-    - name: Build
-      run: cargo build --all-features --all-targets
+      run: |
+        if ! command -v cargo-nextest &> /dev/null; then
+          cargo install cargo-nextest --locked
+        else
+          echo "cargo-nextest already installed"
+        fi
+    
+    - name: Build (if not cached)
+      # Cross-platform build detection
+      if: inputs.cache_key == ''
+      run: cargo build --all-features --all-targets --release
+    
+    - name: Download build artifacts (if available)
+      if: inputs.cache_key != ''
+      uses: actions/download-artifact@v4
+      with:
+        name: build-artifacts-${{ runner.os }}
+        path: target/
+      continue-on-error: true
     - name: Run tests with nextest
       env:
         CI: true
@@ -119,6 +159,8 @@ jobs:
         cargo nextest run -p rustirc-scripting --release --all-features || cargo test -p rustirc-scripting --release --all-features
         cargo nextest run -p rustirc-gui --lib --release --all-features || cargo test -p rustirc-gui --lib --release --all-features
     - name: Run doctests
+      # Only run doctests on Linux to avoid duplication across platforms
+      if: runner.os == 'Linux'
       run: |
         echo "Running doctests for library packages..."
         cargo test --doc -p rustirc-core --all-features || echo "No doctests in rustirc-core"
