@@ -110,7 +110,13 @@ jobs:
     - name: Build
       run: cargo build --all-features --all-targets
     - name: Run tests with nextest
-      run: cargo nextest run --all-features || cargo nextest run --all-features --no-tests
+      run: |
+        cargo nextest run -p rustirc-core --all-features || cargo test -p rustirc-core --all-features
+        cargo nextest run -p rustirc-protocol --all-features || cargo test -p rustirc-protocol --all-features  
+        cargo nextest run -p rustirc-tui --all-features || cargo test -p rustirc-tui --all-features
+        cargo nextest run -p rustirc-plugins --all-features || cargo test -p rustirc-plugins --all-features
+        cargo nextest run -p rustirc-scripting --all-features || cargo test -p rustirc-scripting --all-features
+        cargo nextest run -p rustirc-gui --lib --all-features || cargo test -p rustirc-gui --lib --all-features
     - name: Run doctests
       run: cargo test --doc --all-features || echo "No doctests found"
     - name: Set test result

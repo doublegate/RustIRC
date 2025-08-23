@@ -19,3 +19,7 @@ open = "5.0"
 
 rustirc-core = { path = "../rustirc-core" }
 rustirc-protocol = { path = "../rustirc-protocol" }
+
+[features]
+default = []
+integration-tests = []

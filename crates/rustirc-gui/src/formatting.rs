@@ -416,6 +416,6 @@ mod tests {
     #[test]
     fn test_strip_formatting() {
         let text = "Hello \x02bold\x0304red\x03 world";
-        assert_eq!(strip_formatting(text), "Hello bold world");
+        assert_eq!(strip_formatting(text), "Hello boldred world");
     }
 }
