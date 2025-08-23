@@ -15,6 +15,21 @@ on:
         required: false
         default: false
         type: boolean
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Release tag (e.g., v1.0.0)'
+        required: false
+        type: string
+      prerelease:
+        description: 'Mark as prerelease'
+        required: false
+        default: false
+        type: boolean
+    outputs:
+      release_url:
+        description: 'URL of the created release'
+        value: ${{ jobs.create-release.outputs.release_url }}
 
 env:
   CARGO_TERM_COLOR: always
@@ -120,6 +135,8 @@ jobs:
     name: Create Release
     needs: build-release
     runs-on: ubuntu-latest
+    outputs:
+      release_url: ${{ steps.create_release.outputs.html_url }}
     permissions:
       contents: write
       discussions: write
@@ -187,13 +204,17 @@ jobs:
         EOF
     
     - name: Create new release
+      id: create_release
       if: steps.check_release.outputs.exists == 'false'
       run: |
-        gh release create "$TAG_NAME" \
+        release_output=$(gh release create "$TAG_NAME" \
           --title "RustIRC $TAG_NAME" \
           --notes-file release_notes.md \
           ${{ env.PRERELEASE == 'true' && '--prerelease' || '' }} \
-          --generate-notes
+          --generate-notes \
+          --json html_url \
+          --jq .html_url)
+        echo "html_url=$release_output" >> $GITHUB_OUTPUT
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
@@ -202,4 +223,4 @@ jobs:
         # Find and upload all artifacts
         find artifacts -type f \( -name "*.tar.gz" -o -name "*.zip" -o -name "*.sha256" \) -exec gh release upload "$TAG_NAME" {} --clobber \;
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

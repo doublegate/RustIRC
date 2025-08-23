@@ -1,0 +1,376 @@
+name: Master Pipeline
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*.*.*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip running tests'
+        type: boolean
+        default: false
+      skip_security:
+        description: 'Skip security audit'
+        type: boolean  
+        default: false
+      skip_coverage:
+        description: 'Skip code coverage'
+        type: boolean
+        default: false
+      release_type:
+        description: 'Release type (only for manual runs)'
+        type: choice
+        options: [none, patch, minor, major]
+        default: none
+      rust_version:
+        description: 'Rust version to test'
+        type: choice
+        options: [stable, beta, nightly]
+        default: stable
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # Phase 1: Quick validation (fail fast)
+  quick-checks:
+    name: Quick Checks & Setup
+    runs-on: ubuntu-latest
+    outputs:
+      cache-key: ${{ steps.cache.outputs.cache-key }}
+      should-run-tests: ${{ steps.config.outputs.should-run-tests }}
+      should-run-security: ${{ steps.config.outputs.should-run-security }}
+      should-run-coverage: ${{ steps.config.outputs.should-run-coverage }}
+      should-run-release: ${{ steps.config.outputs.should-run-release }}
+      release-tag: ${{ steps.config.outputs.release-tag }}
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+    
+    - name: Generate cache key
+      id: cache
+      run: |
+        cache_key="shared-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}-${{ github.run_id }}"
+        echo "cache-key=$cache_key" >> $GITHUB_OUTPUT
+    
+    - uses: Swatinem/rust-cache@v2
+      with:
+        key: ${{ steps.cache.outputs.cache-key }}
+        shared-key: "master-pipeline"
+        save-if: true
+    
+    - name: Format check
+      run: cargo fmt --all -- --check
+    
+    - name: Clippy check
+      run: cargo clippy --all-targets --all-features -- -D warnings
+    
+    - name: Configure pipeline
+      id: config
+      run: |
+        # Determine what should run based on trigger and inputs
+        should_run_tests="true"
+        should_run_security="true"
+        should_run_coverage="false"
+        should_run_release="false"
+        release_tag=""
+        
+        # Manual workflow dispatch overrides
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          should_run_tests="${{ !inputs.skip_tests }}"
+          should_run_security="${{ !inputs.skip_security }}"
+          should_run_coverage="${{ !inputs.skip_coverage }}"
+          
+          if [ "${{ inputs.release_type }}" != "none" ]; then
+            should_run_release="true"
+            # Generate release tag based on type
+            latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+            case "${{ inputs.release_type }}" in
+              patch)
+                new_tag=$(echo $latest_tag | awk -F. '{$NF = $NF + 1; print}' OFS=.)
+                ;;
+              minor)  
+                new_tag=$(echo $latest_tag | awk -F. '{$(NF-1) = $(NF-1) + 1; $NF = 0; print}' OFS=.)
+                ;;
+              major)
+                new_tag=$(echo $latest_tag | awk -F. '{$1 = substr($1, 2) + 1; $2 = 0; $3 = 0; print "v" $0}' OFS=.)
+                ;;
+            esac
+            release_tag="$new_tag"
+          fi
+        fi
+        
+        # Tag push triggers release
+        if [[ "${{ github.ref }}" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          should_run_release="true"
+          should_run_coverage="true"  # Full coverage on releases
+          release_tag="${{ github.ref_name }}"
+        fi
+        
+        # PR: skip coverage by default to speed up
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          should_run_coverage="false"
+        fi
+        
+        # Main branch: run coverage
+        if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          should_run_coverage="true"
+        fi
+        
+        echo "should-run-tests=$should_run_tests" >> $GITHUB_OUTPUT
+        echo "should-run-security=$should_run_security" >> $GITHUB_OUTPUT  
+        echo "should-run-coverage=$should_run_coverage" >> $GITHUB_OUTPUT
+        echo "should-run-release=$should_run_release" >> $GITHUB_OUTPUT
+        echo "release-tag=$release_tag" >> $GITHUB_OUTPUT
+        
+        echo "Pipeline Configuration:"
+        echo "  Tests: $should_run_tests"
+        echo "  Security: $should_run_security"
+        echo "  Coverage: $should_run_coverage" 
+        echo "  Release: $should_run_release"
+        echo "  Release Tag: $release_tag"
+
+  # Phase 2: Parallel execution of tests and security
+  test-matrix:
+    name: Test Matrix
+    needs: quick-checks
+    if: needs.quick-checks.outputs.should-run-tests == 'true'
+    uses: ./.github/workflows/ci.yml
+    with:
+      rust_version: ${{ inputs.rust_version || 'stable' }}
+      skip_tests: false
+      cache_key: ${{ needs.quick-checks.outputs.cache-key }}
+    secrets: inherit
+
+  security-audit:
+    name: Security Audit
+    needs: quick-checks
+    if: needs.quick-checks.outputs.should-run-security == 'true'
+    uses: ./.github/workflows/security-audit.yml
+    with:
+      ignore_advisories: 'RUSTSEC-2024-0384,RUSTSEC-2024-0436'
+      create_issues: ${{ github.event_name != 'pull_request' }}
+    secrets: inherit
+
+  # Phase 3: Code coverage (only after tests pass)
+  coverage:
+    name: Code Coverage
+    needs: [quick-checks, test-matrix]
+    if: |
+      always() && 
+      needs.quick-checks.outputs.should-run-coverage == 'true' &&
+      needs.test-matrix.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: dtolnay/rust-toolchain@stable
+    
+    - uses: Swatinem/rust-cache@v2
+      with:
+        key: ${{ needs.quick-checks.outputs.cache-key }}
+        shared-key: "master-pipeline"
+    
+    - name: Install tarpaulin
+      run: cargo install cargo-tarpaulin --locked
+    
+    - name: Generate coverage report
+      run: cargo tarpaulin --out Xml --all-features --timeout 300
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        files: ./cobertura.xml
+        use_oidc: true
+        fail_ci_if_error: false
+        verbose: true
+
+  # Phase 4: Build artifacts for release (parallel with coverage)
+  build-artifacts:
+    name: Build Release Artifacts
+    needs: [quick-checks, test-matrix, security-audit]
+    if: |
+      always() &&
+      needs.quick-checks.outputs.should-run-release == 'true' &&
+      needs.test-matrix.result == 'success' &&
+      (needs.security-audit.result == 'success' || needs.security-audit.result == 'skipped')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: rustirc-linux-amd64.tar.gz
+          - os: windows-latest  
+            target: x86_64-pc-windows-msvc
+            artifact_name: rustirc-windows-amd64.exe.zip
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_name: rustirc-macos-amd64.tar.gz
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: ${{ matrix.target }}
+    
+    - uses: Swatinem/rust-cache@v2
+      with:
+        key: release-${{ matrix.target }}-${{ github.run_id }}
+    
+    - name: Build release binary
+      run: cargo build --release --target ${{ matrix.target }} --bin rustirc
+    
+    - name: Package artifact (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        cd target/${{ matrix.target }}/release
+        tar -czf ../../../${{ matrix.artifact_name }} rustirc
+    
+    - name: Package artifact (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        cd target/${{ matrix.target }}/release
+        7z a ../../../${{ matrix.artifact_name }} rustirc.exe
+      shell: pwsh
+    
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.artifact_name }}
+        path: ${{ matrix.artifact_name }}
+        retention-days: 30
+
+  # Phase 5: Release (only after all checks pass)
+  release:
+    name: Create Release
+    needs: [quick-checks, test-matrix, security-audit, build-artifacts]
+    if: |
+      always() &&
+      needs.quick-checks.outputs.should-run-release == 'true' &&
+      needs.test-matrix.result == 'success' &&
+      (needs.security-audit.result == 'success' || needs.security-audit.result == 'skipped') &&
+      needs.build-artifacts.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      discussions: write
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+    
+    - name: Prepare release assets
+      run: |
+        mkdir -p release-assets
+        find artifacts -name "*.tar.gz" -o -name "*.zip" | while read file; do
+          cp "$file" release-assets/
+          # Generate checksums
+          cd release-assets
+          if command -v shasum >/dev/null; then
+            shasum -a 256 "$(basename "$file")" > "$(basename "$file").sha256"
+          else
+            sha256sum "$(basename "$file")" > "$(basename "$file").sha256"
+          fi
+          cd ..
+        done
+        ls -la release-assets/
+    
+    - name: Create release
+      run: |
+        tag_name="${{ needs.quick-checks.outputs.release-tag }}"
+        
+        # Create release notes
+        cat > release_notes.md << EOF
+        ## Release $tag_name
+        
+        ### What's Changed
+        
+        This release includes the latest improvements and bug fixes.
+        
+        ### Downloads
+        
+        - **Linux x86_64**: \`rustirc-linux-amd64.tar.gz\`
+        - **Windows x86_64**: \`rustirc-windows-amd64.exe.zip\`  
+        - **macOS x86_64**: \`rustirc-macos-amd64.tar.gz\`
+        
+        ### Verification
+        
+        All binaries include SHA256 checksums for verification.
+        
+        ### Installation
+        
+        1. Download the appropriate binary for your platform
+        2. Extract the archive
+        3. Run the client: \`./rustirc\` (Unix) or \`rustirc.exe\` (Windows)
+        
+        For detailed usage instructions, see the [README](https://github.com/doublegate/RustIRC#readme).
+        EOF
+        
+        # Create the release
+        gh release create "$tag_name" \
+          --title "RustIRC $tag_name" \
+          --notes-file release_notes.md \
+          --generate-notes \
+          release-assets/*
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Status reporting job
+  pipeline-status:
+    name: Pipeline Status
+    if: always()
+    needs: [quick-checks, test-matrix, security-audit, coverage, build-artifacts, release]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Report pipeline status
+      run: |
+        echo "## Master Pipeline Results"
+        echo ""
+        echo "| Phase | Status | Duration |"
+        echo "|-------|--------|----------|" 
+        echo "| Quick Checks | ${{ needs.quick-checks.result }} | - |"
+        echo "| Tests | ${{ needs.test-matrix.result || 'skipped' }} | - |"
+        echo "| Security | ${{ needs.security-audit.result || 'skipped' }} | - |"
+        echo "| Coverage | ${{ needs.coverage.result || 'skipped' }} | - |"
+        echo "| Build Artifacts | ${{ needs.build-artifacts.result || 'skipped' }} | - |"
+        echo "| Release | ${{ needs.release.result || 'skipped' }} | - |"
+        echo ""
+        
+        # Calculate overall status
+        overall_status="success"
+        if [[ "${{ needs.quick-checks.result }}" == "failure" ]]; then
+          overall_status="failure"
+        elif [[ "${{ needs.test-matrix.result }}" == "failure" ]]; then
+          overall_status="failure"
+        elif [[ "${{ needs.security-audit.result }}" == "failure" ]]; then
+          overall_status="failure"
+        fi
+        
+        echo "Overall pipeline status: $overall_status"
+        
+        if [ "$overall_status" = "failure" ]; then
+          exit 1
+        fi

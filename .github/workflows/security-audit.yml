@@ -16,6 +16,22 @@ on:
         required: false
         default: true
         type: boolean
+  workflow_call:
+    inputs:
+      ignore_advisories:
+        description: 'Comma-separated list of advisory IDs to ignore'
+        required: false
+        default: 'RUSTSEC-2024-0384,RUSTSEC-2024-0436'
+        type: string
+      create_issues:
+        description: 'Create GitHub issues for new vulnerabilities'
+        required: false
+        default: false
+        type: boolean
+    outputs:
+      vulnerabilities_found:
+        description: 'Number of vulnerabilities found'
+        value: ${{ jobs.security-audit.outputs.vuln_count }}
 
 env:
   CARGO_TERM_COLOR: always
@@ -28,6 +44,8 @@ jobs:
   security-audit:
     name: Security Audit
     runs-on: ubuntu-latest
+    outputs:
+      vuln_count: ${{ steps.count_vulns.outputs.count }}
     permissions:
       contents: read
       issues: write
@@ -106,6 +124,16 @@ jobs:
         
         chmod +x audit_summary.sh
         ./audit_summary.sh
+
+    - name: Count vulnerabilities
+      id: count_vulns
+      run: |
+        if [ -f "audit-results.json" ]; then
+          total=$(jq '[.vulnerabilities.list[]] | length' audit-results.json 2>/dev/null || echo "0")
+        else
+          total=0
+        fi
+        echo "count=$total" >> $GITHUB_OUTPUT
 
     - name: Upload audit results as artifact
       uses: actions/upload-artifact@v4
