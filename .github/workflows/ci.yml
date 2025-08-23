@@ -125,46 +125,9 @@ jobs:
       if: always()
       run: echo "result=success" >> $GITHUB_OUTPUT
     
-  coverage:
-    name: Code Coverage
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write  # Required for OIDC
-    steps:
-    - uses: actions/checkout@v4
-    - uses: dtolnay/rust-toolchain@stable
-    - uses: Swatinem/rust-cache@v2
-      with:
-        key: coverage-${{ runner.os }}
-    - name: Install tarpaulin
-      run: cargo install cargo-tarpaulin --locked
-    - name: Generate coverage
-      run: cargo tarpaulin --out Xml --all-features --timeout 300
-    - name: Upload coverage
-      uses: codecov/codecov-action@v5
-      with:
-        files: ./cobertura.xml
-        use_oidc: true
-        fail_ci_if_error: true
-        verbose: true
-
-  security-audit:
-    name: Security Audit
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      issues: write
-      security-events: write
-    steps:
-    - uses: actions/checkout@v4
-    - uses: rustsec/audit-check@v2.0.0
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        # Allow unmaintained dependencies that are indirect through GUI frameworks
-        # RUSTSEC-2024-0384: instant crate (via iced framework)
-        # RUSTSEC-2024-0436: paste crate (via ratatui/iced frameworks)
-        ignore: RUSTSEC-2024-0384,RUSTSEC-2024-0436
+  # Note: Coverage and Security Audit are handled by master-pipeline.yml
+  # This workflow focuses only on testing across different platforms
+  # to avoid redundant execution when called from master-pipeline
 
   msrv:
     name: Minimum Supported Rust Version
