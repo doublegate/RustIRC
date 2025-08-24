@@ -70,18 +70,19 @@ jobs:
     
     - name: Configure sccache with enhanced resilience
       id: configure_sccache
+      shell: bash
       run: |
         # Check if sccache is available and working with comprehensive testing
         sccache_available="false"
         rustc_wrapper=""
         
-        if command -v sccache &> /dev/null; then
+        if command -v sccache > /dev/null 2>&1; then
           echo "sccache binary found, testing functionality..."
           # Test sccache with timeout and comprehensive checks
-          if timeout 30s sccache --version &> /dev/null 2>&1; then
+          if timeout 30s sccache --version > /dev/null 2>&1; then
             echo "sccache version check passed"
             # Test sccache stats to verify service connectivity
-            if timeout 10s sccache --show-stats &> /dev/null 2>&1; then
+            if timeout 10s sccache --show-stats > /dev/null 2>&1; then
               sccache_available="true"
               rustc_wrapper="sccache"
               echo "sccache verified and will be used for compilation"
@@ -115,11 +116,13 @@ jobs:
         save-if: true
     
     - name: Format check
+      shell: bash
       run: cargo fmt --all -- --check
       env:
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
     
     - name: Clippy check with enhanced resilience
+      shell: bash
       run: |
         # Enhanced clippy execution with timeout and robust error handling
         if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
@@ -141,6 +144,7 @@ jobs:
     
     # Build once here to populate the cache for all subsequent jobs
     - name: Build all targets with enhanced resilience
+      shell: bash
       run: |
         # Enhanced build execution with timeout and robust error handling
         if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then

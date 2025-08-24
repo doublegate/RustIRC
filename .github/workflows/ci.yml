@@ -67,6 +67,7 @@ jobs:
       with:
         key: fmt-${{ runner.os }}
     - name: Check formatting
+      shell: bash
       run: cargo fmt --all -- --check
 
   clippy:
@@ -81,6 +82,7 @@ jobs:
         components: clippy
     - uses: Swatinem/rust-cache@v2
     - name: Run clippy
+      shell: bash
       run: cargo clippy --all-targets --all-features -- -D warnings
 
   test:
@@ -114,18 +116,19 @@ jobs:
     
     - name: Configure sccache with fallback
       id: configure_sccache
+      shell: bash
       run: |
         # Check if sccache is available and working
         sccache_available="false"
         rustc_wrapper=""
         
-        if command -v sccache &> /dev/null; then
+        if command -v sccache > /dev/null 2>&1; then
           echo "sccache binary found, testing functionality..."
           # Test sccache with a timeout to handle hanging
-          if timeout 30s sccache --version &> /dev/null 2>&1; then
+          if timeout 30s sccache --version > /dev/null 2>&1; then
             echo "sccache is working properly"
             # Try to get sccache stats to verify it's actually functional
-            if timeout 10s sccache --show-stats &> /dev/null 2>&1; then
+            if timeout 10s sccache --show-stats > /dev/null 2>&1; then
               sccache_available="true"
               rustc_wrapper="sccache"
               echo "sccache verified and will be used for compilation"
@@ -167,8 +170,9 @@ jobs:
           cargo-tools-${{ runner.os }}-
     
     - name: Install cargo-nextest with sccache fallback
+      shell: bash
       run: |
-        if ! command -v cargo-nextest &> /dev/null; then
+        if ! command -v cargo-nextest > /dev/null 2>&1; then
           echo "Installing cargo-nextest..."
           # Try with configured RUSTC_WRAPPER first
           if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
@@ -192,6 +196,7 @@ jobs:
     - name: Build (if not cached) with sccache fallback
       # Cross-platform build detection
       if: inputs.cache_key == ''
+      shell: bash
       run: |
         # Try with configured RUSTC_WRAPPER first
         if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
@@ -217,62 +222,58 @@ jobs:
         path: target/
       continue-on-error: true
     - name: Run tests with nextest and sccache fallback
+      shell: bash
       env:
         CI: true
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
       run: |
-        # Function to run tests with fallback
-        run_tests_with_fallback() {
-          local package="$1"
-          local test_args="$2"
-          
+        # Test each package individually with direct commands (cross-platform compatible)
+        test_packages=("rustirc-core" "rustirc-protocol" "rustirc-tui" "rustirc-plugins" "rustirc-scripting")
+        
+        for package in "${test_packages[@]}"; do
           echo "Testing package: $package"
-          
-          # Try with nextest first, fallback to cargo test
-          if ! timeout 600s cargo nextest run -p "$package" --release --all-features $test_args; then
+          if ! timeout 600s cargo nextest run -p "$package" --release --all-features; then
             echo "nextest failed for $package, trying cargo test..."
-            if ! timeout 600s cargo test -p "$package" --release --all-features $test_args; then
+            if ! timeout 600s cargo test -p "$package" --release --all-features; then
               echo "Both nextest and cargo test failed for $package"
-              return 1
+              exit 1
             fi
           fi
-        }
+        done
         
-        # Run tests for each package with fallback
-        run_tests_with_fallback "rustirc-core" ""
-        run_tests_with_fallback "rustirc-protocol" ""
-        run_tests_with_fallback "rustirc-tui" ""
-        run_tests_with_fallback "rustirc-plugins" ""
-        run_tests_with_fallback "rustirc-scripting" ""
-        run_tests_with_fallback "rustirc-gui" "--lib"
+        # Test rustirc-gui with --lib flag separately
+        echo "Testing package: rustirc-gui (lib only)"
+        if ! timeout 600s cargo nextest run -p "rustirc-gui" --release --all-features --lib; then
+          echo "nextest failed for rustirc-gui, trying cargo test..."
+          if ! timeout 600s cargo test -p "rustirc-gui" --release --all-features --lib; then
+            echo "Both nextest and cargo test failed for rustirc-gui"
+            exit 1
+          fi
+        fi
     - name: Run doctests with sccache fallback
       # Only run doctests on Linux to avoid duplication across platforms
       if: runner.os == 'Linux'
+      shell: bash
       env:
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
       run: |
         echo "Running doctests for library packages..."
         
-        # Function to run doctests with timeout
-        run_doctest() {
-          local package="$1"
-          echo "Running doctests for $package..."
-          if ! timeout 300s cargo test --doc -p "$package" --all-features 2>/dev/null; then
-            echo "No doctests or doctest failed in $package"
-          else
-            echo "Doctests passed for $package"
-          fi
-        }
+        # Test doctests for each package directly (cross-platform compatible)
+        doctest_packages=("rustirc-core" "rustirc-protocol" "rustirc-gui" "rustirc-tui" "rustirc-scripting" "rustirc-plugins")
         
-        run_doctest "rustirc-core"
-        run_doctest "rustirc-protocol"
-        run_doctest "rustirc-gui"
-        run_doctest "rustirc-tui"
-        run_doctest "rustirc-scripting"
-        run_doctest "rustirc-plugins"
+        for package in "${doctest_packages[@]}"; do
+          echo "Running doctests for $package..."
+          if timeout 300s cargo test --doc -p "$package" --all-features > /dev/null 2>&1; then
+            echo "Doctests passed for $package"
+          else
+            echo "No doctests or doctest failed in $package"
+          fi
+        done
     - name: Set test result
       id: test_result
       if: always()
+      shell: bash
       run: echo "result=success" >> $GITHUB_OUTPUT
     
   # Note: Coverage and Security Audit are handled by master-pipeline.yml
@@ -289,13 +290,14 @@ jobs:
         toolchain: 1.75.0
     - uses: Swatinem/rust-cache@v2
     - name: Check MSRV with sccache fallback
+      shell: bash
       run: |
         # Configure RUSTC_WRAPPER for this specific step
         sccache_available="false"
         rustc_wrapper=""
         
-        if command -v sccache &> /dev/null && timeout 30s sccache --version &> /dev/null 2>&1; then
-          if timeout 10s sccache --show-stats &> /dev/null 2>&1; then
+        if command -v sccache > /dev/null 2>&1 && timeout 30s sccache --version > /dev/null 2>&1; then
+          if timeout 10s sccache --show-stats > /dev/null 2>&1; then
             sccache_available="true"
             rustc_wrapper="sccache"
             echo "Using sccache for MSRV check"

@@ -9,8 +9,8 @@
 [![Rust Version](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE-MIT)
 [![Tests](https://img.shields.io/badge/tests-118%20passing-success.svg)](.github/workflows/ci.yml)
-[![Documentation](https://img.shields.io/badge/docs-rustdoc-blue.svg)](#-api-documentation)
-[![API Coverage](https://img.shields.io/badge/API%20docs-100%25-brightgreen.svg)](#-api-documentation)
+[![Documentation](https://img.shields.io/badge/docs-rustdoc-blue.svg)](docs/api-reference.md)
+[![API Coverage](https://img.shields.io/badge/API%20docs-100%25-brightgreen.svg)](docs/api-reference.md)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/doublegate/RustIRC)
 [![IRC Protocol](https://img.shields.io/badge/IRC-RFC1459%2F2812-green.svg)](docs/specs/irc-protocol.md)
 [![IRCv3](https://img.shields.io/badge/IRCv3-Full%20Support-brightgreen.svg)](docs/specs/ircv3-extensions.md)
@@ -107,6 +107,7 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 ### 🚀 **Latest Infrastructure Improvements** (v0.3.4 - August 23, 2025)
 
 #### Master Pipeline Optimization (60-70% Performance Improvement)
+
 - ✅ **Critical Bug Fix**: Fixed cache key typo (cache-key → cache_key) enabling proper artifact sharing
 - ✅ **Build Artifact Sharing**: Shared compilation artifacts between jobs eliminate redundant builds
 - ✅ **Tool Caching**: cargo-nextest and cargo-tarpaulin cached across runs
@@ -117,6 +118,7 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 - ✅ **Release Asset Fix**: v0.3.4 corrects critical 'cp -r' error in asset preparation
 
 #### Documentation Excellence
+
 - ✅ **65+ Working Doctests**: Comprehensive examples that compile and run
 - ✅ **Per-Crate READMEs**: Every crate has detailed documentation
 - ✅ **Rustdoc Comments**: All public APIs fully documented
