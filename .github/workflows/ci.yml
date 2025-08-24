@@ -114,8 +114,9 @@ jobs:
       continue-on-error: true
       id: sccache
     
-    - name: Configure sccache with fallback
-      id: configure_sccache
+    - name: Configure sccache with fallback (Unix)
+      if: runner.os != 'Windows'
+      id: configure_sccache_unix
       shell: bash
       run: |
         # Check if sccache is available and working
@@ -150,6 +151,60 @@ jobs:
         
         echo "Final configuration: RUSTC_WRAPPER='$rustc_wrapper', available=$sccache_available"
     
+    - name: Configure sccache with fallback (Windows)
+      if: runner.os == 'Windows'
+      id: configure_sccache_windows
+      shell: pwsh
+      run: |
+        # Check if sccache is available and working
+        $sccache_available = "false"
+        $rustc_wrapper = ""
+        
+        if (Get-Command sccache -ErrorAction SilentlyContinue) {
+          Write-Output "sccache binary found, testing functionality..."
+          try {
+            # Test sccache version
+            $null = sccache --version 2>$null
+            Write-Output "sccache is working properly"
+            # Try to get sccache stats to verify it's actually functional
+            try {
+              $null = sccache --show-stats 2>$null
+              $sccache_available = "true"
+              $rustc_wrapper = "sccache"
+              Write-Output "sccache verified and will be used for compilation"
+            } catch {
+              Write-Output "sccache stats failed, may have connection issues - using fallback"
+            }
+          } catch {
+            Write-Output "sccache binary found but not working - using direct compilation"
+          }
+        } else {
+          Write-Output "sccache not found - using direct compilation"
+        }
+        
+        echo "sccache_available=$sccache_available" >> $env:GITHUB_OUTPUT
+        echo "rustc_wrapper=$rustc_wrapper" >> $env:GITHUB_OUTPUT
+        
+        # Export for immediate use in subsequent steps
+        echo "RUSTC_WRAPPER=$rustc_wrapper" >> $env:GITHUB_ENV
+        
+        Write-Output "Final configuration: RUSTC_WRAPPER='$rustc_wrapper', available=$sccache_available"
+    
+    - name: Set sccache outputs for compatibility
+      id: configure_sccache
+      shell: bash
+      run: |
+        # Unify outputs from platform-specific steps
+        if [ "${{ runner.os }}" = "Windows" ]; then
+          sccache_available="${{ steps.configure_sccache_windows.outputs.sccache_available }}"
+          rustc_wrapper="${{ steps.configure_sccache_windows.outputs.rustc_wrapper }}"
+        else
+          sccache_available="${{ steps.configure_sccache_unix.outputs.sccache_available }}"
+          rustc_wrapper="${{ steps.configure_sccache_unix.outputs.rustc_wrapper }}"
+        fi
+        echo "sccache_available=$sccache_available" >> $GITHUB_OUTPUT
+        echo "rustc_wrapper=$rustc_wrapper" >> $GITHUB_OUTPUT
+    
     - uses: Swatinem/rust-cache@v2
       with:
         key: ${{ inputs.cache_key || format('test-{0}-{1}', runner.os, matrix.rust) }}
@@ -169,7 +224,8 @@ jobs:
         restore-keys: |
           cargo-tools-${{ runner.os }}-
     
-    - name: Install cargo-nextest with sccache fallback
+    - name: Install cargo-nextest with sccache fallback (Unix)
+      if: runner.os != 'Windows'
       shell: bash
       run: |
         if ! command -v cargo-nextest > /dev/null 2>&1; then
@@ -193,12 +249,58 @@ jobs:
           echo "cargo-nextest already installed"
         fi
     
+    - name: Install cargo-nextest with sccache fallback (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        if (!(Get-Command cargo-nextest -ErrorAction SilentlyContinue)) {
+          Write-Output "Installing cargo-nextest..."
+          # Try with configured RUSTC_WRAPPER first
+          if ("${{ steps.configure_sccache.outputs.sccache_available }}" -eq "true") {
+            Write-Output "Attempting installation with sccache..."
+            $env:RUSTC_WRAPPER = "${{ steps.configure_sccache.outputs.rustc_wrapper }}"
+            try {
+              cargo install cargo-nextest --locked
+            } catch {
+              Write-Output "Installation failed with sccache, retrying without sccache..."
+              Remove-Item Env:RUSTC_WRAPPER -ErrorAction SilentlyContinue
+              $env:RUSTC_WRAPPER = ""
+              cargo install cargo-nextest --locked
+            }
+          } else {
+            Write-Output "Installing without sccache..."
+            $env:RUSTC_WRAPPER = ""
+            cargo install cargo-nextest --locked
+          }
+        } else {
+          Write-Output "cargo-nextest already installed"
+        }
+    
     - name: Build (if not cached) with sccache fallback
       # Cross-platform build detection
       if: inputs.cache_key == ''
-      shell: bash
+      shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
       run: |
-        # Try with configured RUSTC_WRAPPER first
+        ${{ runner.os == 'Windows' && '
+        # PowerShell version for Windows
+        if ("${{ steps.configure_sccache.outputs.sccache_available }}" -eq "true") {
+          Write-Output "Building with sccache..."
+          $env:RUSTC_WRAPPER = "${{ steps.configure_sccache.outputs.rustc_wrapper }}"
+          try {
+            cargo build --all-features --all-targets --release
+          } catch {
+            Write-Output "Build failed with sccache, retrying without sccache..."
+            Remove-Item Env:RUSTC_WRAPPER -ErrorAction SilentlyContinue
+            $env:RUSTC_WRAPPER = ""
+            cargo build --all-features --all-targets --release
+          }
+        } else {
+          Write-Output "Building without sccache..."
+          $env:RUSTC_WRAPPER = ""
+          cargo build --all-features --all-targets --release
+        }
+        ' || '
+        # Bash version for Unix
         if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
           echo "Building with sccache..."
           export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
@@ -213,6 +315,7 @@ jobs:
           export RUSTC_WRAPPER=""
           timeout 900s cargo build --all-features --all-targets --release
         fi
+        ' }}
     
     - name: Download build artifacts (if available)
       if: inputs.cache_key != ''
@@ -221,55 +324,216 @@ jobs:
         name: build-artifacts-${{ runner.os }}
         path: target/
       continue-on-error: true
-    - name: Run tests with nextest and sccache fallback
-      shell: bash
+    # Test each package individually with cross-platform commands
+    - name: Test rustirc-core
+      shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
       env:
         CI: true
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
       run: |
-        # Test each package individually with direct commands (cross-platform compatible)
-        test_packages=("rustirc-core" "rustirc-protocol" "rustirc-tui" "rustirc-plugins" "rustirc-scripting")
-        
-        for package in "${test_packages[@]}"; do
-          echo "Testing package: $package"
-          if ! timeout 600s cargo nextest run -p "$package" --release --all-features; then
-            echo "nextest failed for $package, trying cargo test..."
-            if ! timeout 600s cargo test -p "$package" --release --all-features; then
-              echo "Both nextest and cargo test failed for $package"
-              exit 1
-            fi
-          fi
-        done
-        
-        # Test rustirc-gui with --lib flag separately
-        echo "Testing package: rustirc-gui (lib only)"
-        if ! timeout 600s cargo nextest run -p "rustirc-gui" --release --all-features --lib; then
-          echo "nextest failed for rustirc-gui, trying cargo test..."
-          if ! timeout 600s cargo test -p "rustirc-gui" --release --all-features --lib; then
-            echo "Both nextest and cargo test failed for rustirc-gui"
-            exit 1
-          fi
+        ${{ runner.os == 'Windows' && '
+        Write-Output "Testing package: rustirc-core"
+        try {
+          cargo nextest run -p rustirc-core --release --all-features
+        } catch {
+          Write-Output "nextest failed for rustirc-core, trying cargo test..."
+          cargo test -p rustirc-core --release --all-features
+        }
+        ' || '
+        echo "Testing package: rustirc-core"
+        if ! timeout 600s cargo nextest run -p rustirc-core --release --all-features; then
+          echo "nextest failed for rustirc-core, trying cargo test..."
+          timeout 600s cargo test -p rustirc-core --release --all-features
         fi
-    - name: Run doctests with sccache fallback
-      # Only run doctests on Linux to avoid duplication across platforms
+        ' }}
+    
+    - name: Test rustirc-protocol
+      shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
+      env:
+        CI: true
+        RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
+      run: |
+        ${{ runner.os == 'Windows' && '
+        Write-Output "Testing package: rustirc-protocol"
+        try {
+          cargo nextest run -p rustirc-protocol --release --all-features
+        } catch {
+          Write-Output "nextest failed for rustirc-protocol, trying cargo test..."
+          cargo test -p rustirc-protocol --release --all-features
+        }
+        ' || '
+        echo "Testing package: rustirc-protocol"
+        if ! timeout 600s cargo nextest run -p rustirc-protocol --release --all-features; then
+          echo "nextest failed for rustirc-protocol, trying cargo test..."
+          timeout 600s cargo test -p rustirc-protocol --release --all-features
+        fi
+        ' }}
+    
+    - name: Test rustirc-tui
+      shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
+      env:
+        CI: true
+        RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
+      run: |
+        ${{ runner.os == 'Windows' && '
+        Write-Output "Testing package: rustirc-tui"
+        try {
+          cargo nextest run -p rustirc-tui --release --all-features
+        } catch {
+          Write-Output "nextest failed for rustirc-tui, trying cargo test..."
+          cargo test -p rustirc-tui --release --all-features
+        }
+        ' || '
+        echo "Testing package: rustirc-tui"
+        if ! timeout 600s cargo nextest run -p rustirc-tui --release --all-features; then
+          echo "nextest failed for rustirc-tui, trying cargo test..."
+          timeout 600s cargo test -p rustirc-tui --release --all-features
+        fi
+        ' }}
+    
+    - name: Test rustirc-plugins
+      shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
+      env:
+        CI: true
+        RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
+      run: |
+        ${{ runner.os == 'Windows' && '
+        Write-Output "Testing package: rustirc-plugins"
+        try {
+          cargo nextest run -p rustirc-plugins --release --all-features
+        } catch {
+          Write-Output "nextest failed for rustirc-plugins, trying cargo test..."
+          cargo test -p rustirc-plugins --release --all-features
+        }
+        ' || '
+        echo "Testing package: rustirc-plugins"
+        if ! timeout 600s cargo nextest run -p rustirc-plugins --release --all-features; then
+          echo "nextest failed for rustirc-plugins, trying cargo test..."
+          timeout 600s cargo test -p rustirc-plugins --release --all-features
+        fi
+        ' }}
+    
+    - name: Test rustirc-scripting
+      shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
+      env:
+        CI: true
+        RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
+      run: |
+        ${{ runner.os == 'Windows' && '
+        Write-Output "Testing package: rustirc-scripting"
+        try {
+          cargo nextest run -p rustirc-scripting --release --all-features
+        } catch {
+          Write-Output "nextest failed for rustirc-scripting, trying cargo test..."
+          cargo test -p rustirc-scripting --release --all-features
+        }
+        ' || '
+        echo "Testing package: rustirc-scripting"
+        if ! timeout 600s cargo nextest run -p rustirc-scripting --release --all-features; then
+          echo "nextest failed for rustirc-scripting, trying cargo test..."
+          timeout 600s cargo test -p rustirc-scripting --release --all-features
+        fi
+        ' }}
+    
+    - name: Test rustirc-gui (lib only)
+      shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
+      env:
+        CI: true
+        RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
+      run: |
+        ${{ runner.os == 'Windows' && '
+        Write-Output "Testing package: rustirc-gui (lib only)"
+        try {
+          cargo nextest run -p rustirc-gui --release --all-features --lib
+        } catch {
+          Write-Output "nextest failed for rustirc-gui, trying cargo test..."
+          cargo test -p rustirc-gui --release --all-features --lib
+        }
+        ' || '
+        echo "Testing package: rustirc-gui (lib only)"
+        if ! timeout 600s cargo nextest run -p rustirc-gui --release --all-features --lib; then
+          echo "nextest failed for rustirc-gui, trying cargo test..."
+          timeout 600s cargo test -p rustirc-gui --release --all-features --lib
+        fi
+        ' }}
+    # Run doctests individually on Linux to avoid duplication across platforms
+    - name: Run doctests for rustirc-core
       if: runner.os == 'Linux'
       shell: bash
       env:
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
       run: |
-        echo "Running doctests for library packages..."
-        
-        # Test doctests for each package directly (cross-platform compatible)
-        doctest_packages=("rustirc-core" "rustirc-protocol" "rustirc-gui" "rustirc-tui" "rustirc-scripting" "rustirc-plugins")
-        
-        for package in "${doctest_packages[@]}"; do
-          echo "Running doctests for $package..."
-          if timeout 300s cargo test --doc -p "$package" --all-features > /dev/null 2>&1; then
-            echo "Doctests passed for $package"
-          else
-            echo "No doctests or doctest failed in $package"
-          fi
-        done
+        echo "Running doctests for rustirc-core..."
+        if timeout 300s cargo test --doc -p rustirc-core --all-features > /dev/null 2>&1; then
+          echo "Doctests passed for rustirc-core"
+        else
+          echo "No doctests or doctest failed in rustirc-core"
+        fi
+    
+    - name: Run doctests for rustirc-protocol
+      if: runner.os == 'Linux'
+      shell: bash
+      env:
+        RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
+      run: |
+        echo "Running doctests for rustirc-protocol..."
+        if timeout 300s cargo test --doc -p rustirc-protocol --all-features > /dev/null 2>&1; then
+          echo "Doctests passed for rustirc-protocol"
+        else
+          echo "No doctests or doctest failed in rustirc-protocol"
+        fi
+    
+    - name: Run doctests for rustirc-gui
+      if: runner.os == 'Linux'
+      shell: bash
+      env:
+        RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
+      run: |
+        echo "Running doctests for rustirc-gui..."
+        if timeout 300s cargo test --doc -p rustirc-gui --all-features > /dev/null 2>&1; then
+          echo "Doctests passed for rustirc-gui"
+        else
+          echo "No doctests or doctest failed in rustirc-gui"
+        fi
+    
+    - name: Run doctests for rustirc-tui
+      if: runner.os == 'Linux'
+      shell: bash
+      env:
+        RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
+      run: |
+        echo "Running doctests for rustirc-tui..."
+        if timeout 300s cargo test --doc -p rustirc-tui --all-features > /dev/null 2>&1; then
+          echo "Doctests passed for rustirc-tui"
+        else
+          echo "No doctests or doctest failed in rustirc-tui"
+        fi
+    
+    - name: Run doctests for rustirc-scripting
+      if: runner.os == 'Linux'
+      shell: bash
+      env:
+        RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
+      run: |
+        echo "Running doctests for rustirc-scripting..."
+        if timeout 300s cargo test --doc -p rustirc-scripting --all-features > /dev/null 2>&1; then
+          echo "Doctests passed for rustirc-scripting"
+        else
+          echo "No doctests or doctest failed in rustirc-scripting"
+        fi
+    
+    - name: Run doctests for rustirc-plugins
+      if: runner.os == 'Linux'
+      shell: bash
+      env:
+        RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
+      run: |
+        echo "Running doctests for rustirc-plugins..."
+        if timeout 300s cargo test --doc -p rustirc-plugins --all-features > /dev/null 2>&1; then
+          echo "Doctests passed for rustirc-plugins"
+        else
+          echo "No doctests or doctest failed in rustirc-plugins"
+        fi
     - name: Set test result
       id: test_result
       if: always()
@@ -290,9 +554,42 @@ jobs:
         toolchain: 1.75.0
     - uses: Swatinem/rust-cache@v2
     - name: Check MSRV with sccache fallback
-      shell: bash
+      shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
       run: |
-        # Configure RUSTC_WRAPPER for this specific step
+        ${{ runner.os == 'Windows' && '
+        # PowerShell version for Windows
+        $sccache_available = "false"
+        $rustc_wrapper = ""
+        
+        if (Get-Command sccache -ErrorAction SilentlyContinue) {
+          try {
+            $null = sccache --version 2>$null
+            try {
+              $null = sccache --show-stats 2>$null
+              $sccache_available = "true"
+              $rustc_wrapper = "sccache"
+              Write-Output "Using sccache for MSRV check"
+            } catch {}
+          } catch {}
+        }
+        
+        if ($sccache_available -eq "true") {
+          $env:RUSTC_WRAPPER = $rustc_wrapper
+          try {
+            cargo check --all-features
+          } catch {
+            Write-Output "MSRV check failed with sccache, retrying without sccache..."
+            Remove-Item Env:RUSTC_WRAPPER -ErrorAction SilentlyContinue
+            $env:RUSTC_WRAPPER = ""
+            cargo check --all-features
+          }
+        } else {
+          Write-Output "Running MSRV check without sccache"
+          $env:RUSTC_WRAPPER = ""
+          cargo check --all-features
+        }
+        ' || '
+        # Bash version for Unix
         sccache_available="false"
         rustc_wrapper=""
         
@@ -317,3 +614,4 @@ jobs:
           export RUSTC_WRAPPER=""
           timeout 600s cargo check --all-features
         fi
+        ' }}
