@@ -115,7 +115,7 @@ jobs:
       id: sccache
     
     - name: Configure sccache with fallback (Unix)
-      if: runner.os != 'Windows'
+      if: !contains(matrix.os, 'windows')
       id: configure_sccache_unix
       shell: bash
       run: |
@@ -152,7 +152,7 @@ jobs:
         echo "Final configuration: RUSTC_WRAPPER='$rustc_wrapper', available=$sccache_available"
     
     - name: Configure sccache with fallback (Windows)
-      if: runner.os == 'Windows'
+      if: contains(matrix.os, 'windows')
       id: configure_sccache_windows
       shell: pwsh
       run: |
@@ -195,7 +195,7 @@ jobs:
       shell: bash
       run: |
         # Unify outputs from platform-specific steps
-        if [ "${{ runner.os }}" = "Windows" ]; then
+        if [[ "${{ matrix.os }}" == *"windows"* ]]; then
           sccache_available="${{ steps.configure_sccache_windows.outputs.sccache_available }}"
           rustc_wrapper="${{ steps.configure_sccache_windows.outputs.rustc_wrapper }}"
         else
@@ -225,7 +225,7 @@ jobs:
           cargo-tools-${{ runner.os }}-
     
     - name: Install cargo-nextest with sccache fallback (Unix)
-      if: runner.os != 'Windows'
+      if: !contains(matrix.os, 'windows')
       shell: bash
       run: |
         if ! command -v cargo-nextest > /dev/null 2>&1; then
@@ -250,7 +250,7 @@ jobs:
         fi
     
     - name: Install cargo-nextest with sccache fallback (Windows)
-      if: runner.os == 'Windows'
+      if: contains(matrix.os, 'windows')
       shell: pwsh
       run: |
         if (!(Get-Command cargo-nextest -ErrorAction SilentlyContinue)) {
@@ -279,9 +279,9 @@ jobs:
     - name: Build (if not cached) with sccache fallback
       # Cross-platform build detection
       if: inputs.cache_key == ''
-      shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
+      shell: ${{ contains(matrix.os, 'windows') && 'pwsh' || 'bash' }}
       run: |
-        ${{ runner.os == 'Windows' && '
+        ${{ contains(matrix.os, 'windows') && '
         # PowerShell version for Windows
         if ("${{ steps.configure_sccache.outputs.sccache_available }}" -eq "true") {
           Write-Output "Building with sccache..."
@@ -326,12 +326,12 @@ jobs:
       continue-on-error: true
     # Test each package individually with cross-platform commands
     - name: Test rustirc-core
-      shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
+      shell: ${{ contains(matrix.os, 'windows') && 'pwsh' || 'bash' }}
       env:
         CI: true
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
       run: |
-        ${{ runner.os == 'Windows' && '
+        ${{ contains(matrix.os, 'windows') && '
         Write-Output "Testing package: rustirc-core"
         try {
           cargo nextest run -p rustirc-core --release --all-features
@@ -348,12 +348,12 @@ jobs:
         ' }}
     
     - name: Test rustirc-protocol
-      shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
+      shell: ${{ contains(matrix.os, 'windows') && 'pwsh' || 'bash' }}
       env:
         CI: true
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
       run: |
-        ${{ runner.os == 'Windows' && '
+        ${{ contains(matrix.os, 'windows') && '
         Write-Output "Testing package: rustirc-protocol"
         try {
           cargo nextest run -p rustirc-protocol --release --all-features
@@ -370,12 +370,12 @@ jobs:
         ' }}
     
     - name: Test rustirc-tui
-      shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
+      shell: ${{ contains(matrix.os, 'windows') && 'pwsh' || 'bash' }}
       env:
         CI: true
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
       run: |
-        ${{ runner.os == 'Windows' && '
+        ${{ contains(matrix.os, 'windows') && '
         Write-Output "Testing package: rustirc-tui"
         try {
           cargo nextest run -p rustirc-tui --release --all-features
@@ -392,12 +392,12 @@ jobs:
         ' }}
     
     - name: Test rustirc-plugins
-      shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
+      shell: ${{ contains(matrix.os, 'windows') && 'pwsh' || 'bash' }}
       env:
         CI: true
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
       run: |
-        ${{ runner.os == 'Windows' && '
+        ${{ contains(matrix.os, 'windows') && '
         Write-Output "Testing package: rustirc-plugins"
         try {
           cargo nextest run -p rustirc-plugins --release --all-features
@@ -414,12 +414,12 @@ jobs:
         ' }}
     
     - name: Test rustirc-scripting
-      shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
+      shell: ${{ contains(matrix.os, 'windows') && 'pwsh' || 'bash' }}
       env:
         CI: true
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
       run: |
-        ${{ runner.os == 'Windows' && '
+        ${{ contains(matrix.os, 'windows') && '
         Write-Output "Testing package: rustirc-scripting"
         try {
           cargo nextest run -p rustirc-scripting --release --all-features
@@ -436,12 +436,12 @@ jobs:
         ' }}
     
     - name: Test rustirc-gui (lib only)
-      shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
+      shell: ${{ contains(matrix.os, 'windows') && 'pwsh' || 'bash' }}
       env:
         CI: true
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
       run: |
-        ${{ runner.os == 'Windows' && '
+        ${{ contains(matrix.os, 'windows') && '
         Write-Output "Testing package: rustirc-gui (lib only)"
         try {
           cargo nextest run -p rustirc-gui --release --all-features --lib
@@ -554,9 +554,9 @@ jobs:
         toolchain: 1.75.0
     - uses: Swatinem/rust-cache@v2
     - name: Check MSRV with sccache fallback
-      shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
+      shell: ${{ contains(matrix.os, 'windows') && 'pwsh' || 'bash' }}
       run: |
-        ${{ runner.os == 'Windows' && '
+        ${{ contains(matrix.os, 'windows') && '
         # PowerShell version for Windows
         $sccache_available = "false"
         $rustc_wrapper = ""
