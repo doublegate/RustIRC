@@ -61,11 +61,11 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 [![Version](https://img.shields.io/badge/version-0.3.5-blue.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.3.5)
 [![Release Date](https://img.shields.io/badge/released-August%2023%2C%202025-green.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.3.5)
 
-**Version 0.3.5** - Critical Pipeline Resilience & Production Stability
+**Version 0.3.5** - Complete YAML Workflow Fixes & CI/CD Production Readiness
 
 ## 🏗️ Current Development Status
 
-**Last Updated**: August 23, 2025 11:00 PM EDT - v0.3.5 Test Matrix Cross-Platform Fixes
+**Last Updated**: August 23, 2025 11:38 PM EDT - v0.3.5 Complete YAML Workflow Fixes & Codecov Integration
 
 ### ✅ **Phase 1: Research & Setup** - **COMPLETE** (100%)
 
@@ -104,25 +104,28 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 - ✅ **Comprehensive Test Coverage**: 10+ test scenarios using execute_task framework
 - ✅ **Context-Aware Menus**: Dynamic menu rendering with real application state
 
-### 🚀 **Latest Infrastructure Improvements** (v0.3.5 - August 23, 2025)
+### 🚀 **Latest Infrastructure Improvements** (v0.3.5 - August 23, 2025 11:38 PM EDT)
 
-#### Pipeline Resilience & Cross-Platform Fixes (99.9% Reliability)
+#### Complete YAML Workflow Fixes & Pipeline Resilience (100% Valid)
 
-- ✅ **sccache Fallback Handling**: Comprehensive fallback when GitHub cache service unavailable
-- ✅ **Test Matrix Cross-Platform**: Fixed bash syntax incompatibility with Windows PowerShell
-- ✅ **Platform-Specific Shells**: Proper shell selection (bash for Unix, pwsh for Windows)
-- ✅ **Environment Variable Fixes**: Removed global RUSTC_WRAPPER causing systematic failures
-- ✅ **Cargo nextest Installation**: Platform-aware installation with proper error handling
-- ✅ **Build Artifact Sharing**: Shared compilation artifacts between jobs eliminate redundant builds
-- ✅ **Tool Caching**: cargo-nextest and cargo-tarpaulin cached across runs
-- ✅ **ARM64 Support**: Added Linux and macOS ARM64 build targets with cross-compilation
+- ✅ **Complete YAML Reformat**: 646-line master-pipeline.yml completely reformatted with proper indentation
+- ✅ **runner.os → matrix.os Migration**: All workflow contexts fixed for reusable workflow compatibility
+- ✅ **Indentation Fixes**: All jobs, steps, and env blocks at correct nesting levels (2/4/6 spaces)
+- ✅ **Cross-Platform Conditionals**: Using contains(matrix.os, 'windows') for OS detection
+- ✅ **YAML Validation**: Zero errors with yamllint, Python yaml parser validates successfully
+- ✅ **Line-Length Compliance**: All critical lines within limits, remaining as acceptable warnings
+- ✅ **Trailing Space Cleanup**: All trailing whitespace removed from workflow files
+- ✅ **Expression Quoting**: Fixed `!contains()` expressions with proper quotes to avoid parsing errors
 
-#### Documentation Excellence
+#### Test Analytics & Documentation Excellence
 
+- ✅ **Codecov Test Analytics**: JUnit XML generation with nextest CI profile for detailed test insights
+- ✅ **Test Results Upload**: Automated test results reporting with failure tracking and flaky test detection
 - ✅ **65+ Working Doctests**: Comprehensive examples that compile and run
 - ✅ **Per-Crate READMEs**: Every crate has detailed documentation
 - ✅ **Rustdoc Comments**: All public APIs fully documented
 - ✅ **Phase Verification**: 100% completion of Phases 1-3 confirmed with reports
+- ✅ **CI/CD Troubleshooting Guide**: Comprehensive guide for pipeline issues and solutions
 
 ### 🔜 **Next Up: Phase 4** - Scripting & Plugins (Weeks 15-18)
 
@@ -294,10 +297,10 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 
 ## 🚦 Current Status
 
-**Version**: 0.3.4 - CI/CD Infrastructure Excellence + Documentation Complete (Released August 23, 2025)  
+**Version**: 0.3.5 - Complete YAML Workflow Fixes & CI/CD Production Readiness (Released August 23, 2025)  
 **Phase**: Phase 4 - Scripting & Plugins (Ready to Begin) 🚀  
-**Recent**: Master Pipeline Optimized ✅ (60-70% performance improvement, critical fixes, ARM64 support)  
-**Total Tasks**: 249 across 7 phases + comprehensive IRC implementation + optimized CI/CD + complete documentation
+**Recent**: Complete YAML reformat ✅ (100% valid workflows, Codecov integration, zero errors)  
+**Total Tasks**: 249 across 7 phases + comprehensive IRC implementation + production CI/CD + complete documentation
 
 ### 🎉 Phase 1-3: COMPLETE ✅ with LIVE IRC FUNCTIONALITY
 
@@ -306,7 +309,17 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 - ✅ **Phase 3: User Interface** - **FULL GUI (Iced 0.13.1)**, TUI (ratatui), CLI prototype, SASL authentication
 - ✅ **LIVE IRC CLIENT** - Complete IRC protocol implementation with real server connectivity
 
-### 🆕 Latest v0.3.4 Release Achievements (August 23, 2025)
+### 🆕 Latest v0.3.5 Release Achievements (August 23, 2025 11:38 PM EDT)
+
+- ✅ **COMPLETE YAML WORKFLOW FIXES**: 646-line master-pipeline.yml reformatted with proper indentation
+- ✅ **runner.os → matrix.os MIGRATION**: All workflow contexts fixed for reusable workflow compatibility
+- ✅ **CODECOV TEST ANALYTICS**: JUnit XML generation with detailed test reporting and flaky test detection
+- ✅ **NEXTEST CI PROFILE**: Configured for JUnit output in `.config/nextest.toml`
+- ✅ **TEST RESULTS UPLOAD**: Automated upload to Codecov for test run analytics
+- ✅ **YAML VALIDATION**: Zero errors with yamllint and Python yaml parser
+- ✅ **CI/CD TROUBLESHOOTING GUIDE**: Comprehensive documentation for pipeline issues
+
+### 🏅 Previous v0.3.4 Release Achievements (August 23, 2025)
 
 - ✅ **MASTER PIPELINE OPTIMIZATION**: Fixed critical cache key typo, achieved 60-70% performance improvement
 - ✅ **BUILD ARTIFACT SHARING**: Eliminated redundant compilation through intelligent artifact caching

@@ -14,18 +14,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Script/plugin manager UI
 - Event-driven scripting API
 
-## [0.3.5] - 2025-08-23 (Final Build: 11:00 PM EDT)
+## [0.3.5] - 2025-08-23 (Final Build: 11:38 PM EDT)
 
 ### Summary
-Critical Pipeline Resilience & Cross-Platform Compatibility - This release addresses critical CI/CD pipeline failures by implementing comprehensive fallback mechanisms for sccache cache service outages, fixing Test Matrix cross-platform compatibility issues, and fixing release notes preservation. The pipeline is now production-ready with 99.9% reliability across all platforms (Linux, Windows, macOS) while maintaining optimal performance when all services are available. Additional documentation for achieving 99.999% reliability has been added.
+Complete YAML Workflow Fixes & Pipeline Validation - This release completes comprehensive YAML workflow fixes including complete reformatting of the 646-line master-pipeline.yml, migration from runner.os to matrix.os for reusable workflow compatibility, and proper indentation at all nesting levels. The pipeline now passes all YAML validation with zero errors and is ready for production deployment across all platforms.
 
 ### Critical Fixes
-- **Test Matrix Cross-Platform Compatibility**: Fixed systematic failures across all architectures
-  - Removed global RUSTC_WRAPPER that caused exit code 101 on all platforms
-  - Fixed bash array syntax incompatibility with Windows PowerShell
-  - Implemented platform-specific shells (bash for Unix, pwsh for Windows)
-  - Fixed cargo nextest installation with proper fallback handling
-  - Resolved environment variable export/unset issues across shells
+- **Complete YAML Workflow Reformat**: Fixed all indentation and syntax issues
+  - Reformatted entire 646-line master-pipeline.yml with proper nesting
+  - Fixed all job definitions at 2 spaces, steps at 6 spaces
+  - Corrected env blocks and with blocks indentation
+  - Added quotes to `!contains()` expressions to fix parsing errors
+  - Removed all trailing spaces from workflow files
+- **runner.os → matrix.os Migration**: Fixed reusable workflow compatibility
+  - Replaced all runner.os references with matrix.os throughout workflows
+  - Updated conditionals to use `contains(matrix.os, 'windows')` pattern
+  - Fixed shell selection with proper OS detection
+  - Corrected cache key generation with matrix.os context
 - **sccache Resilience**: Implemented automatic fallback when GitHub cache service is unavailable
   - Added continue-on-error for sccache-action to prevent pipeline failures
   - Implemented availability checking before attempting to use sccache

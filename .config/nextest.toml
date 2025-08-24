@@ -1,0 +1,8 @@
+# Nextest configuration for CI
+[profile.ci]
+# Derive from the default profile
+default-profile = "default"
+
+# JUnit output for test analytics
+[profile.ci.junit]
+path = "target/nextest/ci/junit.xml"

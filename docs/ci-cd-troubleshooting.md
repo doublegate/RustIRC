@@ -1,5 +1,7 @@
 # CI/CD Pipeline Troubleshooting Guide
 
+**Last Updated**: 2025-08-23 11:38 PM EDT
+
 ## Overview
 
 This guide documents common issues and solutions for the RustIRC GitHub Actions pipeline, with a focus on resilience and recovery from external service failures.
@@ -41,6 +43,27 @@ Server startup failed: cache storage failed to read: Our services aren't availab
 - Added timeout wrappers for all cargo operations (30s-900s based on complexity)
 - Implemented automatic retry without sccache on timeout
 - Enhanced logging to show which mode is being used
+
+### 4. YAML Workflow Syntax Errors
+
+**Problem**: GitHub Actions fails with "Unrecognized named-value: 'runner'" in reusable workflows.
+
+**Root Cause**: The `runner.os` context is not available in reusable workflows (workflow_call).
+
+**Solution**: 
+- Migrated all `runner.os` references to `matrix.os` parameter
+- Updated conditionals to use `contains(matrix.os, 'windows')` pattern
+- Fixed all indentation issues (jobs at 2 spaces, steps at 6 spaces)
+
+### 5. Codecov Test Analytics Integration
+
+**Feature Added**: JUnit XML test results upload for detailed test analytics.
+
+**Implementation**:
+- Added nextest CI profile in `.config/nextest.toml` for JUnit XML generation
+- Updated all test commands to use `--profile ci` flag
+- Added `codecov/test-results-action@v1` to upload test results
+- Provides test run times, failure rates, and flaky test identification
 
 ## Pipeline Architecture
 
