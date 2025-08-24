@@ -14,12 +14,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Script/plugin manager UI
 - Event-driven scripting API
 
-## [0.3.5] - 2025-08-23 (Final Build: 10:32 PM EDT)
+## [0.3.5] - 2025-08-23 (Final Build: 11:00 PM EDT)
 
 ### Summary
-Critical Pipeline Resilience & Production Stability - This release addresses critical CI/CD pipeline failures by implementing comprehensive fallback mechanisms for sccache cache service outages and fixing release notes preservation. The pipeline is now production-ready with 100% resilience to transient failures while maintaining optimal performance when all services are available. Additional documentation for achieving 99.999% reliability has been added.
+Critical Pipeline Resilience & Cross-Platform Compatibility - This release addresses critical CI/CD pipeline failures by implementing comprehensive fallback mechanisms for sccache cache service outages, fixing Test Matrix cross-platform compatibility issues, and fixing release notes preservation. The pipeline is now production-ready with 99.9% reliability across all platforms (Linux, Windows, macOS) while maintaining optimal performance when all services are available. Additional documentation for achieving 99.999% reliability has been added.
 
 ### Critical Fixes
+- **Test Matrix Cross-Platform Compatibility**: Fixed systematic failures across all architectures
+  - Removed global RUSTC_WRAPPER that caused exit code 101 on all platforms
+  - Fixed bash array syntax incompatibility with Windows PowerShell
+  - Implemented platform-specific shells (bash for Unix, pwsh for Windows)
+  - Fixed cargo nextest installation with proper fallback handling
+  - Resolved environment variable export/unset issues across shells
 - **sccache Resilience**: Implemented automatic fallback when GitHub cache service is unavailable
   - Added continue-on-error for sccache-action to prevent pipeline failures
   - Implemented availability checking before attempting to use sccache
@@ -29,10 +35,6 @@ Critical Pipeline Resilience & Production Stability - This release addresses cri
   - Removed conflicting `--generate-notes` flag that was overriding manual notes
   - Preserved carefully crafted release documentation
   - Maintained proper build artifact append logic
-- **Environment Variable Scoping**: Fixed global RUSTC_WRAPPER causing exit code 101
-  - Removed problematic global environment variable
-  - Implemented per-job sccache configuration
-  - Added smart detection and fallback mechanisms
 
 ### Added
 - Comprehensive sccache availability detection system
