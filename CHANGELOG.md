@@ -14,10 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Script/plugin manager UI
 - Event-driven scripting API
 
-## [0.3.5] - 2025-08-24 (Final Build: 12:00 AM EDT)
+## [0.3.5] - 2025-08-24 (Final Build: 12:24 AM EDT)
 
 ### Summary
-Complete Workflow Compatibility Fixes & Pipeline Validation - This release resolves all GitHub Actions workflow compatibility issues including workflow_call context problems, matrix.os references in shell expressions, PowerShell/Bash conditional scripts, and !contains() expression syntax. The pipeline now uses unified bash scripts across all platforms and properly handles reusable workflow invocation.
+Comprehensive Workflow Resilience & CI/CD Hardening - This release implements robust error handling for all GitHub Actions workflows with enhanced sccache fallback mechanisms, complete PowerShell to bash conversion, and cargo-audit version compatibility. The pipeline now gracefully handles GitHub artifact cache service outages, automatically falling back to direct compilation when needed.
 
 ### Critical Fixes
 - **Complete YAML Workflow Reformat**: Fixed all indentation and syntax issues
@@ -28,6 +28,8 @@ Complete Workflow Compatibility Fixes & Pipeline Validation - This release resol
   - Removed matrix.os from shell expressions for workflow_call compatibility
   - Converted all PowerShell/Bash conditionals to unified bash scripts
   - Removed all trailing spaces from workflow files
+  - Enhanced all test execution steps with sccache fallback mechanisms
+  - Added cargo-audit version detection for --format flag compatibility
 - **runner.os → matrix.os Migration**: Fixed reusable workflow compatibility
   - Replaced all runner.os references with matrix.os throughout workflows
   - Updated conditionals to use `contains(matrix.os, 'windows')` pattern

@@ -335,3 +335,27 @@ Ensuring CLI has full GUI feature equivalency:
    - All interface modes tested for feature parity (GUI, TUI, CLI)
    - Professional-grade user experience matching industry IRC clients
    - Ready for Phase 4 Scripting & Plugins development
+
+### Workflow Compatibility Patterns (August 24, 2025)
+
+**Critical GitHub Actions Fixes Applied**:
+
+1. **Workflow_call Context Issues**:
+   - matrix.os not available in shell expressions when called via workflow_call
+   - Solution: Remove all matrix.os from shell fields, use bash universally
+   - Affects reusable workflows invoked from parent workflows
+
+2. **Script Unification Strategy**:
+   - Convert all conditional PowerShell/Bash blocks to unified bash
+   - Bash available on all runners including Windows
+   - Eliminates 125+ lines of conditional logic
+
+3. **Expression Syntax Requirements**:
+   - Use `${{ !contains() }}` not `"!contains()"` for negations
+   - Proper GitHub Actions expression syntax prevents parsing errors
+   - Apply to all conditional expressions in workflows
+
+4. **Validation Before Push**:
+   - Always run `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/file.yml'))"`
+   - Catches syntax and context errors before pipeline execution
+   - Saves debugging time and failed runs
