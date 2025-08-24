@@ -147,6 +147,13 @@ jobs:
         SCCACHE_LOG: error
         SCCACHE_ERROR_LOG: ${{ runner.temp }}/sccache.err.log
         SCCACHE_NO_DAEMON: "1"
+        # Windows-specific optimizations for better cache performance
+        SCCACHE_CACHE_SIZE: ${{ runner.os == 'Windows' && '15G' || '10G' }}
+        SCCACHE_IDLE_TIMEOUT: ${{ runner.os == 'Windows' && '1800' || '600' }}
+        # Enhanced language detection for better caching coverage
+        SCCACHE_RECACHE_ON_COMPILE: "1"
+        CC: ${{ runner.os == 'Windows' && 'cl.exe' || 'gcc' }}
+        CXX: ${{ runner.os == 'Windows' && 'cl.exe' || 'g++' }}
       run: |
         set -euo pipefail
         sccache_available="false"
@@ -204,7 +211,13 @@ jobs:
 
     - uses: Swatinem/rust-cache@v2
       with:
-        key: ${{ inputs.cache_key || format('test-{0}-{1}', matrix.os, matrix.rust) }}
+        key: ${{ inputs.cache_key || format('test-{0}-{1}-{2}-{3}', runner.os, matrix.rust, hashFiles('**/Cargo.lock'), github.run_id) }}
+        shared-key: "test-matrix"
+        # Use restore-keys to enable cache sharing while preventing 409 conflicts
+        restore-keys: |
+          test-${{ runner.os }}-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}-
+          test-${{ runner.os }}-${{ matrix.rust }}-
+          master-pipeline-${{ runner.os }}-
         cache-directories: |
           ~/.cargo/registry/index/
           ~/.cargo/registry/cache/
@@ -270,7 +283,7 @@ jobs:
       if: inputs.cache_key != ''
       uses: actions/download-artifact@v4
       with:
-        name: build-artifacts-${{ matrix.os }}
+        name: build-artifacts-${{ runner.os }}
         path: target/
       continue-on-error: true
     # Test each package individually with cross-platform commands

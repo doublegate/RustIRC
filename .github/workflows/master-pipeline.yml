@@ -47,7 +47,7 @@ jobs:
   # Phase 1: Quick validation (fail fast) and initial build
   quick-checks:
     name: Quick Checks & Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # Specific version for migration preparedness
     outputs:
       cache_key: ${{ steps.cache.outputs.cache_key }}
       should_run_tests: ${{ steps.config.outputs.should_run_tests }}
@@ -101,6 +101,9 @@ jobs:
           SCCACHE_LOG: error
           SCCACHE_ERROR_LOG: ${{ runner.temp }}/sccache.err.log
           SCCACHE_NO_DAEMON: "1"
+          # Windows-specific optimizations for improved cache performance
+          SCCACHE_CACHE_SIZE: ${{ runner.os == 'Windows' && '15G' || '10G' }}
+          SCCACHE_IDLE_TIMEOUT: ${{ runner.os == 'Windows' && '1800' || '600' }}
         run: |
           set -euo pipefail
           sccache_available="false"
@@ -156,13 +159,17 @@ jobs:
       - name: Generate cache key
         id: cache
         run: |
-          cache_key="shared-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}-${{ github.run_id }}"
+          cache_key="master-pipeline-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}-${{ github.run_id }}"
           echo "cache_key=$cache_key" >> $GITHUB_OUTPUT
 
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ steps.cache.outputs.cache_key }}
           shared-key: "master-pipeline"
+          restore-keys: |
+            master-pipeline-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}-
+            master-pipeline-${{ runner.os }}-
+            master-pipeline-
           save-if: true
 
       - name: Format check
@@ -225,6 +232,34 @@ jobs:
             target/debug/
           retention-days: 1
           compression-level: 0  # Fast upload, artifacts deleted after 1 day
+
+      - name: Performance monitoring and sccache statistics
+        if: always()
+        shell: bash
+        run: |
+          echo "=== Build Performance Summary ==="
+          
+          # sccache statistics if available
+          if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ] && command -v sccache > /dev/null 2>&1; then
+            echo "sccache statistics:"
+            run_with_timeout 10s sccache --show-stats || echo "Failed to get sccache stats"
+          else
+            echo "sccache not available for statistics"
+          fi
+          
+          # Disk usage report
+          echo ""
+          echo "Disk usage summary:"
+          df -h . || true
+          
+          # Cargo cache size
+          echo ""
+          echo "Cargo cache information:"
+          du -sh ~/.cargo/registry ~/.cargo/git 2>/dev/null || echo "Cargo cache directories not found"
+          
+          # Build timing information
+          echo ""
+          echo "Build completed successfully at $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
 
       - name: Configure pipeline
         id: config
@@ -313,7 +348,7 @@ jobs:
   documentation:
     name: Documentation
     # Run in parallel - doesn't need quick-checks to complete
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # Specific version for migration preparedness
     permissions:
       contents: read
     steps:
@@ -423,7 +458,7 @@ jobs:
       always() &&
       needs.quick-checks.outputs.should_run_coverage == 'true' &&
       needs.test-matrix.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # Specific version for migration preparedness
     permissions:
       contents: read
       id-token: write
@@ -482,20 +517,20 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-22.04  # Specific version for migration preparedness
             target: x86_64-unknown-linux-gnu
             artifact_name: rustirc-linux-amd64.tar.gz
-          - os: ubuntu-latest
+          - os: ubuntu-22.04  # Specific version for migration preparedness
             target: aarch64-unknown-linux-gnu
             artifact_name: rustirc-linux-arm64.tar.gz
             cross: true
-          - os: windows-latest
+          - os: windows-2022  # Specific version for migration preparedness
             target: x86_64-pc-windows-msvc
             artifact_name: rustirc-windows-amd64.exe.zip
-          - os: macos-latest
+          - os: macos-14  # Specific version for migration preparedness (macOS Sonoma)
             target: x86_64-apple-darwin
             artifact_name: rustirc-macos-amd64.tar.gz
-          - os: macos-latest
+          - os: macos-14  # Specific version for migration preparedness (macOS Sonoma)
             target: aarch64-apple-darwin
             artifact_name: rustirc-macos-arm64.tar.gz
     runs-on: ${{ matrix.os }}
@@ -566,7 +601,7 @@ jobs:
       (needs.security-audit.result == 'success' ||
        needs.security-audit.result == 'skipped') &&
       needs.build-artifacts.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # Specific version for migration preparedness
     permissions:
       contents: write
       discussions: write
@@ -675,7 +710,7 @@ jobs:
       - coverage
       - build-artifacts
       - release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # Specific version for migration preparedness
     steps:
       - name: Report pipeline status
         run: |
