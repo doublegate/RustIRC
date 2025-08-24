@@ -480,13 +480,13 @@ jobs:
         RUSTC_WRAPPER: ""  # Disable sccache for cross-platform builds to avoid conflicts
     
       - name: Package artifact (Unix)
-      if: runner.os != 'Windows'
+      if: !contains(matrix.os, 'windows')
       run: |
         cd target/${{ matrix.target }}/release
         tar -czf ../../../${{ matrix.artifact_name }} rustirc
     
       - name: Package artifact (Windows)
-      if: runner.os == 'Windows'
+      if: contains(matrix.os, 'windows')
       run: |
         cd target/${{ matrix.target }}/release
         7z a ../../../${{ matrix.artifact_name }} rustirc.exe

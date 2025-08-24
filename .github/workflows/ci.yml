@@ -207,7 +207,7 @@ jobs:
     
     - uses: Swatinem/rust-cache@v2
       with:
-        key: ${{ inputs.cache_key || format('test-{0}-{1}', runner.os, matrix.rust) }}
+        key: ${{ inputs.cache_key || format('test-{0}-{1}', matrix.os, matrix.rust) }}
         cache-directories: |
           ~/.cargo/registry/index/
           ~/.cargo/registry/cache/
@@ -220,9 +220,9 @@ jobs:
           ~/.cargo/bin/cargo-nextest
           ~/.cargo/.crates.toml
           ~/.cargo/.crates2.json
-        key: cargo-tools-${{ runner.os }}-nextest
+        key: cargo-tools-${{ matrix.os }}-nextest
         restore-keys: |
-          cargo-tools-${{ runner.os }}-
+          cargo-tools-${{ matrix.os }}-
     
     - name: Install cargo-nextest with sccache fallback (Unix)
       if: !contains(matrix.os, 'windows')
@@ -321,7 +321,7 @@ jobs:
       if: inputs.cache_key != ''
       uses: actions/download-artifact@v4
       with:
-        name: build-artifacts-${{ runner.os }}
+        name: build-artifacts-${{ matrix.os }}
         path: target/
       continue-on-error: true
     # Test each package individually with cross-platform commands
@@ -458,7 +458,7 @@ jobs:
         ' }}
     # Run doctests individually on Linux to avoid duplication across platforms
     - name: Run doctests for rustirc-core
-      if: runner.os == 'Linux'
+      if: contains(matrix.os, 'ubuntu')
       shell: bash
       env:
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
@@ -471,7 +471,7 @@ jobs:
         fi
     
     - name: Run doctests for rustirc-protocol
-      if: runner.os == 'Linux'
+      if: contains(matrix.os, 'ubuntu')
       shell: bash
       env:
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
@@ -484,7 +484,7 @@ jobs:
         fi
     
     - name: Run doctests for rustirc-gui
-      if: runner.os == 'Linux'
+      if: contains(matrix.os, 'ubuntu')
       shell: bash
       env:
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
@@ -497,7 +497,7 @@ jobs:
         fi
     
     - name: Run doctests for rustirc-tui
-      if: runner.os == 'Linux'
+      if: contains(matrix.os, 'ubuntu')
       shell: bash
       env:
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
@@ -510,7 +510,7 @@ jobs:
         fi
     
     - name: Run doctests for rustirc-scripting
-      if: runner.os == 'Linux'
+      if: contains(matrix.os, 'ubuntu')
       shell: bash
       env:
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
@@ -523,7 +523,7 @@ jobs:
         fi
     
     - name: Run doctests for rustirc-plugins
-      if: runner.os == 'Linux'
+      if: contains(matrix.os, 'ubuntu')
       shell: bash
       env:
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
