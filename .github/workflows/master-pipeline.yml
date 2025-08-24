@@ -184,33 +184,6 @@ jobs:
         env:
           RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
 
-      - name: Clippy check with enhanced resilience
-        shell: bash
-        run: |
-          # Enhanced clippy execution with timeout and robust error handling
-          if [ "${{ steps.configure_sccache.outputs.sccache_available }}" =
-            "true" ]; then
-            echo "Running clippy with sccache (timeout: 10 minutes)..."
-            export RUSTC_WRAPPER="${{
-              steps.configure_sccache.outputs.rustc_wrapper }}"
-            if ! run_with_timeout 600s cargo clippy --all-targets \
-              --all-features -- -D warnings; then
-              echo "Clippy failed with sccache (timeout or error), retrying"
-              echo "without sccache..."
-              unset RUSTC_WRAPPER
-              export RUSTC_WRAPPER=""
-              run_with_timeout 600s cargo clippy --all-targets \
-                --all-features -- -D warnings
-            fi
-          else
-            echo "Running clippy without sccache (timeout: 10 minutes)..."
-            export RUSTC_WRAPPER=""
-            run_with_timeout 600s cargo clippy --all-targets \
-              --all-features -- -D warnings
-          fi
-        env:
-          RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
-
       # Build once here to populate the cache for all subsequent jobs
       - name: Build all targets with enhanced resilience
         shell: bash
@@ -236,6 +209,33 @@ jobs:
             export RUSTC_WRAPPER=""
             run_with_timeout 900s cargo build --all-features \
               --all-targets --release
+          fi
+        env:
+          RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
+
+      - name: Clippy check with enhanced resilience
+        shell: bash
+        run: |
+          # Enhanced clippy execution with timeout and robust error handling
+          if [ "${{ steps.configure_sccache.outputs.sccache_available }}" =
+            "true" ]; then
+            echo "Running clippy with sccache (timeout: 10 minutes)..."
+            export RUSTC_WRAPPER="${{
+              steps.configure_sccache.outputs.rustc_wrapper }}"
+            if ! run_with_timeout 600s cargo clippy --all-targets \
+              --all-features -- -D warnings; then
+              echo "Clippy failed with sccache (timeout or error), retrying"
+              echo "without sccache..."
+              unset RUSTC_WRAPPER
+              export RUSTC_WRAPPER=""
+              run_with_timeout 600s cargo clippy --all-targets \
+                --all-features -- -D warnings
+            fi
+          else
+            echo "Running clippy without sccache (timeout: 10 minutes)..."
+            export RUSTC_WRAPPER=""
+            run_with_timeout 600s cargo clippy --all-targets \
+              --all-features -- -D warnings
           fi
         env:
           RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
