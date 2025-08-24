@@ -14,7 +14,7 @@ The project prioritizes full compatibility with IRC standards including IRCv3 ex
 
 ## Development Status
 
-**v0.3.5 Comprehensive GitHub Actions Resilience Complete** (2025-08-24 1:40 AM EDT)
+**v0.3.5 Complete GitHub Actions Pipeline Fix** (2025-08-24 3:28 PM EDT)
 
 - **Phase 1**: Research & Setup ✅ (Complete 2025-08-14)
 - **Phase 2**: Core IRC Engine ✅ (Complete 2025-08-17) 
@@ -419,3 +419,23 @@ Ensuring CLI has full GUI feature equivalency:
    - Use `if ! sccache --start-server >/dev/null 2>&1; then` for detection
    - Proper variable unsetting with `unset RUSTC_WRAPPER`
    - Timeout protection for all cargo operations using `run_with_timeout`
+
+### Complete GitHub Actions Pipeline Fix Pattern (August 24, 2025 3:28 PM EDT)
+
+**Critical Fixes for v0.3.5 Release Build**:
+
+1. **cargo-nextest Installation Syntax Error Fix**:
+   - Problem: Duplicated bash code (lines 247-251) causing unmatched 'fi' statements
+   - Solution: Removed redundant code block from ci.yml
+   - Impact: Test Matrix jobs now execute successfully on all platforms
+
+2. **MSRV Check Missing Function Fix**:
+   - Problem: `run_with_timeout: command not found` error (exit code 127)
+   - Solution: Added complete BASH_ENV helper setup to MSRV job
+   - Impact: MSRV check now has access to cross-platform timeout functions
+
+3. **Comprehensive Validation**:
+   - All 4 workflow files pass YAML syntax validation
+   - Bash scripts validated for proper syntax
+   - BASH_ENV approach ensures function persistence
+   - All existing sccache resilience features preserved
