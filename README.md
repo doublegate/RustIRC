@@ -65,7 +65,7 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 
 ## 🏗️ Current Development Status
 
-**Last Updated**: August 24, 2025 1:10 AM EDT - v0.3.5 Enhanced GitHub Actions Workflow Resilience
+**Last Updated**: August 24, 2025 3:24 PM EDT - v0.3.5 Complete GitHub Actions Pipeline Fix
 
 ### ✅ **Phase 1: Research & Setup** - **COMPLETE** (100%)
 
@@ -322,7 +322,7 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 - ✅ **Phase 3: User Interface** - **FULL GUI (Iced 0.13.1)**, TUI (ratatui), CLI prototype, SASL authentication
 - ✅ **LIVE IRC CLIENT** - Complete IRC protocol implementation with real server connectivity
 
-### 🆕 Latest v0.3.5+ Comprehensive GitHub Actions Resilience (August 24, 2025 1:35 AM EDT)
+### 🆕 Latest v0.3.5+ Complete GitHub Actions Pipeline Fix (August 24, 2025 3:24 PM EDT)
 
 - ✅ **COMPREHENSIVE SCCACHE RESILIENCE**: GitHub cache service HTTP 400 fallback with automatic local disk cache mode
 - ✅ **CROSS-PLATFORM TIMEOUT FIXES**: macOS perl-based timeout, Linux/Windows native timeout with proper error handling
@@ -330,7 +330,8 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 - ✅ **WORKFLOW OPTIMIZATION**: mozilla-actions/sccache-action@v0.0.9 with sccache v0.10.0 for enhanced reliability
 - ✅ **UNIFIED CONFIGURATION**: Eliminated platform-specific sccache steps in favor of comprehensive resilience approach
 - ✅ **YAML WORKFLOW VALIDATION**: Both master-pipeline.yml and ci.yml pass comprehensive syntax validation
-- ✅ **CARGO-NEXTEST RESILIENCE**: Enhanced installation with timeout protection and sccache fallback handling
+- ✅ **CARGO-NEXTEST INSTALLATION FIXED**: Removed duplicated bash code causing 'syntax error near unexpected token fi'
+- ✅ **MSRV CHECK FIXED**: Added BASH_ENV helper setup ensuring run_with_timeout function availability
 
 ### 🏅 Previous v0.3.4 Release Achievements (August 23, 2025)
 

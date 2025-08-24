@@ -244,11 +244,6 @@ jobs:
         else
           echo "cargo-nextest already installed"
         fi
-            run_with_timeout 300s cargo install cargo-nextest --locked
-          fi
-        else
-          echo "cargo-nextest already installed"
-        fi
 
     - name: Build (if not cached) with sccache fallback
       # Cross-platform build detection
@@ -532,6 +527,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    
+    # Setup cross-platform helper functions
+    - name: Load helper functions
+      shell: bash
+      run: |
+        cat >>"$GITHUB_ENV" <<'EOF'
+        BASH_ENV=$RUNNER_TEMP/ci_helpers.sh
+        EOF
+        
+        cat >"$RUNNER_TEMP/ci_helpers.sh" <<'EOF'
+        run_with_timeout() {
+          local duration="$1"; shift
+          # Extract numeric value from duration (remove 's' suffix if present)
+          local numeric_duration="${duration%s}"
+          if [[ "${{ runner.os }}" == "macOS" ]]; then
+            # Use perl-based timeout for macOS (timeout command not available)
+            perl -e "alarm $numeric_duration; exec @ARGV" "$@"
+          else
+            # Use native timeout for Linux/Windows
+            timeout "$duration" "$@"
+          fi
+        }
+        export -f run_with_timeout
+        EOF
+        
     - uses: dtolnay/rust-toolchain@master
       with:
         toolchain: 1.75.0
@@ -543,8 +563,8 @@ jobs:
         sccache_available="false"
         rustc_wrapper=""
 
-        if command -v sccache > /dev/null 2>&1 && timeout 30s sccache --version > /dev/null 2>&1; then
-          if timeout 10s sccache --show-stats > /dev/null 2>&1; then
+        if command -v sccache > /dev/null 2>&1 && run_with_timeout 30s sccache --version > /dev/null 2>&1; then
+          if run_with_timeout 10s sccache --show-stats > /dev/null 2>&1; then
             sccache_available="true"
             rustc_wrapper="sccache"
             echo "Using sccache for MSRV check"
