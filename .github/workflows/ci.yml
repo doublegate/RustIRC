@@ -104,6 +104,23 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
+    
+    # Setup cross-platform timeout function for macOS compatibility
+    - name: Setup cross-platform timeout
+      shell: bash
+      run: |
+        # Create cross-platform timeout function
+        if [[ "${{ runner.os }}" == "macOS" ]]; then
+          # macOS doesn't have timeout command, so we use perl for timeout functionality
+          timeout_func='run_with_timeout() { local timeout_duration=$1; shift; perl -e "alarm $timeout_duration; exec @ARGV" "$@"; }'
+          echo "$timeout_func" >> $HOME/.bashrc
+          eval "$timeout_func"
+        else
+          # Linux/Windows have timeout command available
+          timeout_func='run_with_timeout() { timeout "$@"; }'
+          echo "$timeout_func" >> $HOME/.bashrc
+          eval "$timeout_func"
+        fi
     - uses: dtolnay/rust-toolchain@master
       with:
         toolchain: ${{ inputs.rust_version || matrix.rust }}
@@ -232,16 +249,16 @@ jobs:
           if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
             echo "Attempting installation with sccache..."
             export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
-            if ! timeout 300s cargo install cargo-nextest --locked; then
+            if ! run_with_run_with_timeout 300s cargo install cargo-nextest --locked; then
               echo "Installation failed with sccache, retrying without sccache..."
               unset RUSTC_WRAPPER
               export RUSTC_WRAPPER=""
-              timeout 300s cargo install cargo-nextest --locked
+              run_with_run_with_timeout 300s cargo install cargo-nextest --locked
             fi
           else
             echo "Installing without sccache..."
             export RUSTC_WRAPPER=""
-            timeout 300s cargo install cargo-nextest --locked
+            run_with_run_with_timeout 300s cargo install cargo-nextest --locked
           fi
         else
           echo "cargo-nextest already installed"
@@ -257,16 +274,16 @@ jobs:
           if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
             echo "Attempting installation with sccache..."
             export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
-            if ! timeout 300s cargo install cargo-nextest --locked; then
+            if ! run_with_run_with_timeout 300s cargo install cargo-nextest --locked; then
               echo "Installation failed with sccache, retrying without sccache..."
               unset RUSTC_WRAPPER
               export RUSTC_WRAPPER=""
-              timeout 300s cargo install cargo-nextest --locked
+              run_with_run_with_timeout 300s cargo install cargo-nextest --locked
             fi
           else
             echo "Installing without sccache..."
             export RUSTC_WRAPPER=""
-            timeout 300s cargo install cargo-nextest --locked
+            run_with_run_with_timeout 300s cargo install cargo-nextest --locked
           fi
         else
           echo "cargo-nextest already installed"
@@ -281,16 +298,16 @@ jobs:
         if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
           echo "Building with sccache..."
           export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
-          if ! timeout 900s cargo build --all-features --all-targets --release; then
+          if ! run_with_timeout 900s cargo build --all-features --all-targets --release; then
             echo "Build failed with sccache, retrying without sccache..."
             unset RUSTC_WRAPPER
             export RUSTC_WRAPPER=""
-            timeout 900s cargo build --all-features --all-targets --release
+            run_with_timeout 900s cargo build --all-features --all-targets --release
           fi
         else
           echo "Building without sccache..."
           export RUSTC_WRAPPER=""
-          timeout 900s cargo build --all-features --all-targets --release
+          run_with_timeout 900s cargo build --all-features --all-targets --release
         fi
 
     - name: Download build artifacts (if available)
@@ -310,20 +327,20 @@ jobs:
         # Try with sccache if available
         if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
           export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
-          if ! timeout 600s cargo nextest run -p rustirc-core --release --all-features --profile ci 2>&1; then
+          if ! run_with_timeout 600s cargo nextest run -p rustirc-core --release --all-features --profile ci 2>&1; then
             echo "nextest failed with sccache, trying without sccache..."
             unset RUSTC_WRAPPER
             export RUSTC_WRAPPER=""
-            if ! timeout 600s cargo nextest run -p rustirc-core --release --all-features --profile ci; then
+            if ! run_with_timeout 600s cargo nextest run -p rustirc-core --release --all-features --profile ci; then
               echo "nextest failed, trying cargo test..."
-              timeout 600s cargo test -p rustirc-core --release --all-features
+              run_with_timeout 600s cargo test -p rustirc-core --release --all-features
             fi
           fi
         else
           export RUSTC_WRAPPER=""
-          if ! timeout 600s cargo nextest run -p rustirc-core --release --all-features --profile ci; then
+          if ! run_with_timeout 600s cargo nextest run -p rustirc-core --release --all-features --profile ci; then
             echo "nextest failed, trying cargo test..."
-            timeout 600s cargo test -p rustirc-core --release --all-features
+            run_with_timeout 600s cargo test -p rustirc-core --release --all-features
           fi
         fi
 
@@ -336,20 +353,20 @@ jobs:
         # Try with sccache if available
         if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
           export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
-          if ! timeout 600s cargo nextest run -p rustirc-protocol --release --all-features --profile ci 2>&1; then
+          if ! run_with_timeout 600s cargo nextest run -p rustirc-protocol --release --all-features --profile ci 2>&1; then
             echo "nextest failed with sccache, trying without sccache..."
             unset RUSTC_WRAPPER
             export RUSTC_WRAPPER=""
-            if ! timeout 600s cargo nextest run -p rustirc-protocol --release --all-features --profile ci; then
+            if ! run_with_timeout 600s cargo nextest run -p rustirc-protocol --release --all-features --profile ci; then
               echo "nextest failed, trying cargo test..."
-              timeout 600s cargo test -p rustirc-protocol --release --all-features
+              run_with_timeout 600s cargo test -p rustirc-protocol --release --all-features
             fi
           fi
         else
           export RUSTC_WRAPPER=""
-          if ! timeout 600s cargo nextest run -p rustirc-protocol --release --all-features --profile ci; then
+          if ! run_with_timeout 600s cargo nextest run -p rustirc-protocol --release --all-features --profile ci; then
             echo "nextest failed, trying cargo test..."
-            timeout 600s cargo test -p rustirc-protocol --release --all-features
+            run_with_timeout 600s cargo test -p rustirc-protocol --release --all-features
           fi
         fi
 
@@ -362,20 +379,20 @@ jobs:
         # Try with sccache if available
         if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
           export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
-          if ! timeout 600s cargo nextest run -p rustirc-tui --release --all-features --profile ci 2>&1; then
+          if ! run_with_timeout 600s cargo nextest run -p rustirc-tui --release --all-features --profile ci 2>&1; then
             echo "nextest failed with sccache, trying without sccache..."
             unset RUSTC_WRAPPER
             export RUSTC_WRAPPER=""
-            if ! timeout 600s cargo nextest run -p rustirc-tui --release --all-features --profile ci; then
+            if ! run_with_timeout 600s cargo nextest run -p rustirc-tui --release --all-features --profile ci; then
               echo "nextest failed, trying cargo test..."
-              timeout 600s cargo test -p rustirc-tui --release --all-features
+              run_with_timeout 600s cargo test -p rustirc-tui --release --all-features
             fi
           fi
         else
           export RUSTC_WRAPPER=""
-          if ! timeout 600s cargo nextest run -p rustirc-tui --release --all-features --profile ci; then
+          if ! run_with_timeout 600s cargo nextest run -p rustirc-tui --release --all-features --profile ci; then
             echo "nextest failed, trying cargo test..."
-            timeout 600s cargo test -p rustirc-tui --release --all-features
+            run_with_timeout 600s cargo test -p rustirc-tui --release --all-features
           fi
         fi
 
@@ -388,20 +405,20 @@ jobs:
         # Try with sccache if available
         if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
           export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
-          if ! timeout 600s cargo nextest run -p rustirc-plugins --release --all-features --profile ci 2>&1; then
+          if ! run_with_timeout 600s cargo nextest run -p rustirc-plugins --release --all-features --profile ci 2>&1; then
             echo "nextest failed with sccache, trying without sccache..."
             unset RUSTC_WRAPPER
             export RUSTC_WRAPPER=""
-            if ! timeout 600s cargo nextest run -p rustirc-plugins --release --all-features --profile ci; then
+            if ! run_with_timeout 600s cargo nextest run -p rustirc-plugins --release --all-features --profile ci; then
               echo "nextest failed, trying cargo test..."
-              timeout 600s cargo test -p rustirc-plugins --release --all-features
+              run_with_timeout 600s cargo test -p rustirc-plugins --release --all-features
             fi
           fi
         else
           export RUSTC_WRAPPER=""
-          if ! timeout 600s cargo nextest run -p rustirc-plugins --release --all-features --profile ci; then
+          if ! run_with_timeout 600s cargo nextest run -p rustirc-plugins --release --all-features --profile ci; then
             echo "nextest failed, trying cargo test..."
-            timeout 600s cargo test -p rustirc-plugins --release --all-features
+            run_with_timeout 600s cargo test -p rustirc-plugins --release --all-features
           fi
         fi
 
@@ -414,20 +431,20 @@ jobs:
         # Try with sccache if available
         if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
           export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
-          if ! timeout 600s cargo nextest run -p rustirc-scripting --release --all-features --profile ci 2>&1; then
+          if ! run_with_timeout 600s cargo nextest run -p rustirc-scripting --release --all-features --profile ci 2>&1; then
             echo "nextest failed with sccache, trying without sccache..."
             unset RUSTC_WRAPPER
             export RUSTC_WRAPPER=""
-            if ! timeout 600s cargo nextest run -p rustirc-scripting --release --all-features --profile ci; then
+            if ! run_with_timeout 600s cargo nextest run -p rustirc-scripting --release --all-features --profile ci; then
               echo "nextest failed, trying cargo test..."
-              timeout 600s cargo test -p rustirc-scripting --release --all-features
+              run_with_timeout 600s cargo test -p rustirc-scripting --release --all-features
             fi
           fi
         else
           export RUSTC_WRAPPER=""
-          if ! timeout 600s cargo nextest run -p rustirc-scripting --release --all-features --profile ci; then
+          if ! run_with_timeout 600s cargo nextest run -p rustirc-scripting --release --all-features --profile ci; then
             echo "nextest failed, trying cargo test..."
-            timeout 600s cargo test -p rustirc-scripting --release --all-features
+            run_with_timeout 600s cargo test -p rustirc-scripting --release --all-features
           fi
         fi
 
@@ -440,96 +457,90 @@ jobs:
         # Try with sccache if available
         if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
           export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
-          if ! timeout 600s cargo nextest run -p rustirc-gui --release --all-features --lib --profile ci 2>&1; then
+          if ! run_with_timeout 600s cargo nextest run -p rustirc-gui --release --all-features --lib --profile ci 2>&1; then
             echo "nextest failed with sccache, trying without sccache..."
             unset RUSTC_WRAPPER
             export RUSTC_WRAPPER=""
-            if ! timeout 600s cargo nextest run -p rustirc-gui --release --all-features --lib --profile ci; then
+            if ! run_with_timeout 600s cargo nextest run -p rustirc-gui --release --all-features --lib --profile ci; then
               echo "nextest failed, trying cargo test..."
-              timeout 600s cargo test -p rustirc-gui --release --all-features --lib
+              run_with_timeout 600s cargo test -p rustirc-gui --release --all-features --lib
             fi
           fi
         else
           export RUSTC_WRAPPER=""
-          if ! timeout 600s cargo nextest run -p rustirc-gui --release --all-features --lib --profile ci; then
+          if ! run_with_timeout 600s cargo nextest run -p rustirc-gui --release --all-features --lib --profile ci; then
             echo "nextest failed, trying cargo test..."
-            timeout 600s cargo test -p rustirc-gui --release --all-features --lib
+            run_with_timeout 600s cargo test -p rustirc-gui --release --all-features --lib
           fi
         fi
-    # Run doctests individually on Linux to avoid duplication across platforms
+    # Run doctests on all platforms for comprehensive testing
     - name: Run doctests for rustirc-core
-      if: contains(matrix.os, 'ubuntu')
       shell: bash
       env:
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
       run: |
         echo "Running doctests for rustirc-core..."
-        if timeout 300s cargo test --doc -p rustirc-core --all-features > /dev/null 2>&1; then
+        if run_with_timeout 300s cargo test --doc -p rustirc-core --all-features > /dev/null 2>&1; then
           echo "Doctests passed for rustirc-core"
         else
           echo "No doctests or doctest failed in rustirc-core"
         fi
 
     - name: Run doctests for rustirc-protocol
-      if: contains(matrix.os, 'ubuntu')
       shell: bash
       env:
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
       run: |
         echo "Running doctests for rustirc-protocol..."
-        if timeout 300s cargo test --doc -p rustirc-protocol --all-features > /dev/null 2>&1; then
+        if run_with_timeout 300s cargo test --doc -p rustirc-protocol --all-features > /dev/null 2>&1; then
           echo "Doctests passed for rustirc-protocol"
         else
           echo "No doctests or doctest failed in rustirc-protocol"
         fi
 
     - name: Run doctests for rustirc-gui
-      if: contains(matrix.os, 'ubuntu')
       shell: bash
       env:
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
       run: |
         echo "Running doctests for rustirc-gui..."
-        if timeout 300s cargo test --doc -p rustirc-gui --all-features > /dev/null 2>&1; then
+        if run_with_timeout 300s cargo test --doc -p rustirc-gui --all-features > /dev/null 2>&1; then
           echo "Doctests passed for rustirc-gui"
         else
           echo "No doctests or doctest failed in rustirc-gui"
         fi
 
     - name: Run doctests for rustirc-tui
-      if: contains(matrix.os, 'ubuntu')
       shell: bash
       env:
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
       run: |
         echo "Running doctests for rustirc-tui..."
-        if timeout 300s cargo test --doc -p rustirc-tui --all-features > /dev/null 2>&1; then
+        if run_with_timeout 300s cargo test --doc -p rustirc-tui --all-features > /dev/null 2>&1; then
           echo "Doctests passed for rustirc-tui"
         else
           echo "No doctests or doctest failed in rustirc-tui"
         fi
 
     - name: Run doctests for rustirc-scripting
-      if: contains(matrix.os, 'ubuntu')
       shell: bash
       env:
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
       run: |
         echo "Running doctests for rustirc-scripting..."
-        if timeout 300s cargo test --doc -p rustirc-scripting --all-features > /dev/null 2>&1; then
+        if run_with_timeout 300s cargo test --doc -p rustirc-scripting --all-features > /dev/null 2>&1; then
           echo "Doctests passed for rustirc-scripting"
         else
           echo "No doctests or doctest failed in rustirc-scripting"
         fi
 
     - name: Run doctests for rustirc-plugins
-      if: contains(matrix.os, 'ubuntu')
       shell: bash
       env:
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
       run: |
         echo "Running doctests for rustirc-plugins..."
-        if timeout 300s cargo test --doc -p rustirc-plugins --all-features > /dev/null 2>&1; then
+        if run_with_timeout 300s cargo test --doc -p rustirc-plugins --all-features > /dev/null 2>&1; then
           echo "Doctests passed for rustirc-plugins"
         else
           echo "No doctests or doctest failed in rustirc-plugins"
@@ -581,14 +592,14 @@ jobs:
 
         if [ "$sccache_available" = "true" ]; then
           export RUSTC_WRAPPER="$rustc_wrapper"
-          if ! timeout 600s cargo check --all-features; then
+          if ! run_with_timeout 600s cargo check --all-features; then
             echo "MSRV check failed with sccache, retrying without sccache..."
             unset RUSTC_WRAPPER
             export RUSTC_WRAPPER=""
-            timeout 600s cargo check --all-features
+            run_with_timeout 600s cargo check --all-features
           fi
         else
           echo "Running MSRV check without sccache"
           export RUSTC_WRAPPER=""
-          timeout 600s cargo check --all-features
+          run_with_timeout 600s cargo check --all-features
         fi

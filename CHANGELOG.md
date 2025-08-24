@@ -14,12 +14,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Script/plugin manager UI
 - Event-driven scripting API
 
-## [0.3.5] - 2025-08-24 (Final Build: 12:24 AM EDT)
+## [0.3.5] - 2025-08-24 (Final Build: 12:56 AM EDT)
 
 ### Summary
-Comprehensive Workflow Resilience & CI/CD Hardening - This release implements robust error handling for all GitHub Actions workflows with enhanced sccache fallback mechanisms, complete PowerShell to bash conversion, and cargo-audit version compatibility. The pipeline now gracefully handles GitHub artifact cache service outages, automatically falling back to direct compilation when needed.
+Cross-Platform Compatibility & Comprehensive Doctest Coverage - This release fixes critical macOS Test Matrix failures by implementing cross-platform timeout compatibility and enables comprehensive doctest coverage across all architectures. The macOS timeout command unavailability issue (exit code 127) is resolved with a perl-based timeout implementation, while doctests now execute on Linux, macOS, and Windows for complete test coverage.
 
 ### Critical Fixes
+- **macOS Timeout Compatibility**: Fixed `timeout` command unavailability on macOS runners
+  - Implemented cross-platform timeout function using perl for macOS compatibility
+  - Updated all 15+ timeout usage locations across ci.yml and master-pipeline.yml workflows
+  - Replaced `timeout` commands with `run_with_timeout` function for universal compatibility
+  - Fixed exit code 127 errors preventing macOS Test Matrix execution
+
+- **Comprehensive Doctest Coverage**: Enabled doctests on all architectures 
+  - Removed Ubuntu-only restrictions from all 6 doctest steps
+  - Doctests now execute on Linux, macOS, and Windows for complete coverage
+  - Updated doctest comments from "avoid duplication" to "comprehensive testing"
+  - Ensures consistent doctest validation across all supported platforms
+
 - **Complete YAML Workflow Reformat**: Fixed all indentation and syntax issues
   - Reformatted entire 646-line master-pipeline.yml with proper nesting
   - Fixed all job definitions at 2 spaces, steps at 6 spaces

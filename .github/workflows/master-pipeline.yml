@@ -57,6 +57,23 @@ jobs:
       release_tag: ${{ steps.config.outputs.release_tag }}
     steps:
       - uses: actions/checkout@v4
+      
+      # Setup cross-platform timeout function for macOS compatibility
+      - name: Setup cross-platform timeout
+        shell: bash
+        run: |
+          # Create cross-platform timeout function
+          if [[ "${{ runner.os }}" == "macOS" ]]; then
+            # macOS doesn't have timeout command, so we use perl for timeout functionality
+            timeout_func='run_with_timeout() { local timeout_duration=$1; shift; perl -e "alarm $timeout_duration; exec @ARGV" "$@"; }'
+            echo "$timeout_func" >> $HOME/.bashrc
+            eval "$timeout_func"
+          else
+            # Linux/Windows have timeout command available
+            timeout_func='run_with_timeout() { timeout "$@"; }'
+            echo "$timeout_func" >> $HOME/.bashrc
+            eval "$timeout_func"
+          fi
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -79,10 +96,10 @@ jobs:
           if command -v sccache > /dev/null 2>&1; then
             echo "sccache binary found, testing functionality..."
             # Test sccache with timeout and comprehensive checks
-            if timeout 30s sccache --version > /dev/null 2>&1; then
+            if run_with_timeout 30s sccache --version > /dev/null 2>&1; then
               echo "sccache version check passed"
               # Test sccache stats to verify service connectivity
-              if timeout 10s sccache --show-stats > /dev/null 2>&1; then
+              if run_with_timeout 10s sccache --show-stats > /dev/null 2>&1; then
                 sccache_available="true"
                 rustc_wrapper="sccache"
                 echo "sccache verified and will be used for compilation"
@@ -128,16 +145,16 @@ jobs:
           if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
             echo "Running clippy with sccache (timeout: 10 minutes)..."
             export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
-            if ! timeout 600s cargo clippy --all-targets --all-features -- -D warnings; then
+            if ! run_with_timeout 600s cargo clippy --all-targets --all-features -- -D warnings; then
               echo "Clippy failed with sccache (timeout or error), retrying without sccache..."
               unset RUSTC_WRAPPER
               export RUSTC_WRAPPER=""
-              timeout 600s cargo clippy --all-targets --all-features -- -D warnings
+              run_with_timeout 600s cargo clippy --all-targets --all-features -- -D warnings
             fi
           else
             echo "Running clippy without sccache (timeout: 10 minutes)..."
             export RUSTC_WRAPPER=""
-            timeout 600s cargo clippy --all-targets --all-features -- -D warnings
+            run_with_timeout 600s cargo clippy --all-targets --all-features -- -D warnings
           fi
         env:
           RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
@@ -150,17 +167,17 @@ jobs:
           if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
             echo "Building with sccache (timeout: 15 minutes)..."
             export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
-            if ! timeout 900s cargo build --all-features --all-targets --release; then
+            if ! run_with_timeout 900s cargo build --all-features --all-targets --release; then
               echo "Build failed with sccache (timeout or error), retrying without sccache..."
               unset RUSTC_WRAPPER
               export RUSTC_WRAPPER=""
               echo "Retrying build without sccache (timeout: 15 minutes)..."
-              timeout 900s cargo build --all-features --all-targets --release
+              run_with_timeout 900s cargo build --all-features --all-targets --release
             fi
           else
             echo "Building without sccache (timeout: 15 minutes)..."
             export RUSTC_WRAPPER=""
-            timeout 900s cargo build --all-features --all-targets --release
+            run_with_timeout 900s cargo build --all-features --all-targets --release
           fi
         env:
           RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}

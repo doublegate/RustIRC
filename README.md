@@ -104,7 +104,16 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 - ✅ **Comprehensive Test Coverage**: 10+ test scenarios using execute_task framework
 - ✅ **Context-Aware Menus**: Dynamic menu rendering with real application state
 
-### 🚀 **Latest Infrastructure Improvements** (v0.3.5 - August 24, 2025 12:24 AM EDT)
+### 🚀 **Latest Infrastructure Improvements** (v0.3.5 - August 24, 2025 12:56 AM EDT)
+
+#### Cross-Platform Compatibility & Comprehensive Doctest Coverage (100% Complete)
+
+- ✅ **macOS Timeout Compatibility**: Fixed `timeout` command unavailability on macOS runners (exit code 127)
+- ✅ **Cross-Platform Timeout Function**: Perl-based implementation for macOS, native timeout for Linux/Windows
+- ✅ **Comprehensive Timeout Updates**: 15+ timeout usage locations updated across both workflows
+- ✅ **All-Platform Doctests**: Removed Ubuntu-only restrictions, doctests now run on all architectures
+- ✅ **Complete Test Matrix**: macOS, Windows, and Linux all executing full test suites including doctests
+- ✅ **YAML Syntax Validation**: Both ci.yml and master-pipeline.yml validated with Python yaml.safe_load
 
 #### Complete YAML Workflow Fixes & Pipeline Resilience (100% Valid)
 
