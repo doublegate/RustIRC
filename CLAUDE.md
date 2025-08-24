@@ -359,3 +359,32 @@ Ensuring CLI has full GUI feature equivalency:
    - Always run `python3 -c "import yaml; yaml.safe_load(open('.github/workflows/file.yml'))"`
    - Catches syntax and context errors before pipeline execution
    - Saves debugging time and failed runs
+
+### GitHub Actions Function Persistence Pattern (August 24, 2025 1:17 AM EDT)
+
+**Critical Pattern for RustIRC Workflow Resilience**:
+
+1. **Function Persistence Issues**:
+   - GitHub Actions steps run in separate shell instances
+   - Function definitions don't persist between steps
+   - Error: `run_with_timeout: command not found` in workflow jobs
+
+2. **BASH_ENV Helper Solution**:
+   - Create helper functions in `$RUNNER_TEMP/ci_helpers.sh`
+   - Set `BASH_ENV=$RUNNER_TEMP/ci_helpers.sh` in `$GITHUB_ENV`
+   - Export functions with `export -f function_name` for universal availability
+
+3. **Cross-Platform Timeout Implementation**:
+   - macOS runners lack timeout command (exit code 127)
+   - Use perl-based fallback: `perl -e "alarm $duration; exec @ARGV" "$@"`
+   - Native timeout for Linux/Windows: `timeout "$duration" "$@"`
+
+4. **Systematic Typo Detection**:
+   - Grep analysis identified repeated typos: `run_with_run_with_timeout`
+   - Use MultiEdit with `replace_all: true` for comprehensive fixes
+   - Applied to both master-pipeline.yml and ci.yml workflows
+
+5. **Comprehensive Doctest Coverage**:
+   - Removed Ubuntu-only restrictions: `if: contains(matrix.os, 'ubuntu')`
+   - Enabled doctests on all architectures (Linux, macOS, Windows)
+   - Ensures consistent validation across all supported platforms

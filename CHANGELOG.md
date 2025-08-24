@@ -14,12 +14,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Script/plugin manager UI
 - Event-driven scripting API
 
-## [0.3.5] - 2025-08-24 (Final Build: 1:10 AM EDT)
+## [0.3.5] - 2025-08-24 (Comprehensive GitHub Actions Resilience: 1:35 AM EDT)
 
 ### Summary
-Enhanced GitHub Actions Workflow Resilience - This release fixes critical GitHub Actions workflow issues including the `run_with_timeout: command not found` errors in Quick Checks & Build jobs. Implements BASH_ENV helper function approach for cross-platform timeout compatibility and corrects workflow typos. The macOS timeout command unavailability issue (exit code 127) is resolved with a perl-based timeout implementation, while doctests now execute on Linux, macOS, and Windows for complete test coverage.
+Comprehensive GitHub Actions Resilience - This release implements robust fixes for GitHub cache service outages, sccache HTTP 400 errors, and cross-platform timeout compatibility. Enhanced sccache resilience automatically falls back to local disk cache when GitHub's cache service experiences issues ("Our services aren't available right now"). The updated mozilla-actions/sccache-action@v0.0.9 with sccache v0.10.0 provides enhanced reliability and proper error handling across all supported platforms.
 
 ### Critical Fixes
+
+#### sccache Resilience & GitHub Cache Service Outages
+- **Comprehensive sccache Resilience**: Addresses GitHub cache service HTTP 400 errors
+  - `sccache --start-server` probing with `SCCACHE_NO_DAEMON=1` to detect service unavailability
+  - Automatic fallback to local disk cache mode (`SCCACHE_GHA_ENABLED=false`) when GitHub cache fails
+  - Local disk cache configuration: `SCCACHE_DIR=$HOME/.cache/sccache`, `SCCACHE_CACHE_SIZE=10G`
+  - Updated to mozilla-actions/sccache-action@v0.0.9 with sccache v0.10.0 for enhanced reliability
+  - Unified sccache configuration eliminates platform-specific complexity and circular dependencies
+
+#### Cross-Platform Timeout & Function Persistence
 - **GitHub Actions Function Persistence**: Fixed `run_with_timeout: command not found` errors
   - Implemented BASH_ENV helper function approach for cross-platform timeout functionality
   - Function now properly persists across all GitHub Actions workflow steps
@@ -27,9 +37,10 @@ Enhanced GitHub Actions Workflow Resilience - This release fixes critical GitHub
   - Fixed 6 typos: `run_with_run_with_timeout` → `run_with_timeout` in ci.yml
   - Clean, maintainable helper function architecture prevents future issues
 
-- **macOS Timeout Compatibility**: Fixed `timeout` command unavailability on macOS runners
-  - Implemented cross-platform timeout function using perl for macOS compatibility
-  - Updated all 15+ timeout usage locations across ci.yml and master-pipeline.yml workflows
+- **macOS Timeout Compatibility**: Fixed `timeout: command not found` (exit code 127) on macOS runners
+  - Implemented cross-platform timeout function using perl for macOS compatibility  
+  - Proper numeric duration extraction to prevent "Substitution replacement not terminated" errors
+  - Native timeout for Linux/Windows, perl-based timeout for macOS in unified helper function
   - Replaced `timeout` commands with `run_with_timeout` function for universal compatibility
   - Fixed exit code 127 errors preventing macOS Test Matrix execution
 
