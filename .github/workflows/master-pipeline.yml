@@ -511,7 +511,9 @@ jobs:
       # Install cross for cross-compilation
       - name: Install cross
         if: matrix.cross == true
-        run: cargo install cross --git https://github.com/cross-rs/cross
+        run: |
+          # Install a stable version of cross to avoid GLIBC compatibility issues
+          cargo install cross --version 0.2.5 --locked
 
       # Use shared cache from test phase when possible
       - uses: Swatinem/rust-cache@v2
@@ -525,12 +527,14 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.cross }}" = "true" ]; then
+            # Use cross with proper configuration for ARM64 builds
             cross build --release --target ${{ matrix.target }} --bin rustirc
           else
             cargo build --release --target ${{ matrix.target }} --bin rustirc
           fi
         env:
           RUSTC_WRAPPER: ""  # Disable sccache for cross-platform builds
+          CROSS_CONTAINER_OPTS: "--platform linux/amd64"  # Ensure consistent platform for cross
 
       - name: Package artifact (Unix)
         if: "!contains(matrix.os, 'windows')"

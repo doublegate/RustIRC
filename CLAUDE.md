@@ -420,7 +420,7 @@ Ensuring CLI has full GUI feature equivalency:
    - Proper variable unsetting with `unset RUSTC_WRAPPER`
    - Timeout protection for all cargo operations using `run_with_timeout`
 
-### Complete GitHub Actions Pipeline Fix Pattern (August 24, 2025 3:28 PM EDT)
+### Complete GitHub Actions Pipeline Fix Pattern (August 24, 2025 4:41 PM EDT)
 
 **Critical Fixes for v0.3.5 Release Build**:
 
@@ -434,8 +434,18 @@ Ensuring CLI has full GUI feature equivalency:
    - Solution: Added complete BASH_ENV helper setup to MSRV job
    - Impact: MSRV check now has access to cross-platform timeout functions
 
-3. **Comprehensive Validation**:
-   - All 4 workflow files pass YAML syntax validation
-   - Bash scripts validated for proper syntax
-   - BASH_ENV approach ensures function persistence
-   - All existing sccache resilience features preserved
+3. **Windows Release Build Shell Fix**:
+   - Problem: PowerShell attempting to execute bash if-statement syntax
+   - Solution: Added `shell: bash` specification to Build release binary step
+   - Impact: Windows release artifacts now build successfully
+
+4. **Linux ARM64 Cross-Compilation Fix**:
+   - Problem: GLIBC version mismatch (2.33/2.32/2.34/2.39 not found)
+   - Solution: Use stable cross v0.2.5 with --locked flag instead of latest git
+   - Impact: ARM64 Linux builds now complete successfully
+
+5. **Comprehensive Validation**:
+   - All workflow files pass YAML syntax validation
+   - All platform builds operational (Windows, Linux x64/ARM64, macOS x64/ARM64)
+   - Complete CI/CD pipeline executing without failures
+   - All existing resilience features preserved and enhanced
