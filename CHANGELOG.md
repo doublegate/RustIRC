@@ -14,10 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Script/plugin manager UI
 - Event-driven scripting API
 
-## [0.3.5] - 2025-08-23
+## [0.3.5] - 2025-08-23 (Final Build: 10:32 PM EDT)
 
 ### Summary
-Critical Pipeline Resilience & Production Stability - This release addresses critical CI/CD pipeline failures by implementing comprehensive fallback mechanisms for sccache cache service outages and fixing release notes preservation. The pipeline is now production-ready with 100% resilience to transient failures while maintaining optimal performance when all services are available.
+Critical Pipeline Resilience & Production Stability - This release addresses critical CI/CD pipeline failures by implementing comprehensive fallback mechanisms for sccache cache service outages and fixing release notes preservation. The pipeline is now production-ready with 100% resilience to transient failures while maintaining optimal performance when all services are available. Additional documentation for achieving 99.999% reliability has been added.
 
 ### Critical Fixes
 - **sccache Resilience**: Implemented automatic fallback when GitHub cache service is unavailable
@@ -40,6 +40,8 @@ Critical Pipeline Resilience & Production Stability - This release addresses cri
 - Retry logic for clippy and build steps
 - Enhanced error logging and diagnostics
 - Fallback handling documentation in workflow
+- CI/CD troubleshooting guide (docs/ci-cd-troubleshooting.md)
+- Five nines reliability roadmap (docs/five_nines.md) with 12-point implementation plan
 
 ### Changed
 - sccache-action now continues on error instead of failing pipeline
