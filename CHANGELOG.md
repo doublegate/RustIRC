@@ -14,12 +14,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Script/plugin manager UI
 - Event-driven scripting API
 
-## [0.3.5] - 2025-08-24 (Final Build: 12:56 AM EDT)
+## [0.3.5] - 2025-08-24 (Final Build: 1:10 AM EDT)
 
 ### Summary
-Cross-Platform Compatibility & Comprehensive Doctest Coverage - This release fixes critical macOS Test Matrix failures by implementing cross-platform timeout compatibility and enables comprehensive doctest coverage across all architectures. The macOS timeout command unavailability issue (exit code 127) is resolved with a perl-based timeout implementation, while doctests now execute on Linux, macOS, and Windows for complete test coverage.
+Enhanced GitHub Actions Workflow Resilience - This release fixes critical GitHub Actions workflow issues including the `run_with_timeout: command not found` errors in Quick Checks & Build jobs. Implements BASH_ENV helper function approach for cross-platform timeout compatibility and corrects workflow typos. The macOS timeout command unavailability issue (exit code 127) is resolved with a perl-based timeout implementation, while doctests now execute on Linux, macOS, and Windows for complete test coverage.
 
 ### Critical Fixes
+- **GitHub Actions Function Persistence**: Fixed `run_with_timeout: command not found` errors
+  - Implemented BASH_ENV helper function approach for cross-platform timeout functionality
+  - Function now properly persists across all GitHub Actions workflow steps
+  - Eliminated inline function definitions from individual workflow steps
+  - Fixed 6 typos: `run_with_run_with_timeout` → `run_with_timeout` in ci.yml
+  - Clean, maintainable helper function architecture prevents future issues
+
 - **macOS Timeout Compatibility**: Fixed `timeout` command unavailability on macOS runners
   - Implemented cross-platform timeout function using perl for macOS compatibility
   - Updated all 15+ timeout usage locations across ci.yml and master-pipeline.yml workflows

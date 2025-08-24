@@ -58,22 +58,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      # Setup cross-platform timeout function for macOS compatibility
-      - name: Setup cross-platform timeout
+      # Setup cross-platform helper functions
+      - name: Load helper functions
         shell: bash
         run: |
-          # Create cross-platform timeout function
-          if [[ "${{ runner.os }}" == "macOS" ]]; then
-            # macOS doesn't have timeout command, so we use perl for timeout functionality
-            timeout_func='run_with_timeout() { local timeout_duration=$1; shift; perl -e "alarm $timeout_duration; exec @ARGV" "$@"; }'
-            echo "$timeout_func" >> $HOME/.bashrc
-            eval "$timeout_func"
-          else
-            # Linux/Windows have timeout command available
-            timeout_func='run_with_timeout() { timeout "$@"; }'
-            echo "$timeout_func" >> $HOME/.bashrc
-            eval "$timeout_func"
-          fi
+          cat >>"$GITHUB_ENV" <<'EOF'
+          BASH_ENV=$RUNNER_TEMP/ci_helpers.sh
+          EOF
+          
+          cat >"$RUNNER_TEMP/ci_helpers.sh" <<'EOF'
+          run_with_timeout() {
+            local duration="$1"; shift
+            if [[ "${{ runner.os }}" == "macOS" ]]; then
+              perl -e "alarm $duration; exec @ARGV" "$@"
+            else
+              timeout "$duration" "$@"
+            fi
+          }
+          export -f run_with_timeout
+          EOF
 
       - uses: dtolnay/rust-toolchain@stable
         with:
