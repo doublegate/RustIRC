@@ -14,17 +14,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Script/plugin manager UI
 - Event-driven scripting API
 
-## [0.3.5] - 2025-08-23 (Final Build: 11:38 PM EDT)
+## [0.3.5] - 2025-08-24 (Final Build: 12:00 AM EDT)
 
 ### Summary
-Complete YAML Workflow Fixes & Pipeline Validation - This release completes comprehensive YAML workflow fixes including complete reformatting of the 646-line master-pipeline.yml, migration from runner.os to matrix.os for reusable workflow compatibility, and proper indentation at all nesting levels. The pipeline now passes all YAML validation with zero errors and is ready for production deployment across all platforms.
+Complete Workflow Compatibility Fixes & Pipeline Validation - This release resolves all GitHub Actions workflow compatibility issues including workflow_call context problems, matrix.os references in shell expressions, PowerShell/Bash conditional scripts, and !contains() expression syntax. The pipeline now uses unified bash scripts across all platforms and properly handles reusable workflow invocation.
 
 ### Critical Fixes
 - **Complete YAML Workflow Reformat**: Fixed all indentation and syntax issues
   - Reformatted entire 646-line master-pipeline.yml with proper nesting
   - Fixed all job definitions at 2 spaces, steps at 6 spaces
   - Corrected env blocks and with blocks indentation
-  - Added quotes to `!contains()` expressions to fix parsing errors
+  - Fixed `!contains()` expressions with proper `${{}}` syntax
+  - Removed matrix.os from shell expressions for workflow_call compatibility
+  - Converted all PowerShell/Bash conditionals to unified bash scripts
   - Removed all trailing spaces from workflow files
 - **runner.os → matrix.os Migration**: Fixed reusable workflow compatibility
   - Replaced all runner.os references with matrix.os throughout workflows

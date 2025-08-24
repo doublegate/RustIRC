@@ -61,11 +61,11 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 [![Version](https://img.shields.io/badge/version-0.3.5-blue.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.3.5)
 [![Release Date](https://img.shields.io/badge/released-August%2023%2C%202025-green.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.3.5)
 
-**Version 0.3.5** - Complete YAML Workflow Fixes & CI/CD Production Readiness
+**Version 0.3.5** - Complete Workflow Compatibility Fixes & CI/CD Production Readiness
 
 ## 🏗️ Current Development Status
 
-**Last Updated**: August 23, 2025 11:38 PM EDT - v0.3.5 Complete YAML Workflow Fixes & Codecov Integration
+**Last Updated**: August 24, 2025 12:00 AM EDT - v0.3.5 Complete Workflow Compatibility Fixes
 
 ### ✅ **Phase 1: Research & Setup** - **COMPLETE** (100%)
 
@@ -104,7 +104,7 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 - ✅ **Comprehensive Test Coverage**: 10+ test scenarios using execute_task framework
 - ✅ **Context-Aware Menus**: Dynamic menu rendering with real application state
 
-### 🚀 **Latest Infrastructure Improvements** (v0.3.5 - August 23, 2025 11:38 PM EDT)
+### 🚀 **Latest Infrastructure Improvements** (v0.3.5 - August 24, 2025 12:00 AM EDT)
 
 #### Complete YAML Workflow Fixes & Pipeline Resilience (100% Valid)
 
@@ -115,7 +115,9 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 - ✅ **YAML Validation**: Zero errors with yamllint, Python yaml parser validates successfully
 - ✅ **Line-Length Compliance**: All critical lines within limits, remaining as acceptable warnings
 - ✅ **Trailing Space Cleanup**: All trailing whitespace removed from workflow files
-- ✅ **Expression Quoting**: Fixed `!contains()` expressions with proper quotes to avoid parsing errors
+- ✅ **Expression Quoting**: Fixed `!contains()` expressions with proper `${{}}` syntax
+- ✅ **Workflow_call Compatibility**: Removed matrix.os from shell expressions for reusable workflows
+- ✅ **Unified Bash Scripts**: Converted all PowerShell/Bash conditionals to pure bash for all platforms
 
 #### Test Analytics & Documentation Excellence
 

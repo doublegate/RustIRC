@@ -1,6 +1,6 @@
 # CI/CD Pipeline Troubleshooting Guide
 
-**Last Updated**: 2025-08-23 11:38 PM EDT
+**Last Updated**: 2025-08-24 12:00 AM EDT
 
 ## Overview
 
@@ -46,14 +46,15 @@ Server startup failed: cache storage failed to read: Our services aren't availab
 
 ### 4. YAML Workflow Syntax Errors
 
-**Problem**: GitHub Actions fails with "Unrecognized named-value: 'runner'" in reusable workflows.
+**Problem**: GitHub Actions fails with "Unrecognized named-value: 'matrix'" in workflow_call context.
 
-**Root Cause**: The `runner.os` context is not available in reusable workflows (workflow_call).
+**Root Cause**: The `matrix.os` context is not available in shell expressions when workflow is called via workflow_call.
 
 **Solution**: 
-- Migrated all `runner.os` references to `matrix.os` parameter
-- Updated conditionals to use `contains(matrix.os, 'windows')` pattern
-- Fixed all indentation issues (jobs at 2 spaces, steps at 6 spaces)
+- Removed all `matrix.os` references from shell expressions
+- Converted all PowerShell/Bash conditional scripts to unified bash
+- Fixed `!contains()` expressions with proper `${{}}` syntax
+- Use bash shell on all platforms (available on Windows runners too)
 
 ### 5. Codecov Test Analytics Integration
 
