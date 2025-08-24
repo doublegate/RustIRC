@@ -5,7 +5,7 @@
 
 ![RustIRC Logo](images/RustIRC_Logo.png)
 
-[![Version](https://img.shields.io/badge/version-0.3.5-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.6-blue.svg)](CHANGELOG.md)
 [![Rust Version](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE-MIT)
 [![Tests](https://img.shields.io/badge/tests-118%20passing-success.svg)](.github/workflows/ci.yml)
@@ -58,14 +58,14 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 
 ## 📦 Latest Release
 
-[![Version](https://img.shields.io/badge/version-0.3.5-blue.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.3.5)
-[![Release Date](https://img.shields.io/badge/released-August%2023%2C%202025-green.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.3.5)
+[![Version](https://img.shields.io/badge/version-0.3.6-blue.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.3.6)
+[![Release Date](https://img.shields.io/badge/released-August%2024%2C%202025-green.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.3.6)
 
-**Version 0.3.5** - Complete Workflow Compatibility Fixes & CI/CD Production Readiness
+**Version 0.3.6** - GitHub Actions YAML Compliance & Workflow Resilience Release
 
 ## 🏗️ Current Development Status
 
-**Last Updated**: August 24, 2025 4:41 PM EDT - v0.3.5 Linux ARM64 Cross-Compilation Fix Applied
+**Last Updated**: August 24, 2025 6:30 PM EDT - v0.3.6 GitHub Actions YAML Compliance Release
 
 ### ✅ **Phase 1: Research & Setup** - **COMPLETE** (100%)
 
@@ -310,9 +310,9 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 
 ## 🚦 Current Status
 
-**Version**: 0.3.5 - Complete YAML Workflow Fixes & CI/CD Production Readiness (Released August 23, 2025)  
+**Version**: 0.3.6 - GitHub Actions YAML Compliance & Workflow Resilience (Released August 24, 2025)  
 **Phase**: Phase 4 - Scripting & Plugins (Ready to Begin) 🚀  
-**Recent**: Complete YAML reformat ✅ (100% valid workflows, Codecov integration, zero errors)  
+**Recent**: yamllint compliance ✅ (100% validation pass, artifact naming optimization, comprehensive resilience)  
 **Total Tasks**: 249 across 7 phases + comprehensive IRC implementation + production CI/CD + complete documentation
 
 ### 🎉 Phase 1-3: COMPLETE ✅ with LIVE IRC FUNCTIONALITY
