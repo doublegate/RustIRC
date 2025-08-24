@@ -68,19 +68,39 @@ jobs:
       continue-on-error: true
       id: sccache
     
-    - name: Configure sccache
+    - name: Configure sccache with enhanced resilience
       id: configure_sccache
       run: |
-        # Check if sccache is available and working
-        if command -v sccache &> /dev/null && sccache --version &> /dev/null 2>&1; then
-          echo "sccache_available=true" >> $GITHUB_OUTPUT
-          echo "rustc_wrapper=sccache" >> $GITHUB_OUTPUT
-          echo "sccache is available and will be used"
+        # Check if sccache is available and working with comprehensive testing
+        sccache_available="false"
+        rustc_wrapper=""
+        
+        if command -v sccache &> /dev/null; then
+          echo "sccache binary found, testing functionality..."
+          # Test sccache with timeout and comprehensive checks
+          if timeout 30s sccache --version &> /dev/null 2>&1; then
+            echo "sccache version check passed"
+            # Test sccache stats to verify service connectivity
+            if timeout 10s sccache --show-stats &> /dev/null 2>&1; then
+              sccache_available="true"
+              rustc_wrapper="sccache"
+              echo "sccache verified and will be used for compilation"
+            else
+              echo "sccache stats failed - may indicate service connectivity issues"
+              echo "Falling back to direct compilation for reliability"
+            fi
+          else
+            echo "sccache version check failed - service may be unavailable"
+            echo "Falling back to direct compilation"
+          fi
         else
-          echo "sccache_available=false" >> $GITHUB_OUTPUT
-          echo "rustc_wrapper=" >> $GITHUB_OUTPUT
-          echo "sccache is not available, falling back to direct compilation"
+          echo "sccache binary not found - using direct compilation"
         fi
+        
+        echo "sccache_available=$sccache_available" >> $GITHUB_OUTPUT
+        echo "rustc_wrapper=$rustc_wrapper" >> $GITHUB_OUTPUT
+        
+        echo "Final sccache configuration: available=$sccache_available, wrapper='$rustc_wrapper'"
     
     - name: Generate cache key
       id: cache
@@ -99,37 +119,44 @@ jobs:
       env:
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
     
-    - name: Clippy check
+    - name: Clippy check with enhanced resilience
       run: |
-        # Try with sccache first if available
+        # Enhanced clippy execution with timeout and robust error handling
         if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
-          echo "Running clippy with sccache..."
-          if ! cargo clippy --all-targets --all-features -- -D warnings; then
-            echo "Clippy failed with sccache, retrying without sccache..."
+          echo "Running clippy with sccache (timeout: 10 minutes)..."
+          export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
+          if ! timeout 600s cargo clippy --all-targets --all-features -- -D warnings; then
+            echo "Clippy failed with sccache (timeout or error), retrying without sccache..."
             unset RUSTC_WRAPPER
-            cargo clippy --all-targets --all-features -- -D warnings
+            export RUSTC_WRAPPER=""
+            timeout 600s cargo clippy --all-targets --all-features -- -D warnings
           fi
         else
-          echo "Running clippy without sccache..."
-          cargo clippy --all-targets --all-features -- -D warnings
+          echo "Running clippy without sccache (timeout: 10 minutes)..."
+          export RUSTC_WRAPPER=""
+          timeout 600s cargo clippy --all-targets --all-features -- -D warnings
         fi
       env:
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
     
     # Build once here to populate the cache for all subsequent jobs
-    - name: Build all targets
+    - name: Build all targets with enhanced resilience
       run: |
-        # Try with sccache first if available
+        # Enhanced build execution with timeout and robust error handling
         if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
-          echo "Building with sccache..."
-          if ! cargo build --all-features --all-targets --release; then
-            echo "Build failed with sccache, retrying without sccache..."
+          echo "Building with sccache (timeout: 15 minutes)..."
+          export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
+          if ! timeout 900s cargo build --all-features --all-targets --release; then
+            echo "Build failed with sccache (timeout or error), retrying without sccache..."
             unset RUSTC_WRAPPER
-            cargo build --all-features --all-targets --release
+            export RUSTC_WRAPPER=""
+            echo "Retrying build without sccache (timeout: 15 minutes)..."
+            timeout 900s cargo build --all-features --all-targets --release
           fi
         else
-          echo "Building without sccache..."
-          cargo build --all-features --all-targets --release
+          echo "Building without sccache (timeout: 15 minutes)..."
+          export RUSTC_WRAPPER=""
+          timeout 900s cargo build --all-features --all-targets --release
         fi
       env:
         RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
