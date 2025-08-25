@@ -1,15 +1,16 @@
-0.3.6
+0.3.7
 
-# RustIRC Version 0.3.6 Release
+# RustIRC Version 0.3.7 Release
 # Released: August 25, 2025
 # 
-# GitHub Actions YAML Compliance & Workflow Resilience Release
+# Return to Proven Resilient Workflows Release
 # 
 # Major Achievements:
-# - Fixed critical build/clippy execution order preventing pipeline failures
-# - Achieved complete YAML compliance across all workflow files
-# - Enhanced job dependency management for reliable CI/CD execution
-# - Maintained all existing performance optimizations and resilience features
+# - Restored battle-tested workflow configurations from commit 928aad1
+# - Return to comprehensive sccache resilience for GitHub service outages
+# - Restored cross-platform timeout compatibility (including macOS)
+# - Restored BASH_ENV helper functions for workflow step persistence
+# - Proven stability from v0.3.5 baseline with enhanced reliability
 # 
 # Critical Fixes Applied:
 # 1. Master Pipeline Execution Order:

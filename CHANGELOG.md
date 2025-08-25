@@ -14,7 +14,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Script/plugin manager UI
 - Event-driven scripting API
 
-## [0.3.6] - 2025-08-25 (Simplified GitHub Actions Workflows)
+## [0.3.7] - 2025-08-25 (Return to Proven Resilient Workflows)
+
+### Summary
+Return to Proven Resilient Workflows - This release restores the battle-tested workflow configurations from commit 928aad1 that provided comprehensive resilience patterns. The v0.3.6 simplified workflows failed in production, so v0.3.7 returns to the proven v0.3.5 baseline with enhanced stability and reliability for continuous integration operations.
+
+### Major Features Restored
+- **Comprehensive sccache HTTP 400 Resilience**: Automatic fallback to local disk cache when GitHub Actions cache service experiences outages
+- **Cross-Platform Timeout Compatibility**: BASH_ENV helper functions with perl-based timeout for macOS, native timeout for Linux/Windows
+- **GitHub Cache Service Outage Handling**: Robust error handling across all 6 test execution steps with unset RUSTC_WRAPPER fallback
+- **Workflow Step Function Persistence**: Complete BASH_ENV setup ensuring run_with_timeout availability across all workflow steps
+- **cargo-audit Version Detection**: Fallback to text parsing for older versions without --format flag support
+- **Unified Bash Configuration**: Universal bash shell usage across all platforms including Windows
+
+### Technical Improvements
+- Restored proven resilient workflow configurations with comprehensive error handling
+- Enhanced GitHub Actions cache service outage resilience across master-pipeline.yml and ci.yml
+- Comprehensive timeout protection with cross-platform compatibility
+- Local disk cache fallback configuration for service unavailability
+- Complete workflow step function persistence via BASH_ENV helper architecture
+- Systematic error recovery and retry mechanisms for all cargo operations
+
+### Reliability Enhancements
+- Return to battle-tested v0.3.5 workflow baseline with proven production stability
+- Comprehensive sccache resilience patterns validated under GitHub service outage conditions
+- Enhanced CI/CD pipeline reliability with systematic error handling and recovery
+- Preserved all performance optimizations while ensuring operational resilience
+
+## [0.3.6] - 2025-08-25 (Simplified GitHub Actions Workflows - FAILED)
 
 ### Summary
 Simplified GitHub Actions Workflows - This release modernizes and streamlines the CI/CD pipeline by removing complex resilience patterns in favor of maintainable, clean workflows. Applied comprehensive lessons learned from previous optimization attempts to create reliable, easy-to-maintain GitHub Actions configuration with proper execution order and YAML compliance.
