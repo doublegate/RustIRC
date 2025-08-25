@@ -94,34 +94,27 @@ jobs:
             audit.json
           retention-days: 7
 
-      - name: Create issues for new vulns (optional)
-        if: ${{ (inputs.create_issues || github.event.inputs.create_issues) && steps.parse.outputs.count != '0' }}
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const data = JSON.parse(fs.readFileSync('audit.json', 'utf8'));
-            const vulns = (data.vulnerabilities && data.vulnerabilities.list) || [];
-            for (const v of vulns) {
-              const id = v.advisory && v.advisory.id || 'UNKNOWN-ID';
-              const title = `[RustSec] ${id}: ${v.advisory && v.advisory.title || 'Advisory'}`;
-              const body = `Detected in workflow run ${process.env.GITHUB_RUN_ID}
-
-**Package:** ${v.package && v.package.name} ${v.package && v.package.version}
-**Advisory:** ${id}
-**URL:** ${v.advisory && v.advisory.url}
-
-> ${v.advisory && v.advisory.description || ''}
-
-_This was filed automatically. Please triage and track remediation._`;
-              await github.rest.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                title,
-                body,
-                labels: ['security', 'rustsec']
-              });
-            }
+      # DISABLED: GitHub script with template literals causes YAML parsing issues
+      # - name: Create issues for new vulns (optional)
+      #   if: ${{ (inputs.create_issues || github.event.inputs.create_issues) && steps.parse.outputs.count != '0' }}
+      #   uses: actions/github-script@v7
+      #   with:
+      #     script: |
+      #       const fs = require('fs');
+      #       const data = JSON.parse(fs.readFileSync('audit.json', 'utf8'));
+      #       const vulns = (data.vulnerabilities && data.vulnerabilities.list) || [];
+      #       for (const v of vulns) {
+      #         const id = v.advisory && v.advisory.id || 'UNKNOWN-ID';
+      #         const title = `[RustSec] ${id}: ${v.advisory && v.advisory.title || 'Advisory'}`;
+      #         const body = `Detected in workflow run ${process.env.GITHUB_RUN_ID}\n\nPackage: ${v.package && v.package.name} ${v.package && v.package.version}\nAdvisory: ${id}\nURL: ${v.advisory && v.advisory.url}\n\n${v.advisory && v.advisory.description || ''}\n\nThis was filed automatically. Please triage and track remediation.`;
+      #         await github.rest.issues.create({
+      #           owner: context.repo.owner,
+      #           repo: context.repo.repo,
+      #           title,
+      #           body,
+      #           labels: ['security', 'rustsec']
+      #         });
+      #       }
 
   dependency-review:
     name: Dependency Review (PRs)
