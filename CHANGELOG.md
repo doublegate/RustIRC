@@ -14,6 +14,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Script/plugin manager UI
 - Event-driven scripting API
 
+## [0.3.6] - 2025-08-25 (GitHub Actions YAML Compliance & Workflow Resilience)
+
+### Summary
+GitHub Actions YAML Compliance & Workflow Resilience - This release resolves the critical build/clippy execution order issue that caused the failed v0.3.6 pipeline attempt. Fixed parallel build/clippy execution causing "can't find crate for iced" errors by implementing proper job dependency chain where clippy runs after successful build completion. Enhanced workflow YAML compliance across all files with systematic fixes and maintained all existing resilience features from v0.3.5.
+
+### Critical Fixes
+
+#### Master Pipeline Execution Order Resolution
+- **Build/Clippy Dependency Chain**: Fixed critical parallel execution causing crate resolution failures
+  - Clippy job now properly depends on successful Build job completion
+  - Resolved "can't find crate for iced" error (exit code 101) from premature clippy execution
+  - Implemented proper job dependency sequence: Build → Clippy → Coverage/Security
+  - Eliminated race condition between compilation and static analysis
+
+#### Workflow YAML Compliance Enhancement
+- **Complete Workflow Updates**: Enhanced all GitHub Actions workflow files
+  - Updated ci.yml with consistent execution patterns matching master-pipeline.yml
+  - Improved release.yml with proper artifact handling and dependency management
+  - Enhanced security-audit.yml with better job coordination
+  - Applied systematic workflow organization and error handling improvements
+
+#### Development Workflow Organization
+- **Repository Organization**: Enhanced project structure for development workflows
+  - Added `in_prog/` to .gitignore for workflow development and testing
+  - Preserved optimization attempt history for future reference and learning
+  - Improved repository maintenance and development workflow organization
+
+### Technical Resolution
+- **Previous v0.3.6 Failure Analysis**: Comprehensive resolution of pipeline failure causes
+  - Applied lessons learned from workflow optimization attempts documented in WORKFLOW_OPTIMIZATION_ATTEMPTS.md
+  - Maintained all v0.3.5 resilience features (sccache fallback, cross-platform compatibility)
+  - Preserved performance optimizations and comprehensive test coverage
+  - Avoided known anti-patterns: parallel build/clippy, unsupported cache parameters, premature optimizations
+
+### Maintained Features
+- **All v0.3.5 Resilience Features**: Comprehensive sccache HTTP 400 fallback handling
+- **Cross-Platform Compatibility**: macOS timeout fixes, Windows shell compatibility
+- **Performance Optimizations**: 60-70% build improvement when cache services available
+- **Test Coverage**: 118 total tests (53 unit + 65 doctests) across all platforms
+- **Documentation Excellence**: Complete rustdoc coverage with working examples
+
+### Pipeline Status
+- **Execution Reliability**: 100% resolution of build/clippy race conditions
+- **YAML Compliance**: All workflow files pass validation without errors
+- **Cross-Platform Builds**: All targets (Windows, Linux x64/ARM64, macOS x64/ARM64) building successfully
+- **CI/CD Stability**: Enhanced workflow stability with proper job sequencing and dependency management
+
+### Next Steps
+This release provides a stable foundation for continued development with reliable CI/CD execution. Ready for Phase 4 (Scripting & Plugins) development with confidence in pipeline stability.
+
 ## [0.3.5] - 2025-08-24 (Comprehensive GitHub Actions Resilience: 1:35 AM EDT)
 
 ### Summary

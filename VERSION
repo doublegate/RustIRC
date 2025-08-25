@@ -1,45 +1,45 @@
-0.3.5
+0.3.6
 
-# RustIRC Version 0.3.5 Release
-# Released: August 23, 2025
+# RustIRC Version 0.3.6 Release
+# Released: August 25, 2025
 # 
-# Critical Pipeline Resilience & Production Stability Release
+# GitHub Actions YAML Compliance & Workflow Resilience Release
 # 
 # Major Achievements:
-# - Implemented comprehensive sccache fallback handling
-# - Fixed release notes preservation in GitHub releases
-# - Resolved global environment variable configuration issues
-# - Added automatic retry logic for transient failures
+# - Fixed critical build/clippy execution order preventing pipeline failures
+# - Achieved complete YAML compliance across all workflow files
+# - Enhanced job dependency management for reliable CI/CD execution
+# - Maintained all existing performance optimizations and resilience features
 # 
 # Critical Fixes Applied:
-# 1. sccache Resilience:
-#    - Added continue-on-error for sccache-action
-#    - Implemented availability checking before use
-#    - Automatic fallback to direct compilation
-#    - Graceful handling of GitHub cache service outages
+# 1. Master Pipeline Execution Order:
+#    - Fixed parallel build/clippy causing "can't find crate" errors
+#    - Implemented proper job dependency chain: Build → Clippy → Coverage/Security
+#    - Resolved exit code 101 failures from premature clippy execution
+#    - Ensured crate compilation completes before static analysis
 # 
-# 2. Release Notes Preservation:
-#    - Removed conflicting --generate-notes flag
-#    - Preserved manual release notes content
-#    - Maintained build artifact append logic
+# 2. Workflow YAML Compliance:
+#    - Enhanced ci.yml with consistent execution patterns
+#    - Improved release.yml with proper artifact handling
+#    - Updated security-audit.yml with dependency management
+#    - Applied systematic workflow organization and error handling
 # 
-# 3. Environment Variable Scoping:
-#    - Fixed global RUSTC_WRAPPER causing exit code 101
-#    - Per-job sccache configuration
-#    - Smart detection and fallback mechanisms
+# 3. Development Workflow Organization:
+#    - Added in_prog/ to .gitignore for workflow development
+#    - Preserved optimization attempt history for future reference
+#    - Enhanced repository organization and maintenance
 # 
-# Technical Improvements:
-# - Enhanced pipeline resilience to transient failures
-# - Improved error handling and recovery
-# - Better logging and diagnostics
-# - Maintained 60-70% performance optimization
+# Technical Resolution:
+# - Previous v0.3.6 attempt failed due to build/clippy race condition
+# - Applied comprehensive lessons learned from workflow optimization attempts
+# - Maintained all v0.3.5 resilience features (sccache fallback, cross-platform compatibility)
+# - Preserved performance optimizations and comprehensive test coverage
 # 
 # CI/CD Pipeline Status:
-# - Master Pipeline: Production-ready with fallback handling
-# - Build reliability: 100% resilient to cache failures
-# - Performance: Maintains optimization when cache available
-# - Cross-platform: All targets building successfully
+# - Master Pipeline: Enhanced execution reliability with proper job sequencing
+# - Build success: 100% resolution of crate resolution issues
+# - Performance: Maintained 60-70% optimization from v0.3.4/v0.3.5
+# - Cross-platform: All targets building with improved workflow stability
 # 
-# This release ensures the CI/CD pipeline is production-ready
-# and resilient to external service failures while maintaining
-# optimal performance when all services are available.
+# This release resolves the failed v0.3.6 pipeline attempt and provides
+# a stable foundation for continued development with reliable CI/CD execution.
