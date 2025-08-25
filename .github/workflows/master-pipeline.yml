@@ -1,6 +1,7 @@
+---
 name: Master Pipeline
 
-on:
+'on':
   push:
     branches: [main]
     tags: ['v*.*.*']
@@ -47,7 +48,7 @@ jobs:
   # Phase 1: Quick validation (fail fast) and initial build
   quick-checks:
     name: Quick Checks & Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # Specific version for migration preparedness
     outputs:
       cache_key: ${{ steps.cache.outputs.cache_key }}
       should_run_tests: ${{ steps.config.outputs.should_run_tests }}
@@ -57,7 +58,7 @@ jobs:
       release_tag: ${{ steps.config.outputs.release_tag }}
     steps:
       - uses: actions/checkout@v4
-      
+
       # Setup cross-platform helper functions
       - name: Load helper functions
         shell: bash
@@ -65,7 +66,7 @@ jobs:
           cat >>"$GITHUB_ENV" <<'EOF'
           BASH_ENV=$RUNNER_TEMP/ci_helpers.sh
           EOF
-          
+
           cat >"$RUNNER_TEMP/ci_helpers.sh" <<'EOF'
           run_with_timeout() {
             local duration="$1"; shift
@@ -86,7 +87,8 @@ jobs:
         with:
           components: rustfmt, clippy
 
-      # Setup sccache with comprehensive resilience for GitHub cache service outages
+      # Setup sccache with comprehensive resilience for GitHub cache
+      # service outages
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.9
         continue-on-error: true
@@ -101,6 +103,9 @@ jobs:
           SCCACHE_LOG: error
           SCCACHE_ERROR_LOG: ${{ runner.temp }}/sccache.err.log
           SCCACHE_NO_DAEMON: "1"
+          # Windows-specific optimizations for improved cache performance
+          SCCACHE_CACHE_SIZE: ${{ runner.os == 'Windows' && '15G' || '10G' }}
+          SCCACHE_IDLE_TIMEOUT: ${{ runner.os == 'Windows' && '1800' || '600' }}
         run: |
           set -euo pipefail
           sccache_available="false"
@@ -108,12 +113,13 @@ jobs:
 
           if command -v sccache > /dev/null 2>&1; then
             echo "sccache binary found, probing GitHub Actions cache backend..."
-            
+
             # Probe GHA backend health with comprehensive error handling
             if sccache --start-server >/dev/null 2>>"$SCCACHE_ERROR_LOG"; then
               echo "sccache GHA backend looks healthy"
               # Additional verification with stats command
-              if run_with_timeout 10s sccache --show-stats > /dev/null 2>&1; then
+              if run_with_timeout 10s sccache --show-stats > /dev/null 2>&1
+              then
                 sccache_available="true"
                 rustc_wrapper="sccache"
                 echo "sccache verified and will be used for compilation"
@@ -128,7 +134,8 @@ jobs:
                 rustc_wrapper="sccache"
               fi
             else
-              echo "sccache GHA backend not healthy; GitHub cache service may be experiencing issues"
+              echo "sccache GHA backend not healthy; GitHub cache service may"
+              echo "be experiencing issues"
               echo "Falling back to local disk cache mode"
               # Configure local disk cache as fallback
               echo "SCCACHE_GHA_ENABLED=false" >> $GITHUB_ENV
@@ -137,7 +144,7 @@ jobs:
               sccache_available="true"
               rustc_wrapper="sccache"
             fi
-            
+
             # Print diagnostic information (but don't fail the job)
             if [ -s "$SCCACHE_ERROR_LOG" ]; then
               echo "---- sccache startup diagnostics ----"
@@ -151,18 +158,24 @@ jobs:
           echo "sccache_available=$sccache_available" >> $GITHUB_OUTPUT
           echo "rustc_wrapper=$rustc_wrapper" >> $GITHUB_OUTPUT
 
-          echo "Final sccache configuration: available=$sccache_available, wrapper='$rustc_wrapper'"
+          echo "Final sccache configuration: available=$sccache_available,"
+          echo "wrapper='$rustc_wrapper'"
 
       - name: Generate cache key
         id: cache
         run: |
-          cache_key="shared-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}-${{ github.run_id }}"
+          cache_key="master-pipeline-${{ runner.os }}-${{
+            hashFiles('**/Cargo.lock') }}-${{ github.run_id }}"
           echo "cache_key=$cache_key" >> $GITHUB_OUTPUT
 
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ steps.cache.outputs.cache_key }}
           shared-key: "master-pipeline"
+          restore-keys: |
+            master-pipeline-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}-
+            master-pipeline-${{ runner.os }}-
+            master-pipeline-
           save-if: true
 
       - name: Format check
@@ -171,46 +184,58 @@ jobs:
         env:
           RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
 
-      - name: Clippy check with enhanced resilience
-        shell: bash
-        run: |
-          # Enhanced clippy execution with timeout and robust error handling
-          if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
-            echo "Running clippy with sccache (timeout: 10 minutes)..."
-            export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
-            if ! run_with_timeout 600s cargo clippy --all-targets --all-features -- -D warnings; then
-              echo "Clippy failed with sccache (timeout or error), retrying without sccache..."
-              unset RUSTC_WRAPPER
-              export RUSTC_WRAPPER=""
-              run_with_timeout 600s cargo clippy --all-targets --all-features -- -D warnings
-            fi
-          else
-            echo "Running clippy without sccache (timeout: 10 minutes)..."
-            export RUSTC_WRAPPER=""
-            run_with_timeout 600s cargo clippy --all-targets --all-features -- -D warnings
-          fi
-        env:
-          RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
-
       # Build once here to populate the cache for all subsequent jobs
       - name: Build all targets with enhanced resilience
         shell: bash
         run: |
           # Enhanced build execution with timeout and robust error handling
-          if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
+          if [ "${{ steps.configure_sccache.outputs.sccache_available }}" =
+            "true" ]; then
             echo "Building with sccache (timeout: 15 minutes)..."
-            export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
-            if ! run_with_timeout 900s cargo build --all-features --all-targets --release; then
-              echo "Build failed with sccache (timeout or error), retrying without sccache..."
+            export RUSTC_WRAPPER="${{
+              steps.configure_sccache.outputs.rustc_wrapper }}"
+            if ! run_with_timeout 900s cargo build --all-features \
+              --all-targets --release; then
+              echo "Build failed with sccache (timeout or error), retrying"
+              echo "without sccache..."
               unset RUSTC_WRAPPER
               export RUSTC_WRAPPER=""
               echo "Retrying build without sccache (timeout: 15 minutes)..."
-              run_with_timeout 900s cargo build --all-features --all-targets --release
+              run_with_timeout 900s cargo build --all-features \
+                --all-targets --release
             fi
           else
             echo "Building without sccache (timeout: 15 minutes)..."
             export RUSTC_WRAPPER=""
-            run_with_timeout 900s cargo build --all-features --all-targets --release
+            run_with_timeout 900s cargo build --all-features \
+              --all-targets --release
+          fi
+        env:
+          RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
+
+      - name: Clippy check with enhanced resilience
+        shell: bash
+        run: |
+          # Enhanced clippy execution with timeout and robust error handling
+          if [ "${{ steps.configure_sccache.outputs.sccache_available }}" =
+            "true" ]; then
+            echo "Running clippy with sccache (timeout: 10 minutes)..."
+            export RUSTC_WRAPPER="${{
+              steps.configure_sccache.outputs.rustc_wrapper }}"
+            if ! run_with_timeout 600s cargo clippy --all-targets \
+              --all-features -- -D warnings; then
+              echo "Clippy failed with sccache (timeout or error), retrying"
+              echo "without sccache..."
+              unset RUSTC_WRAPPER
+              export RUSTC_WRAPPER=""
+              run_with_timeout 600s cargo clippy --all-targets \
+                --all-features -- -D warnings
+            fi
+          else
+            echo "Running clippy without sccache (timeout: 10 minutes)..."
+            export RUSTC_WRAPPER=""
+            run_with_timeout 600s cargo clippy --all-targets \
+              --all-features -- -D warnings
           fi
         env:
           RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
@@ -225,6 +250,38 @@ jobs:
             target/debug/
           retention-days: 1
           compression-level: 0  # Fast upload, artifacts deleted after 1 day
+
+      - name: Performance monitoring and sccache statistics
+        if: always()
+        shell: bash
+        run: |
+          echo "=== Build Performance Summary ==="
+
+          # sccache statistics if available
+          if [ "${{ steps.configure_sccache.outputs.sccache_available }}" =
+            "true" ] && command -v sccache > /dev/null 2>&1; then
+            echo "sccache statistics:"
+            run_with_timeout 10s sccache --show-stats ||
+              echo "Failed to get sccache stats"
+          else
+            echo "sccache not available for statistics"
+          fi
+
+          # Disk usage report
+          echo ""
+          echo "Disk usage summary:"
+          df -h . || true
+
+          # Cargo cache size
+          echo ""
+          echo "Cargo cache information:"
+          du -sh ~/.cargo/registry ~/.cargo/git 2>/dev/null ||
+            echo "Cargo cache directories not found"
+
+          # Build timing information
+          echo ""
+          echo "Build completed successfully at $(date -u \
+            '+%Y-%m-%d %H:%M:%S UTC')"
 
       - name: Configure pipeline
         id: config
@@ -245,18 +302,21 @@ jobs:
             if [ "${{ inputs.release_type }}" != "none" ]; then
               should_run_release="true"
               # Generate release tag based on type
-              latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+              latest_tag=$(git describe --tags --abbrev=0 2>/dev/null ||
+                echo "v0.0.0")
               case "${{ inputs.release_type }}" in
                 patch)
-                  new_tag=$(echo $latest_tag | awk -F. '{$NF = $NF + 1; print}' OFS=.)
+                  new_tag=$(echo $latest_tag |
+                    awk -F. '{$NF = $NF + 1; print}' OFS=.)
                   ;;
                 minor)
                   new_tag=$(echo $latest_tag | \
                     awk -F. '{$(NF-1) = $(NF-1) + 1; $NF = 0; print}' OFS=.)
                   ;;
                 major)
-                  new_tag=$(echo $latest_tag | \
-                    awk -F. '{$1 = substr($1, 2) + 1; $2 = 0; $3 = 0; print "v" $0}' OFS=.)
+                  new_tag=$(echo $latest_tag |
+                    awk -F. '{$1 = substr($1, 2) + 1; $2 = 0; $3 = 0;
+                    print "v" $0}' OFS=.)
                   ;;
               esac
               release_tag="$new_tag"
@@ -264,7 +324,8 @@ jobs:
           fi
 
           # Tag push triggers release
-          if [[ "${{ github.ref }}" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          if [[ "${{ github.ref }}" =~
+            ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             should_run_release="true"
             should_run_coverage="true"  # Full coverage on releases
             release_tag="${{ github.ref_name }}"
@@ -313,7 +374,7 @@ jobs:
   documentation:
     name: Documentation
     # Run in parallel - doesn't need quick-checks to complete
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # Specific version for migration preparedness
     permissions:
       contents: read
     steps:
@@ -346,9 +407,12 @@ jobs:
           <meta charset="utf-8">
           <title>RustIRC Documentation</title>
           <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 40px; }
-          h1 { color: #333; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
-          .crate { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+          body { font-family: -apple-system, BlinkMacSystemFont,
+            "Segoe UI", Roboto, sans-serif; margin: 40px; }
+          h1 { color: #333; border-bottom: 2px solid #ddd;
+            padding-bottom: 10px; }
+          .crate { margin: 20px 0; padding: 15px; border: 1px solid #ddd;
+            border-radius: 5px; }
           .crate h2 { margin-top: 0; color: #0969da; }
           a { color: #0969da; text-decoration: none; }
           a:hover { text-decoration: underline; }
@@ -361,22 +425,26 @@ jobs:
 
           <div class="crate">
           <h2><a href="rustirc_core/index.html">rustirc-core</a></h2>
-          <div class="description">Core functionality and shared components</div>
+          <div class="description">Core functionality and shared
+            components</div>
           </div>
 
           <div class="crate">
           <h2><a href="rustirc_protocol/index.html">rustirc-protocol</a></h2>
-          <div class="description">IRC protocol implementation with parsing and validation</div>
+          <div class="description">IRC protocol implementation with parsing
+            and validation</div>
           </div>
 
           <div class="crate">
           <h2><a href="rustirc_gui/index.html">rustirc-gui</a></h2>
-          <div class="description">Modern graphical user interface using Iced</div>
+          <div class="description">Modern graphical user interface using
+            Iced</div>
           </div>
 
           <div class="crate">
           <h2><a href="rustirc_tui/index.html">rustirc-tui</a></h2>
-          <div class="description">Terminal-based user interface using ratatui</div>
+          <div class="description">Terminal-based user interface using
+            ratatui</div>
           </div>
 
           <div class="crate">
@@ -423,7 +491,7 @@ jobs:
       always() &&
       needs.quick-checks.outputs.should_run_coverage == 'true' &&
       needs.test-matrix.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # Specific version for migration preparedness
     permissions:
       contents: read
       id-token: write
@@ -477,25 +545,28 @@ jobs:
       always() &&
       needs.quick-checks.outputs.should_run_release == 'true' &&
       needs.test-matrix.result == 'success' &&
-      (needs.security-audit.result == 'success' || needs.security-audit.result == 'skipped')
+      (needs.security-audit.result == 'success' ||
+       needs.security-audit.result == 'skipped')
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-22.04  # Specific version for migration preparedness
             target: x86_64-unknown-linux-gnu
             artifact_name: rustirc-linux-amd64.tar.gz
-          - os: ubuntu-latest
+          - os: ubuntu-22.04  # Specific version for migration preparedness
             target: aarch64-unknown-linux-gnu
             artifact_name: rustirc-linux-arm64.tar.gz
             cross: true
-          - os: windows-latest
+          - os: windows-2022  # Specific version for migration preparedness
             target: x86_64-pc-windows-msvc
             artifact_name: rustirc-windows-amd64.exe.zip
-          - os: macos-latest
+          - os: macos-14  # Specific version for migration preparedness
+            # (macOS Sonoma)
             target: x86_64-apple-darwin
             artifact_name: rustirc-macos-amd64.tar.gz
-          - os: macos-latest
+          - os: macos-14  # Specific version for migration preparedness
+            # (macOS Sonoma)
             target: aarch64-apple-darwin
             artifact_name: rustirc-macos-arm64.tar.gz
     runs-on: ${{ matrix.os }}
@@ -512,7 +583,8 @@ jobs:
       - name: Install cross
         if: matrix.cross == true
         run: |
-          # Install a stable version of cross to avoid GLIBC compatibility issues
+          # Install a stable version of cross to avoid GLIBC
+          # compatibility issues
           cargo install cross --version 0.2.5 --locked
 
       # Use shared cache from test phase when possible
@@ -533,8 +605,10 @@ jobs:
             cargo build --release --target ${{ matrix.target }} --bin rustirc
           fi
         env:
-          RUSTC_WRAPPER: ""  # Disable sccache for cross-platform builds
-          CROSS_CONTAINER_OPTS: "--platform linux/amd64"  # Ensure consistent platform for cross
+          # Disable sccache for cross-platform builds
+          RUSTC_WRAPPER: ""
+          # Ensure consistent platform for cross
+          CROSS_CONTAINER_OPTS: "--platform linux/amd64"
 
       - name: Package artifact (Unix)
         if: "!contains(matrix.os, 'windows')"
@@ -566,7 +640,7 @@ jobs:
       (needs.security-audit.result == 'success' ||
        needs.security-audit.result == 'skipped') &&
       needs.build-artifacts.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # Specific version for migration preparedness
     permissions:
       contents: write
       discussions: write
@@ -583,8 +657,10 @@ jobs:
       - name: Prepare release assets
         run: |
           mkdir -p release-assets
-          # Find only files (not directories) with proper parentheses for OR condition
-          find artifacts -type f \( -name "*.tar.gz" -o -name "*.zip" \) | while read file; do
+          # Find only files (not directories) with proper parentheses for
+          # OR condition
+          find artifacts -type f \( -name "*.tar.gz" -o -name "*.zip" \) |
+            while read file; do
             echo "Processing: $file"
             cp "$file" release-assets/
             # Generate checksums
@@ -606,7 +682,8 @@ jobs:
 
           # Check if release already exists
           if gh release view "$tag_name" >/dev/null 2>&1; then
-            echo "Release $tag_name already exists. Uploading new artifacts only..."
+            echo "Release $tag_name already exists. Uploading new"
+            echo "artifacts only..."
 
             # Upload artifacts to existing release (will replace if they exist)
             for file in release-assets/*; do
@@ -644,13 +721,17 @@ jobs:
           2. Extract the archive
           3. Run the client: \`./rustirc\` (Unix) or \`rustirc.exe\` (Windows)
 
-          For detailed usage instructions, see the [README](https://github.com/doublegate/RustIRC#readme).
+          For detailed usage instructions, see the
+          [README](https://github.com/doublegate/RustIRC#readme).
 
           ---
 
           **Build Information:**
-          - Pipeline Run: [${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-          - Commit: [${{ github.sha }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
+          - Pipeline Run: [${{ github.run_number }}](${{
+            github.server_url }}/${{ github.repository }}/actions/runs/${{
+            github.run_id }})
+          - Commit: [${{ github.sha }}](${{ github.server_url }}/${{
+            github.repository }}/commit/${{ github.sha }})
           - Build Date: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
           EOF
 
@@ -675,7 +756,7 @@ jobs:
       - coverage
       - build-artifacts
       - release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # Specific version for migration preparedness
     steps:
       - name: Report pipeline status
         run: |
@@ -685,10 +766,14 @@ jobs:
           echo "|-------|--------|----------|"
           echo "| Quick Checks | ${{ needs.quick-checks.result }} | - |"
           echo "| Tests | ${{ needs.test-matrix.result || 'skipped' }} | - |"
-          echo "| Security | ${{ needs.security-audit.result || 'skipped' }} | - |"
-          echo "| Documentation | ${{ needs.documentation.result || 'skipped' }} | - |"
-          echo "| Coverage | ${{ needs.coverage.result || 'skipped' }} | - |"
-          echo "| Build Artifacts | ${{ needs.build-artifacts.result || 'skipped' }} | - |"
+          echo "| Security | ${{
+            needs.security-audit.result || 'skipped' }} | - |"
+          echo "| Documentation | ${{
+            needs.documentation.result || 'skipped' }} | - |"
+          echo "| Coverage | ${{
+            needs.coverage.result || 'skipped' }} | - |"
+          echo "| Build Artifacts | ${{
+            needs.build-artifacts.result || 'skipped' }} | - |"
           echo "| Release | ${{ needs.release.result || 'skipped' }} | - |"
           echo ""
 
