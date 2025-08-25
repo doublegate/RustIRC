@@ -1,5 +1,7 @@
 # RustIRC Documentation
 
+**Last Updated**: 2025-08-25 12:37 AM EDT
+
 Welcome to the comprehensive documentation for RustIRC, a modern IRC client built with Rust that combines the best features of mIRC, HexChat, and WeeChat.
 
 ## Documentation Structure

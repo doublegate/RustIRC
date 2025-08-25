@@ -17,7 +17,7 @@
 
 A powerful, modern IRC client built in Rust that combines the best features of mIRC, HexChat, and WeeChat
 
-**Last Updated**: 2025-08-24 11:08 PM EDT
+**Last Updated**: 2025-08-25 12:37 AM EDT
 
 [Features](#-features) • [Documentation](#-documentation) • [Development Plan](#-development-plan) • [Architecture](#️-architecture) • [Contributing](#-contributing)
 

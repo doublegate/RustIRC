@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - 2025-08-25 (GUI Framework Explorations)
+
+#### New Feature Branches
+- **impr_gui branch**: Material Design 3 components for Iced v0.13.1
+  - Comprehensive atomic design architecture (atoms → molecules → organisms)
+  - Material Design 3 theme with full color system and typography scale
+  - Advanced components: RichTextEditor with IRC formatting, ResponsiveLayout, MaterialSidebar
+  - Fixed Unicode escape sequences for IRC control characters
+  - Builder patterns for component flexibility
+
+- **dioxus branch**: Complete Dioxus v0.6 GUI implementation
+  - React-like component architecture with virtual DOM
+  - Context API for global state management (IrcState, ThemeState, UiState)
+  - Tailwind CSS integration for modern styling
+  - Hooks-based state management (use_signal, use_context, use_future)
+  - 11 custom components with React-like patterns
+
+### Infrastructure
+- Installed system libraries for Dioxus support (webkit2gtk4.1-devel, libsoup3-devel, atk-devel, gtk3-devel)
+
 ### Planned for Next Release (Phase 4: Scripting & Plugins)
 - Lua scripting engine with sandboxed execution
 - Python scripting support via PyO3

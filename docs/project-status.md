@@ -1,9 +1,9 @@
 # RustIRC Project Status
 
-**Last Updated**: 2025-08-24 11:08 PM EDT  
+**Last Updated**: 2025-08-25 12:37 AM EDT  
 **Current Version**: v0.3.7 - Return to Proven Resilient Workflows  
-**Current Phase**: Phase 1-3 Complete, Ready for Phase 4 (Scripting & Plugins)  
-**Overall Progress**: Fully functional IRC client with live server connectivity, comprehensive CI/CD pipeline with battle-tested resilience patterns, 118 passing tests, complete documentation
+**Current Phase**: Phase 1-3 Complete, GUI Framework Explorations, Ready for Phase 4 (Scripting & Plugins)  
+**Overall Progress**: Fully functional IRC client with live server connectivity, comprehensive CI/CD pipeline with battle-tested resilience patterns, 118 passing tests, complete documentation, two experimental GUI branches
 
 ## Overview
 
@@ -204,12 +204,34 @@ RustIRC has successfully completed Phases 1-3 with a **fully functional IRC clie
 6. ✅ **CRITICAL**: Fixed GUI mode selection - `cargo run` launches full-featured GUI
 7. ✅ **ZERO COMPILATION ERRORS**: All 19 compiler errors systematically resolved
 
+### GUI Framework Explorations (August 25, 2025)
+
+**New Feature Branches Created**:
+
+1. **impr_gui branch** - Material Design 3 Iced Implementation
+   - Comprehensive atomic design architecture (atoms → molecules → organisms)
+   - Material Design 3 theme with full color system
+   - Advanced components: RichTextEditor with IRC formatting support
+   - ResponsiveLayout with breakpoint-based grid system
+   - MaterialSidebar with collapsible sections
+   - Fixed Unicode escape sequences for IRC control characters
+
+2. **dioxus branch** - React-like Dioxus v0.6 Implementation
+   - Complete virtual DOM architecture
+   - Context API for global state management
+   - React-like hooks (use_signal, use_context, use_future)
+   - Tailwind CSS integration
+   - 11 custom components with modern patterns
+   - System libraries installed (webkit2gtk4.1-devel, libsoup3-devel, atk-devel, gtk3-devel)
+
 ### Immediate Next Steps (Phase 4 Ready)
 1. ✅ **COMPLETED**: All GUI compilation errors resolved (19→0)
 2. ✅ **COMPLETED**: GUI mode selection fixed (`cargo run` = full GUI)
 3. ✅ **COMPLETED**: Multi-interface system operational (GUI/TUI/CLI)
-4. 🚀 **READY**: Begin Phase 4 scripting integration (Lua/Python engines)
-5. 🚀 **READY**: Start plugin architecture development
+4. ✅ **COMPLETED**: GUI framework explorations (impr_gui and dioxus branches)
+5. 🚀 **READY**: Begin Phase 4 scripting integration (Lua/Python engines)
+6. 🚀 **READY**: Start plugin architecture development
+7. 🔬 **EVALUATE**: Compare Iced MD3 vs Dioxus implementations for future direction
 
 ## Risk Register
 
