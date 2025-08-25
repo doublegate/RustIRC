@@ -17,8 +17,10 @@ use crate::dialogs::{AboutDialog, ConnectDialog, SettingsDialog};
 use dioxus::prelude::*;
 
 /// Main application entry point
-pub fn launch_app() {
+pub fn launch_app() -> anyhow::Result<()> {
+    // Launch the Dioxus desktop application
     dioxus::launch(App);
+    Ok(())
 }
 
 /// Root application component
@@ -178,51 +180,19 @@ fn ContextMenuProvider() -> Element {
 #[component]
 fn KeyboardShortcuts() -> Element {
     let ui_state = use_context::<UiState>();
-    let theme_state = use_context::<ThemeState>();
+    let _theme_state = use_context::<ThemeState>();
 
-    // Handle global keyboard shortcuts
+    // Handle global keyboard shortcuts (desktop version)
     use_effect(move || {
-        let document = web_sys::window().unwrap().document().unwrap();
-
-        let closure =
-            wasm_bindgen::closure::Closure::wrap(Box::new(move |event: web_sys::KeyboardEvent| {
-                // Ctrl/Cmd + K: Show connect dialog
-                if (event.ctrl_key() || event.meta_key()) && event.key() == "k" {
-                    event.prevent_default();
-                    ui_state.show_dialog(DialogType::Connect);
-                }
-                // Ctrl/Cmd + T: New tab (future)
-                else if (event.ctrl_key() || event.meta_key()) && event.key() == "t" {
-                    event.prevent_default();
-                    // TODO: Implement new tab functionality
-                }
-                // Ctrl/Cmd + ,: Settings
-                else if (event.ctrl_key() || event.meta_key()) && event.key() == "," {
-                    event.prevent_default();
-                    ui_state.show_dialog(DialogType::Settings);
-                }
-                // F1: About
-                else if event.key() == "F1" {
-                    event.prevent_default();
-                    ui_state.show_dialog(DialogType::About);
-                }
-                // Escape: Close all dialogs/menus
-                else if event.key() == "Escape" {
-                    ui_state.active_dialogs.write().clear();
-                    ui_state.hide_context_menu();
-                }
-            }) as Box<dyn FnMut(_)>);
-
-        document
-            .add_event_listener_with_callback("keydown", closure.as_ref().unchecked_ref())
-            .unwrap();
-
-        // Cleanup
+        // In desktop Dioxus apps, keyboard shortcuts are handled by the main window
+        // or through component event handlers. Global shortcuts would be registered
+        // with the desktop application framework.
+        
+        let _ui_state = ui_state.clone();
+        
+        // Desktop keyboard shortcut setup would happen here
         move || {
-            document
-                .remove_event_listener_with_callback("keydown", closure.as_ref().unchecked_ref())
-                .unwrap();
-            closure.forget(); // Prevent memory leak
+            // Desktop cleanup if needed
         }
     });
 

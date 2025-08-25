@@ -1,0 +1,50 @@
+[application]
+name = "RustIRC"
+default_platform = "desktop"
+out_dir = "dist"
+asset_dir = "assets"
+
+[application.tools]
+tailwind = "npx tailwindcss -i ./input.css -o ./assets/tailwind.css --watch=always"
+
+[web.app]
+title = "RustIRC - Modern IRC Client"
+base_path = "/"
+
+[web.watcher]
+watch_path = ["src", "assets"]
+reload_html = true
+index_on_404 = true
+
+[web.resource]
+style = ["crates/rustirc-gui/assets/style.css"]
+script = []
+
+[web.resource.dev]
+style = ["crates/rustirc-gui/assets/style.css"]
+script = []
+
+[bundle]
+identifier = "com.rustirc.client"
+publisher = "RustIRC Team"
+icon = ["images/rustirc-logo.png"]
+resources = ["assets"]
+copyright = "Copyright (c) 2025 RustIRC Team"
+category = "DeveloperTool"
+short_description = "Modern IRC client with React-like UI"
+long_description = """
+RustIRC is a modern IRC client built with Rust and Dioxus v0.6,
+featuring a React-like component architecture, Virtual DOM,
+and comprehensive IRC protocol support including IRCv3 extensions.
+"""
+
+[bundle.linux]
+deb_depends = ["libwebkit2gtk-4.1-0", "libgtk-3-0"]
+rpm_depends = ["webkit2gtk4.1", "gtk3"]
+
+[bundle.macos]
+frameworks = []
+minimum_system_version = "10.15"
+
+[bundle.windows]
+webview_install_mode = "DownloadBootstrapper"

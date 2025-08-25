@@ -37,39 +37,47 @@ pub fn StatusBar() -> Element {
                 class: "flex items-center space-x-4",
 
                 // Connection indicator
-                if let Some((server, state, nickname)) = connection_status {
-                    div {
-                        class: "flex items-center space-x-2",
-
-                        // Status dot
+                match connection_status {
+                    Some((server, state, nickname)) => rsx! {
                         div {
-                            class: match state {
-                                rustirc_core::ConnectionState::Connected => "w-2 h-2 rounded-full bg-[var(--success)]",
-                                rustirc_core::ConnectionState::Connecting => "w-2 h-2 rounded-full bg-[var(--warning)]",
-                                rustirc_core::ConnectionState::Reconnecting => "w-2 h-2 rounded-full bg-[var(--info)] animate-pulse",
-                                rustirc_core::ConnectionState::Disconnected => "w-2 h-2 rounded-full bg-[var(--error)]",
+                            class: "flex items-center space-x-2",
+
+                            // Status dot
+                            div {
+                                class: match state {
+                                    rustirc_core::ConnectionState::Connected => "w-2 h-2 rounded-full bg-[var(--success)]",
+                                    rustirc_core::ConnectionState::Connecting => "w-2 h-2 rounded-full bg-[var(--warning)]",
+                                    rustirc_core::ConnectionState::Reconnecting => "w-2 h-2 rounded-full bg-[var(--info)] animate-pulse",
+                                    rustirc_core::ConnectionState::Disconnected => "w-2 h-2 rounded-full bg-[var(--error)]",
+                                }
+                            }
+
+                            // Connection info
+                            span {
+                                class: "text-[var(--text-secondary)]",
+                                "{nickname} @ {server} ({state:?})"
                             }
                         }
-
-                        // Connection info
-                        span {
-                            class: "text-[var(--text-secondary)]",
-                            "{nickname} @ {server} ({state:?})"
+                    },
+                    None => rsx! {
+                        div {
+                            class: "flex items-center space-x-2 text-[var(--text-muted)]",
+                            div { class: "w-2 h-2 rounded-full bg-[var(--text-muted)]" }
+                            span { "Not connected" }
                         }
-                    }
-                } else {
-                    div {
-                        class: "flex items-center space-x-2 text-[var(--text-muted)]",
-                        div { class: "w-2 h-2 rounded-full bg-[var(--text-muted)]" }
-                        span { "Not connected" }
                     }
                 }
 
                 // Current channel indicator
-                if let Some(channel) = current_channel.as_ref() {
-                    div {
-                        class: "text-[var(--text-secondary)]",
-                        "#{channel}"
+                {
+                    match current_channel.as_ref() {
+                        Some(channel) => rsx! {
+                            div {
+                                class: "text-[var(--text-secondary)]",
+                                "#{channel}"
+                            }
+                        },
+                        None => rsx! { span {} }
                     }
                 }
             }

@@ -1,0 +1,364 @@
+/* Main stylesheet for RustIRC Dioxus application */
+
+/* CSS Grid Layout for IRC Interface */
+.grid-cols-irc-layout {
+  grid-template-columns: var(--sidebar-width, 250px) 1fr;
+}
+
+.grid-cols-irc-layout-no-userlist {
+  grid-template-columns: var(--sidebar-width, 250px) 1fr;
+}
+
+.grid-rows-irc-layout {
+  grid-template-rows: auto 1fr auto;
+}
+
+/* Base Component Styles */
+.irc-window {
+  height: 100vh;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.irc-panel {
+  background-color: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
+/* Input Components */
+.irc-input {
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.irc-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(187, 134, 252, 0.1);
+}
+
+.irc-input:disabled {
+  background-color: var(--bg-quaternary);
+  color: var(--text-disabled);
+  cursor: not-allowed;
+}
+
+/* Button Components */
+.irc-button {
+  background-color: var(--button-bg);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.irc-button:hover:not(:disabled) {
+  background-color: var(--button-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.irc-button:active {
+  transform: translateY(0);
+}
+
+.irc-button:disabled {
+  background-color: var(--bg-quaternary);
+  color: var(--text-disabled);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Channel and Tab Styles */
+.irc-channel-active {
+  background-color: var(--accent-primary);
+  color: white;
+  font-weight: 500;
+}
+
+.irc-channel-unread {
+  background-color: var(--bg-tertiary);
+  position: relative;
+}
+
+.irc-channel-unread::after {
+  content: '';
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.5rem;
+  height: 0.5rem;
+  background-color: var(--accent-primary);
+  border-radius: 50%;
+}
+
+/* Message Styles */
+.irc-message {
+  padding: 0.25rem 0;
+  border-radius: 0.25rem;
+  margin: 0.125rem 0;
+}
+
+.irc-message:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.irc-message-action {
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+.irc-message-system {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.irc-message-error {
+  color: var(--error);
+  font-weight: 500;
+}
+
+/* IRC Text Formatting */
+.irc-bold {
+  font-weight: bold;
+}
+
+.irc-italic {
+  font-style: italic;
+}
+
+.irc-underline {
+  text-decoration: underline;
+}
+
+.irc-strikethrough {
+  text-decoration: line-through;
+}
+
+.irc-monospace {
+  font-family: 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+  background-color: var(--bg-tertiary);
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+}
+
+/* Custom Scrollbars */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--border-hover);
+}
+
+/* Context Menu Styles */
+.context-menu {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow-lg);
+  padding: 0.5rem 0;
+  min-width: 12rem;
+}
+
+.context-menu-item {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.context-menu-item:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.context-menu-item:active {
+  background-color: var(--accent-primary);
+  color: white;
+}
+
+/* Modal Dialog Styles */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-lg);
+  padding: 1.5rem;
+  min-width: 20rem;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+/* Animation Classes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.slide-in-right {
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* Notification Styles */
+.notification {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-shadow: var(--shadow-md);
+  z-index: 1001;
+  max-width: 20rem;
+}
+
+.notification-success {
+  border-left: 4px solid var(--success);
+}
+
+.notification-error {
+  border-left: 4px solid var(--error);
+}
+
+.notification-info {
+  border-left: 4px solid var(--info);
+}
+
+.notification-warning {
+  border-left: 4px solid var(--warning);
+}
+
+/* Loading Spinners */
+.spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 50%;
+  border-top-color: var(--accent-primary);
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .irc-window {
+    font-size: 0.875rem;
+  }
+  
+  .grid-cols-irc-layout,
+  .grid-cols-irc-layout-no-userlist {
+    grid-template-columns: 1fr;
+  }
+  
+  .modal-content {
+    margin: 1rem;
+    max-width: calc(100vw - 2rem);
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .irc-input {
+    border-width: 2px;
+  }
+  
+  .irc-button {
+    border: 2px solid var(--accent-primary);
+  }
+  
+  .context-menu {
+    border-width: 2px;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .irc-window {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .irc-button,
+  .context-menu,
+  .modal-backdrop {
+    display: none !important;
+  }
+}

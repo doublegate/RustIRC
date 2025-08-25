@@ -18,7 +18,7 @@ A powerful, modern IRC client built with Rust and Dioxus - bringing React-like d
 
 **Last Updated**: 2025-08-25 | **Branch**: Dioxus GUI Framework Exploration
 
-[Features](#-features) • [Documentation](#-documentation) • [Development Plan](#-development-plan) • [Architecture](#️-architecture) • [Contributing](#-contributing)
+[Features](#-features) • [Documentation](#-documentation) • [Development Plan](#-development-plan) • [Architecture](#-architecture) • [Contributing](#-contributing)
 
 </div>
 <!-- markdownlint-enable MD033 -->
@@ -76,6 +76,7 @@ Combining IRC's proven protocol with modern React-inspired UI development.
 **Version 0.3.7** - Return to Proven Resilient Workflows
 
 ### Key Highlights
+
 - 🔧 Restored battle-tested workflow configurations from v0.3.5 baseline
 - 🛡️ Comprehensive sccache HTTP 400 resilience for GitHub service outages
 - 🌍 Cross-platform timeout compatibility with BASH_ENV helper functions
@@ -90,11 +91,13 @@ Combining IRC's proven protocol with modern React-inspired UI development.
 ### 🚀 **Dioxus Implementation Progress**
 
 #### System Setup - **COMPLETE** ✅
+
 - ✅ System libraries installed (webkit2gtk-4.1, libsoup3, atk, gtk3)
 - ✅ Dioxus v0.6 dependencies configured
 - ✅ Development environment ready for React-like development
 
 #### Component Architecture - **IN PROGRESS** 🔨
+
 - 🔄 Converting Iced components to Dioxus RSX syntax
 - 🔄 Implementing React-style hooks for state management
 - 🔄 Setting up Context API for global state
@@ -272,9 +275,9 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 │  │  │  Provider  │  │  Provider  │  │  Provider  │      │   │
 │  │  └────────────┘  └────────────┘  └────────────┘      │   │
 │  │         │              │               │             │   │
-│  │  ┌────────────────────────────────────────────┐       │   │
-│  │  │          Virtual DOM & Diffing            │       │   │
-│  │  └────────────────────────────────────────────┘       │   │
+│  │  ┌────────────────────────────────────────────┐      │   │
+│  │  │          Virtual DOM & Diffing             │      │   │
+│  │  └────────────────────────────────────────────┘      │   │
 │  └──────────────────────────────────────────────────────┘   │
 │                              │                              │
 │  ┌──────────────────────────────────────────────────────┐   │
