@@ -1,9 +1,8 @@
----
 name: CI
 
-'on':
+on:
   pull_request:
-    branches: [main]
+    branches: [ main ]
   workflow_dispatch:
     inputs:
       rust_version:
@@ -46,33 +45,30 @@ env:
   RUST_BACKTRACE: 1
   SCCACHE_GHA_ENABLED: "true"
   # RUSTC_WRAPPER set per-job after sccache availability check
-  # Global setting removed to prevent systematic failures
-  # when sccache unavailable
+  # Global setting removed to prevent systematic failures when sccache unavailable
 
 # Concurrency handled by calling workflow (Master Pipeline)
 # to prevent deadlocks when used with workflow_call
 
 jobs:
-  # Note: Format and Clippy checks are handled by
-  # master-pipeline quick-checks
-  # These jobs are kept for standalone CI runs
-  # (when not called from master-pipeline)
+  # Note: Format and Clippy checks are handled by master-pipeline quick-checks
+  # These jobs are kept for standalone CI runs (when not called from master-pipeline)
   fmt:
     name: Format Check
     # Skip if called from master-pipeline (cache_key input is set)
     if: ${{ !inputs.cache_key }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt
-      - uses: Swatinem/rust-cache@v2
-        with:
-          key: fmt-${{ runner.os }}
-      - name: Check formatting
-        shell: bash
-        run: cargo fmt --all -- --check
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt
+    - uses: Swatinem/rust-cache@v2
+      with:
+        key: fmt-${{ runner.os }}
+    - name: Check formatting
+      shell: bash
+      run: cargo fmt --all -- --check
 
   clippy:
     name: Clippy
@@ -80,14 +76,14 @@ jobs:
     if: ${{ !inputs.cache_key }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
-      - uses: Swatinem/rust-cache@v2
-      - name: Run clippy
-        shell: bash
-        run: cargo clippy --all-targets --all-features -- -D warnings
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy
+    - uses: Swatinem/rust-cache@v2
+    - name: Run clippy
+      shell: bash
+      run: cargo clippy --all-targets --all-features -- -D warnings
 
   test:
     name: Test
@@ -100,105 +96,75 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         rust: [stable, beta]
         exclude:
-          # Reduce matrix size by skipping beta on Windows/macOS
-          # for faster CI
+          # Reduce matrix size by skipping beta on Windows/macOS for faster CI
           - os: windows-latest
             rust: beta
           - os: macos-latest
             rust: beta
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
+    
+    # Setup cross-platform helper functions
+    - name: Load helper functions
+      shell: bash
+      run: |
+        cat >>"$GITHUB_ENV" <<'EOF'
+        BASH_ENV=$RUNNER_TEMP/ci_helpers.sh
+        EOF
+        
+        cat >"$RUNNER_TEMP/ci_helpers.sh" <<'EOF'
+        run_with_timeout() {
+          local duration="$1"; shift
+          # Extract numeric value from duration (remove 's' suffix if present)
+          local numeric_duration="${duration%s}"
+          if [[ "${{ runner.os }}" == "macOS" ]]; then
+            # Use perl-based timeout for macOS (timeout command not available)
+            perl -e "alarm $numeric_duration; exec @ARGV" "$@"
+          else
+            # Use native timeout for Linux/Windows
+            timeout "$duration" "$@"
+          fi
+        }
+        export -f run_with_timeout
+        EOF
+    - uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ inputs.rust_version || matrix.rust }}
 
-      # Setup cross-platform helper functions
-      - name: Load helper functions
-        shell: bash
-        run: |
-          cat >>"$GITHUB_ENV" <<'EOF'
-          BASH_ENV=$RUNNER_TEMP/ci_helpers.sh
-          EOF
+    # Setup sccache with comprehensive GitHub cache service resilience
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.9
+      continue-on-error: true
+      id: sccache
+      with:
+        version: v0.10.0
 
-          cat >"$RUNNER_TEMP/ci_helpers.sh" <<'EOF'
-          run_with_timeout() {
-            local duration="$1"; shift
-            # Extract numeric value from duration
-            # (remove 's' suffix if present)
-            local numeric_duration="${duration%s}"
-            if [[ "${{ runner.os }}" == "macOS" ]]; then
-              # Use perl-based timeout for macOS
-              # (timeout command not available)
-              perl -e "alarm $numeric_duration; exec @ARGV" "$@"
+    - name: Configure sccache with GitHub cache service resilience
+      id: configure_sccache
+      shell: bash
+      env:
+        SCCACHE_LOG: error
+        SCCACHE_ERROR_LOG: ${{ runner.temp }}/sccache.err.log
+        SCCACHE_NO_DAEMON: "1"
+      run: |
+        set -euo pipefail
+        sccache_available="false"
+        rustc_wrapper=""
+
+        if command -v sccache > /dev/null 2>&1; then
+          echo "sccache binary found, probing GitHub Actions cache backend..."
+          
+          # Probe GHA backend health - this is where HTTP 400 errors manifest
+          if sccache --start-server >/dev/null 2>>"$SCCACHE_ERROR_LOG"; then
+            echo "sccache GHA backend looks healthy"
+            # Additional verification with stats command
+            if run_with_timeout 10s sccache --show-stats > /dev/null 2>&1; then
+              sccache_available="true"
+              rustc_wrapper="sccache"
+              echo "sccache verified and will be used for compilation"
             else
-              # Use native timeout for Linux/Windows
-              timeout "$duration" "$@"
-            fi
-          }
-          export -f run_with_timeout
-          EOF
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ inputs.rust_version || matrix.rust }}
-
-      # Setup sccache with comprehensive GitHub cache
-      # service resilience
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.9
-        continue-on-error: true
-        id: sccache
-        with:
-          version: v0.10.0
-
-      - name: Configure sccache with GitHub cache service resilience
-        id: configure_sccache
-        shell: bash
-        env:
-          SCCACHE_LOG: error
-          SCCACHE_ERROR_LOG: ${{ runner.temp }}/sccache.err.log
-          SCCACHE_NO_DAEMON: "1"
-          # Windows-specific optimizations for better cache
-          # performance
-          SCCACHE_CACHE_SIZE: >-
-            ${{ runner.os == 'Windows' && '15G' || '10G' }}
-          SCCACHE_IDLE_TIMEOUT: >-
-            ${{ runner.os == 'Windows' && '1800' || '600' }}
-          # Enhanced language detection for better caching coverage
-          SCCACHE_RECACHE_ON_COMPILE: "1"
-          CC: ${{ runner.os == 'Windows' && 'cl.exe' || 'gcc' }}
-          CXX: ${{ runner.os == 'Windows' && 'cl.exe' || 'g++' }}
-        run: |
-          set -euo pipefail
-          sccache_available="false"
-          rustc_wrapper=""
-
-          if command -v sccache > /dev/null 2>&1; then
-            echo "sccache binary found, probing GitHub Actions"
-            echo "cache backend..."
-
-            # Probe GHA backend health - this is where HTTP 400
-            # errors manifest
-            if sccache --start-server >/dev/null 2>>"$SCCACHE_ERROR_LOG"
-            then
-              echo "sccache GHA backend looks healthy"
-              # Additional verification with stats command
-              if run_with_timeout 10s sccache --show-stats > /dev/null 2>&1
-              then
-                sccache_available="true"
-                rustc_wrapper="sccache"
-                echo "sccache verified and will be used for compilation"
-              else
-                echo "sccache stats failed - backend may be degraded,"
-                echo "falling back to local cache"
-                # Configure local disk cache as fallback
-                echo "SCCACHE_GHA_ENABLED=false" >> $GITHUB_ENV
-                echo "SCCACHE_DIR=$HOME/.cache/sccache" >> $GITHUB_ENV
-                echo "SCCACHE_CACHE_SIZE=10G" >> $GITHUB_ENV
-                sccache_available="true"
-                rustc_wrapper="sccache"
-              fi
-            else
-              echo "sccache GHA backend not healthy; GitHub cache"
-              echo "service experiencing issues"
-              echo "Falling back to local disk cache mode"
+              echo "sccache stats failed - backend may be degraded, falling back to local cache"
               # Configure local disk cache as fallback
               echo "SCCACHE_GHA_ENABLED=false" >> $GITHUB_ENV
               echo "SCCACHE_DIR=$HOME/.cache/sccache" >> $GITHUB_ENV
@@ -206,421 +172,351 @@ jobs:
               sccache_available="true"
               rustc_wrapper="sccache"
             fi
-
-            # Print diagnostic information for debugging
-            if [ -s "$SCCACHE_ERROR_LOG" ]; then
-              echo "---- sccache startup diagnostics ----"
-              cat "$SCCACHE_ERROR_LOG" || true
-              echo "------------------------------------"
-            fi
           else
-            echo "sccache binary not found - using direct compilation"
+            echo "sccache GHA backend not healthy; GitHub cache service experiencing issues"
+            echo "Falling back to local disk cache mode"
+            # Configure local disk cache as fallback
+            echo "SCCACHE_GHA_ENABLED=false" >> $GITHUB_ENV
+            echo "SCCACHE_DIR=$HOME/.cache/sccache" >> $GITHUB_ENV
+            echo "SCCACHE_CACHE_SIZE=10G" >> $GITHUB_ENV
+            sccache_available="true"
+            rustc_wrapper="sccache"
           fi
+          
+          # Print diagnostic information for debugging
+          if [ -s "$SCCACHE_ERROR_LOG" ]; then
+            echo "---- sccache startup diagnostics ----"
+            cat "$SCCACHE_ERROR_LOG" || true
+            echo "------------------------------------"
+          fi
+        else
+          echo "sccache binary not found - using direct compilation"
+        fi
 
-          echo "sccache_available=$sccache_available" >> $GITHUB_OUTPUT
-          echo "rustc_wrapper=$rustc_wrapper" >> $GITHUB_OUTPUT
+        echo "sccache_available=$sccache_available" >> $GITHUB_OUTPUT
+        echo "rustc_wrapper=$rustc_wrapper" >> $GITHUB_OUTPUT
 
-          echo "Final sccache configuration:"
-          echo "available=$sccache_available, wrapper='$rustc_wrapper'"
+        echo "Final sccache configuration: available=$sccache_available, wrapper='$rustc_wrapper'"
 
-      # Old Windows-specific sccache configuration removed
-      # - now using unified approach
+    # Old Windows-specific sccache configuration removed - now using unified approach
 
-      # Note: Unified sccache configuration complete
-      # - redundant compatibility step removed
+    # Note: Unified sccache configuration complete - redundant compatibility step removed
 
-      - uses: Swatinem/rust-cache@v2
-        with:
-          key: >-
-            ${{ inputs.cache_key ||
-            format('test-{0}-{1}-{2}-{3}', runner.os, matrix.rust,
-            hashFiles('**/Cargo.lock'), github.run_id) }}
-          shared-key: "test-matrix"
-          # Use restore-keys to enable cache sharing while
-          # preventing 409 conflicts
-          restore-keys: |
-            test-${{ runner.os }}-${{ matrix.rust }}-${{
-            hashFiles('**/Cargo.lock') }}-
-            test-${{ runner.os }}-${{ matrix.rust }}-
-            master-pipeline-${{ runner.os }}-
-          cache-directories: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-      - name: Cache cargo tools
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/cargo-nextest
-            ~/.cargo/.crates.toml
-            ~/.cargo/.crates2.json
-          key: cargo-tools-${{ matrix.os }}-nextest
-          restore-keys: |
-            cargo-tools-${{ matrix.os }}-
+    - uses: Swatinem/rust-cache@v2
+      with:
+        key: ${{ inputs.cache_key || format('test-{0}-{1}', matrix.os, matrix.rust) }}
+        cache-directories: |
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+    - name: Cache cargo tools
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/bin/cargo-nextest
+          ~/.cargo/.crates.toml
+          ~/.cargo/.crates2.json
+        key: cargo-tools-${{ matrix.os }}-nextest
+        restore-keys: |
+          cargo-tools-${{ matrix.os }}-
 
-      - name: Install cargo-nextest with enhanced sccache resilience
-        shell: bash
-        run: |
-          if ! command -v cargo-nextest > /dev/null 2>&1; then
-            echo "Installing cargo-nextest with GitHub cache service"
-            echo "resilience..."
-            # Use sccache if available, with robust error handling
-            if [ "${{ steps.configure_sccache.outputs.sccache_available }}"
-            = "true" ]; then
-              echo "Attempting installation with sccache"
-              echo "(local or GHA mode)..."
-              export RUSTC_WRAPPER="${{
-              steps.configure_sccache.outputs.rustc_wrapper }}"
-              if ! run_with_timeout 300s cargo install cargo-nextest --locked
-              then
-                echo "Installation failed with sccache, retrying with"
-                echo "direct compilation..."
-                unset RUSTC_WRAPPER
-                export RUSTC_WRAPPER=""
-                run_with_timeout 300s cargo install cargo-nextest --locked
-              fi
-            else
-              echo "Installing with direct compilation (no sccache)..."
+    - name: Install cargo-nextest with enhanced sccache resilience
+      shell: bash
+      run: |
+        if ! command -v cargo-nextest > /dev/null 2>&1; then
+          echo "Installing cargo-nextest with GitHub cache service resilience..."
+          # Use sccache if available, with robust error handling
+          if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
+            echo "Attempting installation with sccache (local or GHA mode)..."
+            export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
+            if ! run_with_timeout 300s cargo install cargo-nextest --locked; then
+              echo "Installation failed with sccache, retrying with direct compilation..."
+              unset RUSTC_WRAPPER
               export RUSTC_WRAPPER=""
               run_with_timeout 300s cargo install cargo-nextest --locked
             fi
           else
-            echo "cargo-nextest already installed"
-          fi
-
-      - name: Build (if not cached) with sccache fallback
-        # Cross-platform build detection
-        if: inputs.cache_key == ''
-        shell: bash
-        run: |
-          # Unified bash script for all platforms
-          if [ "${{ steps.configure_sccache.outputs.sccache_available }}"
-          = "true" ]; then
-            echo "Building with sccache..."
-            export RUSTC_WRAPPER="${{
-            steps.configure_sccache.outputs.rustc_wrapper }}"
-            if ! run_with_timeout 900s cargo build --all-features \
-            --all-targets --release; then
-              echo "Build failed with sccache, retrying without sccache..."
-              unset RUSTC_WRAPPER
-              export RUSTC_WRAPPER=""
-              run_with_timeout 900s cargo build --all-features \
-              --all-targets --release
-            fi
-          else
-            echo "Building without sccache..."
+            echo "Installing with direct compilation (no sccache)..."
             export RUSTC_WRAPPER=""
-            run_with_timeout 900s cargo build --all-features \
-            --all-targets --release
+            run_with_timeout 300s cargo install cargo-nextest --locked
           fi
+        else
+          echo "cargo-nextest already installed"
+        fi
 
-      - name: Download build artifacts (if available)
-        if: inputs.cache_key != ''
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifacts-${{ runner.os }}
-          path: target/
-        continue-on-error: true
-      # Test each package individually with cross-platform commands
-      - name: Test rustirc-core
-        shell: bash
-        env:
-          CI: true
-        run: |
-          echo "Testing package: rustirc-core"
-          # Try with sccache if available
-          if [ "${{ steps.configure_sccache.outputs.sccache_available }}"
-          = "true" ]; then
-            export RUSTC_WRAPPER="${{
-            steps.configure_sccache.outputs.rustc_wrapper }}"
-            if ! run_with_timeout 600s cargo nextest run -p rustirc-core \
-            --release --all-features --profile ci 2>&1; then
-              echo "nextest failed with sccache, trying without sccache..."
-              unset RUSTC_WRAPPER
-              export RUSTC_WRAPPER=""
-              if ! run_with_timeout 600s cargo nextest run -p rustirc-core \
-              --release --all-features --profile ci; then
-                echo "nextest failed, trying cargo test..."
-                run_with_timeout 600s cargo test -p rustirc-core \
-                --release --all-features
-              fi
-            fi
-          else
+    - name: Build (if not cached) with sccache fallback
+      # Cross-platform build detection
+      if: inputs.cache_key == ''
+      shell: bash
+      run: |
+        # Unified bash script for all platforms
+        if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
+          echo "Building with sccache..."
+          export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
+          if ! run_with_timeout 900s cargo build --all-features --all-targets --release; then
+            echo "Build failed with sccache, retrying without sccache..."
+            unset RUSTC_WRAPPER
             export RUSTC_WRAPPER=""
-            if ! run_with_timeout 600s cargo nextest run -p rustirc-core \
-            --release --all-features --profile ci; then
+            run_with_timeout 900s cargo build --all-features --all-targets --release
+          fi
+        else
+          echo "Building without sccache..."
+          export RUSTC_WRAPPER=""
+          run_with_timeout 900s cargo build --all-features --all-targets --release
+        fi
+
+    - name: Download build artifacts (if available)
+      if: inputs.cache_key != ''
+      uses: actions/download-artifact@v4
+      with:
+        name: build-artifacts-${{ matrix.os }}
+        path: target/
+      continue-on-error: true
+    # Test each package individually with cross-platform commands
+    - name: Test rustirc-core
+      shell: bash
+      env:
+        CI: true
+      run: |
+        echo "Testing package: rustirc-core"
+        # Try with sccache if available
+        if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
+          export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
+          if ! run_with_timeout 600s cargo nextest run -p rustirc-core --release --all-features --profile ci 2>&1; then
+            echo "nextest failed with sccache, trying without sccache..."
+            unset RUSTC_WRAPPER
+            export RUSTC_WRAPPER=""
+            if ! run_with_timeout 600s cargo nextest run -p rustirc-core --release --all-features --profile ci; then
               echo "nextest failed, trying cargo test..."
-              run_with_timeout 600s cargo test -p rustirc-core \
-              --release --all-features
+              run_with_timeout 600s cargo test -p rustirc-core --release --all-features
             fi
           fi
+        else
+          export RUSTC_WRAPPER=""
+          if ! run_with_timeout 600s cargo nextest run -p rustirc-core --release --all-features --profile ci; then
+            echo "nextest failed, trying cargo test..."
+            run_with_timeout 600s cargo test -p rustirc-core --release --all-features
+          fi
+        fi
 
-      - name: Test rustirc-protocol
-        shell: bash
-        env:
-          CI: true
-        run: |
-          echo "Testing package: rustirc-protocol"
-          # Try with sccache if available
-          if [ "${{ steps.configure_sccache.outputs.sccache_available }}"
-          = "true" ]; then
-            export RUSTC_WRAPPER="${{
-            steps.configure_sccache.outputs.rustc_wrapper }}"
-            if ! run_with_timeout 600s cargo nextest run -p rustirc-protocol \
-            --release --all-features --profile ci 2>&1; then
-              echo "nextest failed with sccache, trying without sccache..."
-              unset RUSTC_WRAPPER
-              export RUSTC_WRAPPER=""
-              if ! run_with_timeout 600s cargo nextest run \
-              -p rustirc-protocol --release --all-features --profile ci; then
-                echo "nextest failed, trying cargo test..."
-                run_with_timeout 600s cargo test -p rustirc-protocol \
-                --release --all-features
-              fi
-            fi
-          else
+    - name: Test rustirc-protocol
+      shell: bash
+      env:
+        CI: true
+      run: |
+        echo "Testing package: rustirc-protocol"
+        # Try with sccache if available
+        if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
+          export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
+          if ! run_with_timeout 600s cargo nextest run -p rustirc-protocol --release --all-features --profile ci 2>&1; then
+            echo "nextest failed with sccache, trying without sccache..."
+            unset RUSTC_WRAPPER
             export RUSTC_WRAPPER=""
-            if ! run_with_timeout 600s cargo nextest run -p rustirc-protocol \
-            --release --all-features --profile ci; then
+            if ! run_with_timeout 600s cargo nextest run -p rustirc-protocol --release --all-features --profile ci; then
               echo "nextest failed, trying cargo test..."
-              run_with_timeout 600s cargo test -p rustirc-protocol \
-              --release --all-features
+              run_with_timeout 600s cargo test -p rustirc-protocol --release --all-features
             fi
           fi
+        else
+          export RUSTC_WRAPPER=""
+          if ! run_with_timeout 600s cargo nextest run -p rustirc-protocol --release --all-features --profile ci; then
+            echo "nextest failed, trying cargo test..."
+            run_with_timeout 600s cargo test -p rustirc-protocol --release --all-features
+          fi
+        fi
 
-      - name: Test rustirc-tui
-        shell: bash
-        env:
-          CI: true
-        run: |
-          echo "Testing package: rustirc-tui"
-          # Try with sccache if available
-          if [ "${{ steps.configure_sccache.outputs.sccache_available }}"
-          = "true" ]; then
-            export RUSTC_WRAPPER="${{
-            steps.configure_sccache.outputs.rustc_wrapper }}"
-            if ! run_with_timeout 600s cargo nextest run -p rustirc-tui \
-            --release --all-features --profile ci 2>&1; then
-              echo "nextest failed with sccache, trying without sccache..."
-              unset RUSTC_WRAPPER
-              export RUSTC_WRAPPER=""
-              if ! run_with_timeout 600s cargo nextest run -p rustirc-tui \
-              --release --all-features --profile ci; then
-                echo "nextest failed, trying cargo test..."
-                run_with_timeout 600s cargo test -p rustirc-tui \
-                --release --all-features
-              fi
-            fi
-          else
+    - name: Test rustirc-tui
+      shell: bash
+      env:
+        CI: true
+      run: |
+        echo "Testing package: rustirc-tui"
+        # Try with sccache if available
+        if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
+          export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
+          if ! run_with_timeout 600s cargo nextest run -p rustirc-tui --release --all-features --profile ci 2>&1; then
+            echo "nextest failed with sccache, trying without sccache..."
+            unset RUSTC_WRAPPER
             export RUSTC_WRAPPER=""
-            if ! run_with_timeout 600s cargo nextest run -p rustirc-tui \
-            --release --all-features --profile ci; then
+            if ! run_with_timeout 600s cargo nextest run -p rustirc-tui --release --all-features --profile ci; then
               echo "nextest failed, trying cargo test..."
-              run_with_timeout 600s cargo test -p rustirc-tui \
-              --release --all-features
+              run_with_timeout 600s cargo test -p rustirc-tui --release --all-features
             fi
           fi
+        else
+          export RUSTC_WRAPPER=""
+          if ! run_with_timeout 600s cargo nextest run -p rustirc-tui --release --all-features --profile ci; then
+            echo "nextest failed, trying cargo test..."
+            run_with_timeout 600s cargo test -p rustirc-tui --release --all-features
+          fi
+        fi
 
-      - name: Test rustirc-plugins
-        shell: bash
-        env:
-          CI: true
-        run: |
-          echo "Testing package: rustirc-plugins"
-          # Try with sccache if available
-          if [ "${{ steps.configure_sccache.outputs.sccache_available }}"
-          = "true" ]; then
-            export RUSTC_WRAPPER="${{
-            steps.configure_sccache.outputs.rustc_wrapper }}"
-            if ! run_with_timeout 600s cargo nextest run -p rustirc-plugins \
-            --release --all-features --profile ci 2>&1; then
-              echo "nextest failed with sccache, trying without sccache..."
-              unset RUSTC_WRAPPER
-              export RUSTC_WRAPPER=""
-              if ! run_with_timeout 600s cargo nextest run -p rustirc-plugins \
-              --release --all-features --profile ci; then
-                echo "nextest failed, trying cargo test..."
-                run_with_timeout 600s cargo test -p rustirc-plugins \
-                --release --all-features
-              fi
-            fi
-          else
+    - name: Test rustirc-plugins
+      shell: bash
+      env:
+        CI: true
+      run: |
+        echo "Testing package: rustirc-plugins"
+        # Try with sccache if available
+        if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
+          export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
+          if ! run_with_timeout 600s cargo nextest run -p rustirc-plugins --release --all-features --profile ci 2>&1; then
+            echo "nextest failed with sccache, trying without sccache..."
+            unset RUSTC_WRAPPER
             export RUSTC_WRAPPER=""
-            if ! run_with_timeout 600s cargo nextest run -p rustirc-plugins \
-            --release --all-features --profile ci; then
+            if ! run_with_timeout 600s cargo nextest run -p rustirc-plugins --release --all-features --profile ci; then
               echo "nextest failed, trying cargo test..."
-              run_with_timeout 600s cargo test -p rustirc-plugins \
-              --release --all-features
+              run_with_timeout 600s cargo test -p rustirc-plugins --release --all-features
             fi
           fi
+        else
+          export RUSTC_WRAPPER=""
+          if ! run_with_timeout 600s cargo nextest run -p rustirc-plugins --release --all-features --profile ci; then
+            echo "nextest failed, trying cargo test..."
+            run_with_timeout 600s cargo test -p rustirc-plugins --release --all-features
+          fi
+        fi
 
-      - name: Test rustirc-scripting
-        shell: bash
-        env:
-          CI: true
-        run: |
-          echo "Testing package: rustirc-scripting"
-          # Try with sccache if available
-          if [ "${{ steps.configure_sccache.outputs.sccache_available }}"
-          = "true" ]; then
-            export RUSTC_WRAPPER="${{
-            steps.configure_sccache.outputs.rustc_wrapper }}"
-            if ! run_with_timeout 600s cargo nextest run \
-            -p rustirc-scripting --release --all-features --profile ci 2>&1
-            then
-              echo "nextest failed with sccache, trying without sccache..."
-              unset RUSTC_WRAPPER
-              export RUSTC_WRAPPER=""
-              if ! run_with_timeout 600s cargo nextest run \
-              -p rustirc-scripting --release --all-features --profile ci; then
-                echo "nextest failed, trying cargo test..."
-                run_with_timeout 600s cargo test -p rustirc-scripting \
-                --release --all-features
-              fi
-            fi
-          else
+    - name: Test rustirc-scripting
+      shell: bash
+      env:
+        CI: true
+      run: |
+        echo "Testing package: rustirc-scripting"
+        # Try with sccache if available
+        if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
+          export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
+          if ! run_with_timeout 600s cargo nextest run -p rustirc-scripting --release --all-features --profile ci 2>&1; then
+            echo "nextest failed with sccache, trying without sccache..."
+            unset RUSTC_WRAPPER
             export RUSTC_WRAPPER=""
-            if ! run_with_timeout 600s cargo nextest run -p rustirc-scripting \
-            --release --all-features --profile ci; then
+            if ! run_with_timeout 600s cargo nextest run -p rustirc-scripting --release --all-features --profile ci; then
               echo "nextest failed, trying cargo test..."
-              run_with_timeout 600s cargo test -p rustirc-scripting \
-              --release --all-features
+              run_with_timeout 600s cargo test -p rustirc-scripting --release --all-features
             fi
           fi
+        else
+          export RUSTC_WRAPPER=""
+          if ! run_with_timeout 600s cargo nextest run -p rustirc-scripting --release --all-features --profile ci; then
+            echo "nextest failed, trying cargo test..."
+            run_with_timeout 600s cargo test -p rustirc-scripting --release --all-features
+          fi
+        fi
 
-      - name: Test rustirc-gui (lib only)
-        shell: bash
-        env:
-          CI: true
-        run: |
-          echo "Testing package: rustirc-gui (lib only)"
-          # Try with sccache if available
-          if [ "${{ steps.configure_sccache.outputs.sccache_available }}"
-          = "true" ]; then
-            export RUSTC_WRAPPER="${{
-            steps.configure_sccache.outputs.rustc_wrapper }}"
-            if ! run_with_timeout 600s cargo nextest run -p rustirc-gui \
-            --release --all-features --lib --profile ci 2>&1; then
-              echo "nextest failed with sccache, trying without sccache..."
-              unset RUSTC_WRAPPER
-              export RUSTC_WRAPPER=""
-              if ! run_with_timeout 600s cargo nextest run -p rustirc-gui \
-              --release --all-features --lib --profile ci; then
-                echo "nextest failed, trying cargo test..."
-                run_with_timeout 600s cargo test -p rustirc-gui \
-                --release --all-features --lib
-              fi
-            fi
-          else
+    - name: Test rustirc-gui (lib only)
+      shell: bash
+      env:
+        CI: true
+      run: |
+        echo "Testing package: rustirc-gui (lib only)"
+        # Try with sccache if available
+        if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
+          export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
+          if ! run_with_timeout 600s cargo nextest run -p rustirc-gui --release --all-features --lib --profile ci 2>&1; then
+            echo "nextest failed with sccache, trying without sccache..."
+            unset RUSTC_WRAPPER
             export RUSTC_WRAPPER=""
-            if ! run_with_timeout 600s cargo nextest run -p rustirc-gui \
-            --release --all-features --lib --profile ci; then
+            if ! run_with_timeout 600s cargo nextest run -p rustirc-gui --release --all-features --lib --profile ci; then
               echo "nextest failed, trying cargo test..."
-              run_with_timeout 600s cargo test -p rustirc-gui \
-              --release --all-features --lib
+              run_with_timeout 600s cargo test -p rustirc-gui --release --all-features --lib
             fi
           fi
-      # Run doctests on all platforms for comprehensive testing
-      - name: Run doctests for rustirc-core
-        shell: bash
-        env:
-          RUSTC_WRAPPER: >-
-            ${{ steps.configure_sccache.outputs.rustc_wrapper }}
-        run: |
-          echo "Running doctests for rustirc-core..."
-          if run_with_timeout 300s cargo test --doc -p rustirc-core \
-          --all-features > /dev/null 2>&1; then
-            echo "Doctests passed for rustirc-core"
-          else
-            echo "No doctests or doctest failed in rustirc-core"
+        else
+          export RUSTC_WRAPPER=""
+          if ! run_with_timeout 600s cargo nextest run -p rustirc-gui --release --all-features --lib --profile ci; then
+            echo "nextest failed, trying cargo test..."
+            run_with_timeout 600s cargo test -p rustirc-gui --release --all-features --lib
           fi
+        fi
+    # Run doctests on all platforms for comprehensive testing
+    - name: Run doctests for rustirc-core
+      shell: bash
+      env:
+        RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
+      run: |
+        echo "Running doctests for rustirc-core..."
+        if run_with_timeout 300s cargo test --doc -p rustirc-core --all-features > /dev/null 2>&1; then
+          echo "Doctests passed for rustirc-core"
+        else
+          echo "No doctests or doctest failed in rustirc-core"
+        fi
 
-      - name: Run doctests for rustirc-protocol
-        shell: bash
-        env:
-          RUSTC_WRAPPER: >-
-            ${{ steps.configure_sccache.outputs.rustc_wrapper }}
-        run: |
-          echo "Running doctests for rustirc-protocol..."
-          if run_with_timeout 300s cargo test --doc -p rustirc-protocol \
-          --all-features > /dev/null 2>&1; then
-            echo "Doctests passed for rustirc-protocol"
-          else
-            echo "No doctests or doctest failed in rustirc-protocol"
-          fi
+    - name: Run doctests for rustirc-protocol
+      shell: bash
+      env:
+        RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
+      run: |
+        echo "Running doctests for rustirc-protocol..."
+        if run_with_timeout 300s cargo test --doc -p rustirc-protocol --all-features > /dev/null 2>&1; then
+          echo "Doctests passed for rustirc-protocol"
+        else
+          echo "No doctests or doctest failed in rustirc-protocol"
+        fi
 
-      - name: Run doctests for rustirc-gui
-        shell: bash
-        env:
-          RUSTC_WRAPPER: >-
-            ${{ steps.configure_sccache.outputs.rustc_wrapper }}
-        run: |
-          echo "Running doctests for rustirc-gui..."
-          if run_with_timeout 300s cargo test --doc -p rustirc-gui \
-          --all-features > /dev/null 2>&1; then
-            echo "Doctests passed for rustirc-gui"
-          else
-            echo "No doctests or doctest failed in rustirc-gui"
-          fi
+    - name: Run doctests for rustirc-gui
+      shell: bash
+      env:
+        RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
+      run: |
+        echo "Running doctests for rustirc-gui..."
+        if run_with_timeout 300s cargo test --doc -p rustirc-gui --all-features > /dev/null 2>&1; then
+          echo "Doctests passed for rustirc-gui"
+        else
+          echo "No doctests or doctest failed in rustirc-gui"
+        fi
 
-      - name: Run doctests for rustirc-tui
-        shell: bash
-        env:
-          RUSTC_WRAPPER: >-
-            ${{ steps.configure_sccache.outputs.rustc_wrapper }}
-        run: |
-          echo "Running doctests for rustirc-tui..."
-          if run_with_timeout 300s cargo test --doc -p rustirc-tui \
-          --all-features > /dev/null 2>&1; then
-            echo "Doctests passed for rustirc-tui"
-          else
-            echo "No doctests or doctest failed in rustirc-tui"
-          fi
+    - name: Run doctests for rustirc-tui
+      shell: bash
+      env:
+        RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
+      run: |
+        echo "Running doctests for rustirc-tui..."
+        if run_with_timeout 300s cargo test --doc -p rustirc-tui --all-features > /dev/null 2>&1; then
+          echo "Doctests passed for rustirc-tui"
+        else
+          echo "No doctests or doctest failed in rustirc-tui"
+        fi
 
-      - name: Run doctests for rustirc-scripting
-        shell: bash
-        env:
-          RUSTC_WRAPPER: >-
-            ${{ steps.configure_sccache.outputs.rustc_wrapper }}
-        run: |
-          echo "Running doctests for rustirc-scripting..."
-          if run_with_timeout 300s cargo test --doc -p rustirc-scripting \
-          --all-features > /dev/null 2>&1; then
-            echo "Doctests passed for rustirc-scripting"
-          else
-            echo "No doctests or doctest failed in rustirc-scripting"
-          fi
+    - name: Run doctests for rustirc-scripting
+      shell: bash
+      env:
+        RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
+      run: |
+        echo "Running doctests for rustirc-scripting..."
+        if run_with_timeout 300s cargo test --doc -p rustirc-scripting --all-features > /dev/null 2>&1; then
+          echo "Doctests passed for rustirc-scripting"
+        else
+          echo "No doctests or doctest failed in rustirc-scripting"
+        fi
 
-      - name: Run doctests for rustirc-plugins
-        shell: bash
-        env:
-          RUSTC_WRAPPER: >-
-            ${{ steps.configure_sccache.outputs.rustc_wrapper }}
-        run: |
-          echo "Running doctests for rustirc-plugins..."
-          if run_with_timeout 300s cargo test --doc -p rustirc-plugins \
-          --all-features > /dev/null 2>&1; then
-            echo "Doctests passed for rustirc-plugins"
-          else
-            echo "No doctests or doctest failed in rustirc-plugins"
-          fi
+    - name: Run doctests for rustirc-plugins
+      shell: bash
+      env:
+        RUSTC_WRAPPER: ${{ steps.configure_sccache.outputs.rustc_wrapper }}
+      run: |
+        echo "Running doctests for rustirc-plugins..."
+        if run_with_timeout 300s cargo test --doc -p rustirc-plugins --all-features > /dev/null 2>&1; then
+          echo "Doctests passed for rustirc-plugins"
+        else
+          echo "No doctests or doctest failed in rustirc-plugins"
+        fi
 
-      # Upload test results to Codecov for Test Analytics
-      - name: Upload test results to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/test-results-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          file: target/nextest/ci/junit.xml
-          flags: unittests
-          name: test-results-${{ matrix.os }}-${{ matrix.rust }}
+    # Upload test results to Codecov for Test Analytics
+    - name: Upload test results to Codecov
+      if: ${{ !cancelled() }}
+      uses: codecov/test-results-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: target/nextest/ci/junit.xml
+        flags: unittests
+        name: test-results-${{ matrix.os }}-${{ matrix.rust }}
 
-      - name: Set test result
-        id: test_result
-        if: always()
-        shell: bash
-        run: echo "result=success" >> $GITHUB_OUTPUT
+    - name: Set test result
+      id: test_result
+      if: always()
+      shell: bash
+      run: echo "result=success" >> $GITHUB_OUTPUT
 
   # Note: Coverage and Security Audit are handled by master-pipeline.yml
   # This workflow focuses only on testing across different platforms
@@ -630,66 +526,61 @@ jobs:
     name: Minimum Supported Rust Version
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      # Setup cross-platform helper functions
-      - name: Load helper functions
-        shell: bash
-        run: |
-          cat >>"$GITHUB_ENV" <<'EOF'
-          BASH_ENV=$RUNNER_TEMP/ci_helpers.sh
-          EOF
-
-          cat >"$RUNNER_TEMP/ci_helpers.sh" <<'EOF'
-          run_with_timeout() {
-            local duration="$1"; shift
-            # Extract numeric value from duration
-            # (remove 's' suffix if present)
-            local numeric_duration="${duration%s}"
-            if [[ "${{ runner.os }}" == "macOS" ]]; then
-              # Use perl-based timeout for macOS
-              # (timeout command not available)
-              perl -e "alarm $numeric_duration; exec @ARGV" "$@"
-            else
-              # Use native timeout for Linux/Windows
-              timeout "$duration" "$@"
-            fi
-          }
-          export -f run_with_timeout
-          EOF
-
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: 1.75.0
-      - uses: Swatinem/rust-cache@v2
-      - name: Check MSRV with sccache fallback
-        shell: bash
-        run: |
-          # Unified bash script for all platforms
-          sccache_available="false"
-          rustc_wrapper=""
-
-          if command -v sccache > /dev/null 2>&1 && \
-          run_with_timeout 30s sccache --version > /dev/null 2>&1; then
-            if run_with_timeout 10s sccache --show-stats > /dev/null 2>&1
-            then
-              sccache_available="true"
-              rustc_wrapper="sccache"
-              echo "Using sccache for MSRV check"
-            fi
-          fi
-
-          if [ "$sccache_available" = "true" ]; then
-            export RUSTC_WRAPPER="$rustc_wrapper"
-            if ! run_with_timeout 600s cargo check --all-features; then
-              echo "MSRV check failed with sccache, retrying without"
-              echo "sccache..."
-              unset RUSTC_WRAPPER
-              export RUSTC_WRAPPER=""
-              run_with_timeout 600s cargo check --all-features
-            fi
+    - uses: actions/checkout@v4
+    
+    # Setup cross-platform helper functions
+    - name: Load helper functions
+      shell: bash
+      run: |
+        cat >>"$GITHUB_ENV" <<'EOF'
+        BASH_ENV=$RUNNER_TEMP/ci_helpers.sh
+        EOF
+        
+        cat >"$RUNNER_TEMP/ci_helpers.sh" <<'EOF'
+        run_with_timeout() {
+          local duration="$1"; shift
+          # Extract numeric value from duration (remove 's' suffix if present)
+          local numeric_duration="${duration%s}"
+          if [[ "${{ runner.os }}" == "macOS" ]]; then
+            # Use perl-based timeout for macOS (timeout command not available)
+            perl -e "alarm $numeric_duration; exec @ARGV" "$@"
           else
-            echo "Running MSRV check without sccache"
+            # Use native timeout for Linux/Windows
+            timeout "$duration" "$@"
+          fi
+        }
+        export -f run_with_timeout
+        EOF
+        
+    - uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: 1.75.0
+    - uses: Swatinem/rust-cache@v2
+    - name: Check MSRV with sccache fallback
+      shell: bash
+      run: |
+        # Unified bash script for all platforms
+        sccache_available="false"
+        rustc_wrapper=""
+
+        if command -v sccache > /dev/null 2>&1 && run_with_timeout 30s sccache --version > /dev/null 2>&1; then
+          if run_with_timeout 10s sccache --show-stats > /dev/null 2>&1; then
+            sccache_available="true"
+            rustc_wrapper="sccache"
+            echo "Using sccache for MSRV check"
+          fi
+        fi
+
+        if [ "$sccache_available" = "true" ]; then
+          export RUSTC_WRAPPER="$rustc_wrapper"
+          if ! run_with_timeout 600s cargo check --all-features; then
+            echo "MSRV check failed with sccache, retrying without sccache..."
+            unset RUSTC_WRAPPER
             export RUSTC_WRAPPER=""
             run_with_timeout 600s cargo check --all-features
           fi
+        else
+          echo "Running MSRV check without sccache"
+          export RUSTC_WRAPPER=""
+          run_with_timeout 600s cargo check --all-features
+        fi

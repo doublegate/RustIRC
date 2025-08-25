@@ -1,6 +1,6 @@
 [package]
 name = "rustirc-core"
-version = "0.3.6"
+version = "0.3.5"
 edition = "2021"
 authors = ["RustIRC Contributors"]
 description = "Core functionality for RustIRC client"
