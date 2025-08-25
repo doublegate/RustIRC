@@ -2,6 +2,7 @@
 
 pub mod accessibility;
 pub mod app;
+pub mod components;
 pub mod dialogs;
 pub mod event_handler;
 pub mod formatting;
@@ -11,6 +12,7 @@ pub mod platform;
 pub mod state;
 pub mod testing;
 pub mod theme;
+pub mod themes;
 pub mod widgets;
 
 // Deprecated simple app - being phased out
