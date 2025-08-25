@@ -7,7 +7,8 @@ description = "GUI implementation for RustIRC"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-iced = { workspace = true }
+dioxus = "0.6.3"
+dioxus-desktop = "0.6.3"
 tokio = { workspace = true }
 serde = { workspace = true }
 tracing = { workspace = true }
@@ -16,6 +17,7 @@ thiserror = { workspace = true }
 regex = { workspace = true }
 async-trait = "0.1"
 open = "5.0"
+uuid = { version = "1.0", features = ["v4"] }
 
 rustirc-core = { path = "../rustirc-core" }
 rustirc-protocol = { path = "../rustirc-protocol" }

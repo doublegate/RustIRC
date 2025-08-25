@@ -38,6 +38,10 @@ struct Args {
     /// Run in CLI mode for testing
     #[arg(long)]
     cli: bool,
+
+    /// Use Dioxus GUI (modern React-like interface)
+    #[arg(long)]
+    dioxus: bool,
 }
 
 fn main() -> Result<()> {
@@ -52,6 +56,8 @@ fn main() -> Result<()> {
         run_cli(args)?;
     } else if args.tui {
         run_tui(args)?;
+    } else if args.dioxus {
+        run_dioxus_gui(args)?;
     } else {
         run_gui(args)?;
     }
@@ -87,6 +93,24 @@ fn run_gui(args: Args) -> Result<()> {
 
     // Run the full-featured GUI application with all advanced features
     RustIrcGui::run().map_err(|e| anyhow::anyhow!("GUI error: {}", e))?;
+
+    Ok(())
+}
+
+fn run_dioxus_gui(args: Args) -> Result<()> {
+    info!("Starting modern GUI mode with Dioxus (React-like components, modern styling)");
+
+    // Use configuration from args if provided
+    if let Some(config_path) = args.config {
+        info!("Loading configuration from: {}", config_path);
+        // TODO: Load and apply configuration
+    }
+
+    // Use Dioxus GUI with modern React-like architecture
+    use rustirc_gui::launch_app;
+
+    info!("Launching Dioxus desktop application...");
+    launch_app().map_err(|e| anyhow::anyhow!("Dioxus GUI error: {}", e))?;
 
     Ok(())
 }

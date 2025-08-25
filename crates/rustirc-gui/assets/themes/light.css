@@ -1,0 +1,16 @@
+/* Light theme CSS variables */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #e0e0e0;
+  --text-primary: #212121;
+  --text-secondary: #424242;
+  --text-muted: #757575;
+  --accent-primary: #1976d2;
+  --accent-hover: #1565c0;
+  --border-color: #e0e0e0;
+  --success: #388e3c;
+  --warning: #f57c00;
+  --error: #d32f2f;
+  --info: #1976d2;
+}

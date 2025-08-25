@@ -1,0 +1,16 @@
+/* Discord theme CSS variables */
+:root {
+  --bg-primary: #36393f;
+  --bg-secondary: #2f3136;
+  --bg-tertiary: #40444b;
+  --text-primary: #dcddde;
+  --text-secondary: #8e9297;
+  --text-muted: #72767d;
+  --accent-primary: #5865f2;
+  --accent-hover: #4752c4;
+  --border-color: #40444b;
+  --success: #3ba55d;
+  --warning: #faa81a;
+  --error: #ed4245;
+  --info: #5865f2;
+}

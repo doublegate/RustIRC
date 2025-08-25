@@ -1,0 +1,182 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom IRC Client Styles */
+:root {
+  /* Dark theme (default) */
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #2d2d2d;
+  --bg-tertiary: #404040;
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --text-muted: #737373;
+  --accent-primary: #007acc;
+  --accent-hover: #005a9e;
+  --border-color: #404040;
+  --success: #4caf50;
+  --warning: #ff9800;
+  --error: #f44336;
+  --info: #2196f3;
+}
+
+/* Light theme variables */
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #e0e0e0;
+  --text-primary: #212121;
+  --text-secondary: #424242;
+  --text-muted: #757575;
+  --accent-primary: #1976d2;
+  --accent-hover: #1565c0;
+  --border-color: #e0e0e0;
+  --success: #388e3c;
+  --warning: #f57c00;
+  --error: #d32f2f;
+  --info: #1976d2;
+}
+
+/* Discord theme variables */
+[data-theme="discord"] {
+  --bg-primary: #36393f;
+  --bg-secondary: #2f3136;
+  --bg-tertiary: #40444b;
+  --text-primary: #dcddde;
+  --text-secondary: #8e9297;
+  --text-muted: #72767d;
+  --accent-primary: #5865f2;
+  --accent-hover: #4752c4;
+  --border-color: #40444b;
+}
+
+/* Nord theme variables */
+[data-theme="nord"] {
+  --bg-primary: #2e3440;
+  --bg-secondary: #3b4252;
+  --bg-tertiary: #434c5e;
+  --text-primary: #eceff4;
+  --text-secondary: #d8dee9;
+  --text-muted: #81a1c1;
+  --accent-primary: #88c0d0;
+  --accent-hover: #81a1c1;
+  --border-color: #434c5e;
+}
+
+/* Base component styles */
+@layer components {
+  .irc-window {
+    @apply h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-hidden;
+  }
+  
+  .irc-panel {
+    @apply bg-[var(--bg-secondary)] border-[var(--border-color)];
+  }
+  
+  .irc-button {
+    @apply bg-[var(--accent-primary)] hover:bg-[var(--accent-hover)] text-white px-3 py-1 rounded transition-colors;
+  }
+  
+  .irc-input {
+    @apply bg-[var(--bg-tertiary)] text-[var(--text-primary)] border-[var(--border-color)] border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)];
+  }
+  
+  .irc-message {
+    @apply px-3 py-1 hover:bg-[var(--bg-tertiary)] transition-colors;
+  }
+  
+  .irc-message-system {
+    @apply text-[var(--text-muted)] italic;
+  }
+  
+  .irc-message-error {
+    @apply text-[var(--error)];
+  }
+  
+  .irc-message-action {
+    @apply text-[var(--info)] italic;
+  }
+  
+  .irc-channel-active {
+    @apply bg-[var(--accent-primary)] text-white;
+  }
+  
+  .irc-channel-unread {
+    @apply text-[var(--accent-primary)] font-medium;
+  }
+  
+  .irc-user-op {
+    @apply text-[var(--success)];
+  }
+  
+  .irc-user-voice {
+    @apply text-[var(--warning)];
+  }
+  
+  .irc-user-away {
+    @apply text-[var(--text-muted)] opacity-60;
+  }
+  
+  .modal-backdrop {
+    @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50;
+  }
+  
+  .modal-content {
+    @apply bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg shadow-xl min-w-96 max-w-2xl;
+  }
+  
+  .context-menu {
+    @apply bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded shadow-lg py-1 min-w-48;
+  }
+  
+  .context-menu-item {
+    @apply px-3 py-2 hover:bg-[var(--bg-tertiary)] cursor-pointer transition-colors;
+  }
+}
+
+/* IRC color formatting */
+.irc-color-0 { color: #ffffff; }
+.irc-color-1 { color: #000000; }
+.irc-color-2 { color: #00007f; }
+.irc-color-3 { color: #009300; }
+.irc-color-4 { color: #ff0000; }
+.irc-color-5 { color: #7f0000; }
+.irc-color-6 { color: #9c009c; }
+.irc-color-7 { color: #fc7f00; }
+.irc-color-8 { color: #ffff00; }
+.irc-color-9 { color: #00fc00; }
+.irc-color-10 { color: #009393; }
+.irc-color-11 { color: #00ffff; }
+.irc-color-12 { color: #0000fc; }
+.irc-color-13 { color: #ff00ff; }
+.irc-color-14 { color: #7f7f7f; }
+.irc-color-15 { color: #d2d2d2; }
+
+/* IRC text formatting */
+.irc-bold { font-weight: bold; }
+.irc-italic { font-style: italic; }
+.irc-underline { text-decoration: underline; }
+.irc-strikethrough { text-decoration: line-through; }
+
+/* Scrollbar styling */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-primary) var(--bg-secondary);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--accent-primary);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-hover);
+}

@@ -1,0 +1,16 @@
+/* Dark theme CSS variables */
+:root {
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #2d2d2d;
+  --bg-tertiary: #404040;
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --text-muted: #737373;
+  --accent-primary: #007acc;
+  --accent-hover: #005a9e;
+  --border-color: #404040;
+  --success: #4caf50;
+  --warning: #ff9800;
+  --error: #f44336;
+  --info: #2196f3;
+}

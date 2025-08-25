@@ -450,7 +450,7 @@ Ensuring CLI has full GUI feature equivalency:
    - Complete CI/CD pipeline executing without failures
    - All existing resilience features preserved and enhanced
 
-### Workflow Optimization Lessons Learned (August 24, 2025 8:25 PM EDT)
+### Workflow Optimization Lessons Learned (August 24, 2025 11:12 PM EDT)
 
 **Critical Anti-patterns Discovered Through v0.3.6 Attempt**:
 
@@ -476,4 +476,10 @@ Ensuring CLI has full GUI feature equivalency:
    - **Approach**: Preserve failed attempts in in_prog/ folder
    - **Documentation**: WORKFLOW_OPTIMIZATION_ATTEMPTS.md with all 14 commits
    - **Benefit**: Future reference for what doesn't work and why
-   - **Repository state**: Stable v0.3.5 at commit 4e0fcf6
+   - **Repository state**: Stable v0.3.7 with proven resilient workflows from commit 928aad1
+
+5. **v0.3.7 Release Success**:
+   - **Approach**: Restored workflows from commit 928aad1 (v0.3.5 baseline)
+   - **Result**: Successful release with all resilience patterns intact
+   - **Key patterns**: sccache HTTP 400 resilience, BASH_ENV helpers, timeout handling
+   - **Repository state**: v0.3.7 released with battle-tested configurations
