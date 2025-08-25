@@ -14,14 +14,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Script/plugin manager UI
 - Event-driven scripting API
 
-## [0.3.6] - 2025-08-25 (GitHub Actions YAML Compliance & Workflow Resilience)
+## [0.3.6] - 2025-08-25 (Simplified GitHub Actions Workflows)
 
 ### Summary
-GitHub Actions YAML Compliance & Workflow Resilience - This release resolves the critical build/clippy execution order issue that caused the failed v0.3.6 pipeline attempt. Fixed parallel build/clippy execution causing "can't find crate for iced" errors by implementing proper job dependency chain where clippy runs after successful build completion. Enhanced workflow YAML compliance across all files with systematic fixes and maintained all existing resilience features from v0.3.5.
+Simplified GitHub Actions Workflows - This release modernizes and streamlines the CI/CD pipeline by removing complex resilience patterns in favor of maintainable, clean workflows. Applied comprehensive lessons learned from previous optimization attempts to create reliable, easy-to-maintain GitHub Actions configuration with proper execution order and YAML compliance.
 
-### Critical Fixes
+### Major Changes
 
-#### Master Pipeline Execution Order Resolution
+#### Workflow Simplification & Modernization
+- **Simplified CI Pipeline**: Streamlined ci.yml with focused job matrix for PR testing
+- **Enhanced Release Process**: Improved release.yml with better artifact handling
+- **Modernized Security Audit**: Updated security-audit.yml with JSON output and dependency management
+- **Streamlined Master Pipeline**: Added smoke tests with proper build flow sequence
+- **Removed Complex Resilience**: Eliminated complex sccache HTTP 400 fallback patterns for maintainability
+- **YAML Compliance**: Fixed all yamllint validation issues across all workflow files
+
+#### Critical Execution Order Fixes
 - **Build/Clippy Dependency Chain**: Fixed critical parallel execution causing crate resolution failures
   - Clippy job now properly depends on successful Build job completion
   - Resolved "can't find crate for iced" error (exit code 101) from premature clippy execution
