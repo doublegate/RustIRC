@@ -449,3 +449,31 @@ Ensuring CLI has full GUI feature equivalency:
    - All platform builds operational (Windows, Linux x64/ARM64, macOS x64/ARM64)
    - Complete CI/CD pipeline executing without failures
    - All existing resilience features preserved and enhanced
+
+### Workflow Optimization Lessons Learned (August 24, 2025 8:25 PM EDT)
+
+**Critical Anti-patterns Discovered Through v0.3.6 Attempt**:
+
+1. **Build/Clippy Execution Order**:
+   - **Anti-pattern**: Running clippy in parallel with or before build
+   - **Error**: "can't find crate for iced" (exit code 101)
+   - **Solution**: clippy MUST run after successful build completion
+   - **Impact**: v0.3.6 pipeline failed, reverted to v0.3.5 stable baseline
+
+2. **Swatinem/rust-cache@v2 Parameters**:
+   - **Anti-pattern**: Using restore-keys parameter
+   - **Error**: "Unexpected inputs: restore-keys"
+   - **Solution**: Only use supported parameters (key, shared-key, save-if)
+   - **Documentation**: Action does not support restore-keys despite cache similarity
+
+3. **yamllint Compliance Strategy**:
+   - **Preference**: Manual line-by-line fixes over automation
+   - **Key fixes**: Document markers (---), truthy values ('on':), line lengths
+   - **Result**: 33+ errors fixed while preserving functionality
+   - **Learning**: Automation can miss context-sensitive formatting requirements
+
+4. **Workflow Reversion Strategy**:
+   - **Approach**: Preserve failed attempts in in_prog/ folder
+   - **Documentation**: WORKFLOW_OPTIMIZATION_ATTEMPTS.md with all 14 commits
+   - **Benefit**: Future reference for what doesn't work and why
+   - **Repository state**: Stable v0.3.5 at commit 4e0fcf6

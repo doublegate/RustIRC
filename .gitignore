@@ -109,6 +109,9 @@ $RECYCLE.BIN/
 .nfs*
 
 # Development files
+# Work in progress folder for optimization attempts
+in_prog/
+
 # Logs
 logs/
 *.log
