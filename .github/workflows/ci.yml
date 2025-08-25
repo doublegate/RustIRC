@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
     inputs:
       rust_version:
@@ -10,6 +10,16 @@ on:
         default: stable
         options: [stable, beta, nightly]
       skip_tests:
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      rust_version:
+        description: 'Rust toolchain version'
+        type: string
+        default: 'stable'
+      skip_tests:
+        description: 'Skip running tests'
         type: boolean
         default: false
 
