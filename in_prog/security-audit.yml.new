@@ -128,7 +128,7 @@ jobs:
             echo "⚠️ Audit command failed, created empty JSON"
           fi
         fi
-        
+
         # Verify the file exists and is valid JSON
         if [ -f "audit-results.json" ]; then
           if jq empty audit-results.json 2>/dev/null; then
@@ -146,13 +146,13 @@ jobs:
       run: |
         cat > audit_summary.sh << 'EOF'
         #!/bin/bash
-        
+
         if [ -f "audit-results.json" ] && jq empty audit-results.json 2>/dev/null; then
           # Count vulnerabilities by severity (handle empty list gracefully)
           high_count=$(jq '[.vulnerabilities.list[]? | select(.advisory.severity == "high")] | length' audit-results.json 2>/dev/null || echo "0")
           medium_count=$(jq '[.vulnerabilities.list[]? | select(.advisory.severity == "medium")] | length' audit-results.json 2>/dev/null || echo "0")
           low_count=$(jq '[.vulnerabilities.list[]? | select(.advisory.severity == "low")] | length' audit-results.json 2>/dev/null || echo "0")
-          
+
           echo "# Security Audit Summary" > audit_summary.md
           echo "" >> audit_summary.md
           echo "**Audit Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> audit_summary.md
@@ -164,7 +164,7 @@ jobs:
           echo "- 🟡 Medium: $medium_count" >> audit_summary.md
           echo "- 🟢 Low: $low_count" >> audit_summary.md
           echo "" >> audit_summary.md
-          
+
           total_vulns=$((high_count + medium_count + low_count))
           if [ $total_vulns -gt 0 ]; then
             echo "## Detected Vulnerabilities" >> audit_summary.md
@@ -191,10 +191,10 @@ jobs:
           echo "- cargo-audit installation problems" >> audit_summary.md
           echo "- Temporary service unavailability" >> audit_summary.md
         fi
-        
+
         cat audit_summary.md
         EOF
-        
+
         chmod +x audit_summary.sh
         ./audit_summary.sh
 

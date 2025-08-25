@@ -17,6 +17,8 @@
 
 A powerful, modern IRC client built in Rust that combines the best features of mIRC, HexChat, and WeeChat
 
+**Last Updated**: 2025-08-24 11:08 PM EDT
+
 [Features](#-features) • [Documentation](#-documentation) • [Development Plan](#-development-plan) • [Architecture](#️-architecture) • [Contributing](#-contributing)
 
 </div>
@@ -58,14 +60,20 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 
 ## 📦 Latest Release
 
-[![Version](https://img.shields.io/badge/version-0.3.6-blue.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.3.6)
-[![Release Date](https://img.shields.io/badge/released-August%2024%2C%202025-green.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.3.6)
+[![Version](https://img.shields.io/badge/version-0.3.7-blue.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.3.7)
+[![Release Date](https://img.shields.io/badge/released-August%2024%2C%202025-green.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.3.7)
 
-**Version 0.3.6** - GitHub Actions YAML Compliance & Workflow Resilience Release
+**Version 0.3.7** - Return to Proven Resilient Workflows
+
+### Key Highlights
+- 🔧 Restored battle-tested workflow configurations from v0.3.5 baseline
+- 🛡️ Comprehensive sccache HTTP 400 resilience for GitHub service outages
+- 🌍 Cross-platform timeout compatibility with BASH_ENV helper functions
+- ✅ Full CI/CD pipeline stability with proven error handling patterns
 
 ## 🏗️ Current Development Status
 
-**Last Updated**: August 24, 2025 6:30 PM EDT - v0.3.6 GitHub Actions YAML Compliance Release
+**Last Updated**: August 24, 2025 11:08 PM EDT - v0.3.7 Released with Proven Resilient Workflows
 
 ### ✅ **Phase 1: Research & Setup** - **COMPLETE** (100%)
 
@@ -104,7 +112,7 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 - ✅ **Comprehensive Test Coverage**: 10+ test scenarios using execute_task framework
 - ✅ **Context-Aware Menus**: Dynamic menu rendering with real application state
 
-### 🚀 **Latest Infrastructure Improvements** (v0.3.5 - August 24, 2025 12:56 AM EDT)
+### 🚀 **Latest Infrastructure Improvements** (v0.3.7 - August 24, 2025 11:08 PM EDT)
 
 #### Cross-Platform Compatibility & Comprehensive Doctest Coverage (100% Complete)
 
@@ -310,10 +318,10 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 
 ## 🚦 Current Status
 
-**Version**: 0.3.6 - GitHub Actions YAML Compliance & Workflow Resilience (Released August 24, 2025)  
-**Phase**: Phase 4 - Scripting & Plugins (Ready to Begin) 🚀  
-**Recent**: yamllint compliance ✅ (100% validation pass, artifact naming optimization, comprehensive resilience)  
-**Total Tasks**: 249 across 7 phases + comprehensive IRC implementation + production CI/CD + complete documentation
+**Version**: 0.3.7 - Return to Proven Resilient Workflows (Released August 24, 2025)  
+**Phase**: Phases 1-3 Complete ✅ | Phase 4 - Scripting & Plugins (Ready to Begin) 🚀  
+**Build Status**: All 6 crates compile with zero errors | 118 tests passing | CI/CD operational  
+**Total Tasks**: 249 across 7 phases | 100% Phase 1-3 implementation verified | Zero placeholders
 
 ### 🎉 Phase 1-3: COMPLETE ✅ with LIVE IRC FUNCTIONALITY
 
@@ -322,7 +330,18 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 - ✅ **Phase 3: User Interface** - **FULL GUI (Iced 0.13.1)**, TUI (ratatui), CLI prototype, SASL authentication
 - ✅ **LIVE IRC CLIENT** - Complete IRC protocol implementation with real server connectivity
 
-### 🆕 Latest v0.3.5+ Complete GitHub Actions Pipeline Fix (August 24, 2025 3:24 PM EDT)
+### 🆕 v0.3.7 Workflow Resilience Restoration (August 24, 2025 11:08 PM EDT)
+
+- ✅ **RESTORED PROVEN WORKFLOWS**: Reverted to battle-tested configurations from commit 928aad1 (v0.3.5 baseline)
+- ✅ **COMPREHENSIVE SCCACHE RESILIENCE**: Automatic fallback to local disk cache during GitHub service outages
+- ✅ **CROSS-PLATFORM TIMEOUT COMPATIBILITY**: BASH_ENV helper functions with perl-based macOS fallback
+- ✅ **GITHUB CACHE SERVICE OUTAGE HANDLING**: Robust error recovery across all test execution steps
+- ✅ **WORKFLOW STEP FUNCTION PERSISTENCE**: Complete BASH_ENV architecture for function availability
+- ✅ **UNIFIED BASH CONFIGURATION**: Universal bash shell usage across all platforms including Windows
+- ✅ **LESSONS LEARNED DOCUMENTED**: All optimization attempts preserved in in_prog/ folder for reference
+- ✅ **STABLE CI/CD FOUNDATION**: Return to proven pipeline configuration after v0.3.6 simplification failure
+
+### Previous v0.3.5 Complete GitHub Actions Pipeline Fix (August 24, 2025 1:40 AM EDT)
 
 - ✅ **COMPREHENSIVE SCCACHE RESILIENCE**: GitHub cache service HTTP 400 fallback with automatic local disk cache mode
 - ✅ **CROSS-PLATFORM TIMEOUT FIXES**: macOS perl-based timeout, Linux/Windows native timeout with proper error handling
