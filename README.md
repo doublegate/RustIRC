@@ -1,62 +1,72 @@
-# RustIRC - Modern IRC Client
+# RustIRC - Modern IRC Client (Dioxus v0.6 Branch)
 
 <!-- markdownlint-disable MD033 -->
 <div align="center">
 
 ![RustIRC Logo](images/RustIRC_Logo.png)
 
-[![Version](https://img.shields.io/badge/version-0.3.7-blue.svg)](CHANGELOG.md)
+[![Branch](https://img.shields.io/badge/branch-dioxus-purple.svg)](https://github.com/doublegate/RustIRC/tree/dioxus)
+[![Dioxus](https://img.shields.io/badge/Dioxus-v0.6-blue.svg)](https://dioxuslabs.com)
 [![Rust Version](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE-MIT)
-[![Tests](https://img.shields.io/badge/tests-118%20passing-success.svg)](.github/workflows/ci.yml)
-[![Documentation](https://img.shields.io/badge/docs-rustdoc-blue.svg)](docs/api-reference.md)
-[![API Coverage](https://img.shields.io/badge/API%20docs-100%25-brightgreen.svg)](docs/api-reference.md)
+[![GUI Framework](https://img.shields.io/badge/GUI-React--like%20VDOM-brightgreen.svg)](https://dioxuslabs.com)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/doublegate/RustIRC)
 [![IRC Protocol](https://img.shields.io/badge/IRC-RFC1459%2F2812-green.svg)](docs/specs/irc-protocol.md)
 [![IRCv3](https://img.shields.io/badge/IRCv3-Full%20Support-brightgreen.svg)](docs/specs/ircv3-extensions.md)
 
-A powerful, modern IRC client built in Rust that combines the best features of mIRC, HexChat, and WeeChat
+A powerful, modern IRC client built with Rust and Dioxus - bringing React-like development to desktop IRC
 
-**Last Updated**: 2025-08-24 11:08 PM EDT
+**Last Updated**: 2025-08-25 | **Branch**: Dioxus GUI Framework Exploration
 
 [Features](#-features) • [Documentation](#-documentation) • [Development Plan](#-development-plan) • [Architecture](#️-architecture) • [Contributing](#-contributing)
 
 </div>
 <!-- markdownlint-enable MD033 -->
 
-## 🎯 Vision
+## 🎯 Vision - Dioxus Implementation
 
-RustIRC aims to be the definitive modern IRC client by combining:
+This branch explores re-imagining RustIRC with **Dioxus v0.6** - a React-like framework for Rust that brings:
 
-- **mIRC's** powerful scripting and customization capabilities
-- **HexChat's** user-friendly GUI and plugin ecosystem
-- **WeeChat's** efficiency, performance, and professional features
+- **React-style Components**: Familiar JSX-like syntax with RSX macros
+- **Virtual DOM**: Efficient diffing and rendering for smooth UI updates
+- **Cross-Platform Native**: Desktop apps with WebView or native rendering
+- **Modern State Management**: Hooks, Context API, and reactive patterns
+- **Hot Reloading**: Rapid development with instant UI updates
 
-Built with Rust for memory safety, performance, and cross-platform reliability.
+Combining IRC's proven protocol with modern React-inspired UI development.
 
 ## ✨ Features
 
-### Core Capabilities
+### Dioxus-Specific UI Capabilities
+
+- ⚛️ **React-like Components** - Composable UI with RSX syntax and functional components
+- 🎨 **Native Rendering Options** - WebView for rich content or native widgets for performance
+- 🔄 **Hot Reload Development** - Instant UI updates without recompiling
+- 🪝 **Modern Hooks System** - useState, useEffect, useContext, and custom hooks
+- 📦 **Component Library** - Pre-built Material Design and custom IRC components
+- 🎯 **Async State Management** - Seamless integration with Tokio async runtime
+- 🖼️ **Rich Media Support** - WebView enables modern web content rendering
+- 📱 **Responsive Layouts** - Flexbox and CSS Grid for adaptive designs
+
+### Core IRC Capabilities
 
 - 🔌 **Multi-Server Support** - Connect to multiple IRC networks simultaneously
 - 🔒 **Modern Security** - TLS/SSL by default, SASL authentication, secure credential storage
-- 🎨 **Dual Interface** - Beautiful GUI (Iced) and efficient TUI (ratatui) modes
 - 📜 **Dual Scripting** - Both Lua and Python scripting with sandboxed execution
 - 🔧 **Plugin System** - Binary plugins for high-performance extensions
 - 📡 **Full Protocol Support** - RFC 1459/2812 compliance with complete IRCv3 extensions
 - 💾 **DCC Support** - File transfers and direct chats with resume capability
 - 🌍 **Cross-Platform** - Native support for Windows, macOS, and Linux
 
-### Advanced Features
+### Dioxus-Enhanced Features
 
-- 🎯 Smart tab completion with context awareness
-- 📊 Advanced message filtering and highlighting
-- 🔍 Full-text search across all buffers
-- 📱 Responsive design that adapts to window size
-- 🎨 Theming engine with custom color schemes
-- 🌐 Internationalization support
-- ♿ Accessibility features
-- 📈 Performance monitoring and optimization
+- 🎭 **Dynamic Theming** - CSS-in-Rust with runtime theme switching
+- 🔍 **Virtual List Rendering** - Efficient handling of thousands of messages
+- 📊 **React DevTools Compatible** - Debug components with familiar tools
+- 🌐 **Web Technology Integration** - Embed web content, previews, and rich media
+- ⚡ **Concurrent Rendering** - Non-blocking UI updates during heavy operations
+- 🎨 **CSS Animations** - Smooth transitions and micro-interactions
+- 📱 **Future Mobile Ready** - Dioxus supports iOS/Android targets
 
 ## 📦 Latest Release
 
@@ -71,18 +81,26 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 - 🌍 Cross-platform timeout compatibility with BASH_ENV helper functions
 - ✅ Full CI/CD pipeline stability with proven error handling patterns
 
-## 🏗️ Current Development Status
+## 🏗️ Current Development Status - Dioxus Branch
 
-**Last Updated**: August 24, 2025 11:08 PM EDT - v0.3.7 Released with Proven Resilient Workflows
+**Branch Purpose**: Exploring modern React-like GUI implementation using Dioxus v0.6  
+**Base**: Forked from main branch at v0.3.7 with complete IRC engine  
+**Status**: GUI Framework Research & Prototyping Phase
 
-### ✅ **Phase 1: Research & Setup** - **COMPLETE** (100%)
+### 🚀 **Dioxus Implementation Progress**
 
-- ✅ Technology validation with 4 working prototypes
-- ✅ Development environment fully configured
-- ✅ Core architecture implemented with 6-crate workspace structure
-- ✅ CI/CD pipeline operational with GitHub Actions
+#### System Setup - **COMPLETE** ✅
+- ✅ System libraries installed (webkit2gtk-4.1, libsoup3, atk, gtk3)
+- ✅ Dioxus v0.6 dependencies configured
+- ✅ Development environment ready for React-like development
 
-### ✅ **Phase 2: Core IRC Engine** - **COMPLETE** (100% Verified)
+#### Component Architecture - **IN PROGRESS** 🔨
+- 🔄 Converting Iced components to Dioxus RSX syntax
+- 🔄 Implementing React-style hooks for state management
+- 🔄 Setting up Context API for global state
+- 📋 Creating component library with Material Design patterns
+
+### ✅ **Inherited from Main Branch** (100% Complete)
 
 - ✅ Async networking layer with Tokio and full TLS support via rustls
 - ✅ Complete IRC protocol parser (RFC 1459/2812) with IRCv3 extensions
@@ -240,24 +258,36 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 - Launch preparation
 - **[Detailed Plan](docs/phases/phase7-release-distribution.md)** | **[Tasks](to-dos/phase7-todos.md)**
 
-## 🏗️ Architecture
+## 🏗️ Architecture - Dioxus Implementation
 
-### High-Level Design
+### Dioxus Component Architecture
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
-│                      User Interface Layer                   │
-│  ┌─────────────────────┐        ┌────────────────────────┐  │
-│  │   GUI (Iced/GTK)    │        │     TUI (ratatui)      │  │
-│  └─────────────────────┘        └────────────────────────┘  │
+│                    Dioxus UI Layer (v0.6)                   │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │            React-like Component Tree                 │   │
+│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐      │   │
+│  │  │    App     │  │  Router    │  │   Theme    │      │   │
+│  │  │  Provider  │  │  Provider  │  │  Provider  │      │   │
+│  │  └────────────┘  └────────────┘  └────────────┘      │   │
+│  │         │              │               │             │   │
+│  │  ┌────────────────────────────────────────────┐       │   │
+│  │  │          Virtual DOM & Diffing            │       │   │
+│  │  └────────────────────────────────────────────┘       │   │
+│  └──────────────────────────────────────────────────────┘   │
+│                              │                              │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │         Platform Rendering (WebView/Native)          │   │
+│  └──────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
                               │
 ┌─────────────────────────────────────────────────────────────┐
-│                    Scripting & Plugin Layer                 │
-│  ┌──────────┐  ┌──────────┐  ┌─────────┐  ┌────────────┐    │
-│  │   Lua    │  │  Python  │  │ Binary  │  │  Script    │    │
-│  │ (mlua)   │  │  (PyO3)  │  │ Plugins │  │  Manager   │    │
-│  └──────────┘  └──────────┘  └─────────┘  └────────────┘    │
+│                State Management & Hooks Layer               │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
+│  │   useState   │  │  useContext  │  │  useAsync    │       │
+│  │   useEffect  │  │  useReducer  │  │  Custom Hooks│       │
+│  └──────────────┘  └──────────────┘  └──────────────┘       │
 └─────────────────────────────────────────────────────────────┘
                               │
 ┌─────────────────────────────────────────────────────────────┐
@@ -286,15 +316,29 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 - **Zero-copy parsing** where possible for performance
 - **Modular design** allowing easy feature additions
 
-## 🛠️ Technology Stack
+## 🛠️ Technology Stack - Dioxus Branch
 
-### Core Technologies
+### UI Technologies (Dioxus-Specific)
+
+- **GUI Framework**: Dioxus v0.6 (React-like components)
+- **Rendering**: WebView (WebKit2GTK) or native widgets
+- **Styling**: CSS-in-Rust with hot reload support
+- **State Management**: Hooks API (useState, useEffect, useContext)
+- **Router**: Dioxus Router for view navigation
+- **Component Library**: Custom Material Design components
+
+### Core Technologies (Inherited)
 
 - **Language**: Rust (Edition 2021, MSRV 1.75.0)
 - **Async Runtime**: Tokio (multi-threaded, work-stealing)
-- **GUI Framework**: Iced (primary) / GTK-rs (fallback)
-- **TUI Framework**: ratatui
 - **TLS**: rustls (pure Rust, no OpenSSL)
+- **IRC Protocol**: Custom parser with IRCv3 support
+
+### Platform Dependencies
+
+- **Linux**: webkit2gtk-4.1, libsoup3, atk, gtk3
+- **macOS**: WebKit framework (built-in)
+- **Windows**: WebView2 runtime
 
 ### Scripting & Extensions
 
@@ -416,17 +460,34 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 - ✅ **COMPREHENSIVE MESSAGE PARSING**: Support for all standard IRC response codes and messages
 - ✅ **GUI FIXES & ENHANCEMENTS**: WHOIS command working, pane dividers always visible, system message filtering operational, menu checkmarks functional
 
-### Build Status
+### Build Status - Dioxus Branch
 
 ```bash
-✅ cargo build              # Successful compilation (12 minor style warnings)
-✅ cargo test               # 118 tests pass (53 unit + 65 doctests)
-✅ cargo run                # Full-featured GUI with LIVE IRC connectivity
-✅ cargo run -- --cli       # CLI prototype with multi-server support
-✅ cargo run -- --tui       # TUI mode with ratatui interface
-✅ cargo run -- --help      # Command-line help and options
-✅ cargo clippy             # 95.3% warning reduction achieved
-✅ cargo doc --open         # Complete API documentation with examples
+🔨 cargo build              # IN PROGRESS - Converting to Dioxus components
+🔨 cargo test               # Tests inherited from main branch
+🚀 dx serve                 # Launch Dioxus dev server with hot reload
+🚀 dx build --release       # Build optimized desktop app
+🚀 cargo run --bin dioxus   # Run Dioxus GUI implementation
+✅ cargo run -- --cli       # CLI prototype (unchanged from main)
+✅ cargo run -- --tui       # TUI mode (unchanged from main)
+📚 cargo doc --open         # API documentation
+```
+
+#### Dioxus-Specific Commands
+
+```bash
+# Development with hot reload
+dx serve --hot-reload
+
+# Build for different platforms
+dx build --platform desktop
+dx build --platform web      # Future web support
+
+# Component testing
+cargo test --package rustirc-dioxus-gui
+
+# Format RSX components
+dx fmt
 ```
 
 ### Current Capabilities
@@ -463,24 +524,38 @@ While RustIRC is currently in early development, we welcome contributions!
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-### Development Setup
+### Development Setup - Dioxus Branch
 
 ```bash
-# Clone the repository
+# Clone the repository and checkout Dioxus branch
 git clone https://github.com/doublegate/RustIRC.git
 cd RustIRC
+git checkout dioxus
 
 # Install Rust (if needed)
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
+# Install Dioxus CLI
+cargo install dioxus-cli
+
+# Install system dependencies (Linux)
+# For Fedora/Bazzite:
+rpm-ostree install webkit2gtk4.1-devel libsoup3-devel atk-devel gtk3-devel
+
+# For Ubuntu/Debian:
+sudo apt install libwebkit2gtk-4.1-dev libsoup-3.0-dev libatk1.0-dev libgtk-3-dev
+
 # Build the project
 cargo build
+
+# Run with Dioxus hot reload
+dx serve
 
 # Run tests
 cargo test
 
 # Run with debug logging
-RUST_LOG=debug cargo run
+RUST_LOG=debug cargo run --bin dioxus
 ```
 
 ### Code Style
