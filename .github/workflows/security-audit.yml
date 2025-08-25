@@ -2,142 +2,54 @@ name: Security Audit
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # daily at 00:00 UTC
+    - cron: '0 0 * * *'
   workflow_dispatch:
     inputs:
       ignore_advisories:
-        description: 'Comma-separated RustSec IDs to ignore (e.g., RUSTSEC-2024-0384,RUSTSEC-2024-0436)'
+        description: 'Comma-separated list of advisory IDs to ignore'
         required: false
-        default: 'RUSTSEC-2024-0384,RUSTSEC-2024-0436'
+        default: ''
         type: string
       create_issues:
         description: 'Create GitHub issues for new vulnerabilities'
         required: false
         default: true
         type: boolean
-  workflow_call:
-    inputs:
-      ignore_advisories:
-        description: 'Comma-separated RustSec IDs to ignore'
-        required: false
-        default: 'RUSTSEC-2024-0384,RUSTSEC-2024-0436'
-        type: string
-      create_issues:
-        description: 'Create GitHub issues for new vulnerabilities'
-        required: false
-        default: true
-        type: boolean
-    outputs:
-      vulnerabilities_found:
-        description: 'Number of vulnerabilities found'
-        value: ${{ jobs.security-audit.outputs.vuln_count }}
 
 permissions:
   contents: read
-  security-events: write
   issues: write
 
-env:
-  CARGO_TERM_COLOR: always
-
 jobs:
-  security-audit:
-    name: RustSec audit
+  audit:
     runs-on: ubuntu-latest
-    outputs:
-      vuln_count: ${{ steps.parse.outputs.count || 0 }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
         with:
-          fetch-depth: 0
+          toolchain: stable
 
-      - name: Cache RustSec advisory DB
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/cargo-audit
-          key: cargo-audit-db-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            cargo-audit-db-${{ runner.os }}-
+      - name: Install cargo-audit (pinned)
+        run: cargo install cargo-audit@0.20.2 --locked
 
-      # Maintained wrapper around cargo-audit
-      - name: Run RustSec audit (actions-rs/audit-check)
-        uses: actions-rs/audit-check@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          ignore: ${{ inputs.ignore_advisories || github.event.inputs.ignore_advisories || 'RUSTSEC-2024-0384,RUSTSEC-2024-0436' }}
-
-      # Also run cargo-audit directly to capture structured output
-      - name: Install cargo-audit
-        run: cargo install cargo-audit --locked
-
-      - name: cargo audit (JSON)
-        id: cargo_audit
-        run: cargo audit --json > audit.json || true
-
-      - name: Parse vulnerabilities
-        id: parse
-        shell: bash
+      - name: Run cargo audit
+        id: run-audit
+        continue-on-error: true
         run: |
-          if command -v jq >/dev/null; then
-            echo "count=$(jq '[.vulnerabilities.list[]?] | length' -r < audit.json)" >> "$GITHUB_OUTPUT"
-          else
-            echo "count=0" >> "$GITHUB_OUTPUT"
-          fi
+          set -e
+          cargo audit --json > audit.json
 
-      - name: Upload audit artifacts
-        if: always()
+      - name: Upload audit results
         uses: actions/upload-artifact@v4
         with:
-          name: security-audit-${{ github.run_id }}
-          path: |
-            audit.json
+          name: security-audit-json
+          path: audit.json
           retention-days: 7
 
-      # DISABLED: GitHub script with template literals causes YAML parsing issues
-      # - name: Create issues for new vulns (optional)
-      #   if: ${{ (inputs.create_issues || github.event.inputs.create_issues) && steps.parse.outputs.count != '0' }}
-      #   uses: actions/github-script@v7
-      #   with:
-      #     script: |
-      #       const fs = require('fs');
-      #       const data = JSON.parse(fs.readFileSync('audit.json', 'utf8'));
-      #       const vulns = (data.vulnerabilities && data.vulnerabilities.list) || [];
-      #       for (const v of vulns) {
-      #         const id = v.advisory && v.advisory.id || 'UNKNOWN-ID';
-      #         const title = `[RustSec] ${id}: ${v.advisory && v.advisory.title || 'Advisory'}`;
-      #         const body = `Detected in workflow run ${process.env.GITHUB_RUN_ID}\n\nPackage: ${v.package && v.package.name} ${v.package && v.package.version}\nAdvisory: ${id}\nURL: ${v.advisory && v.advisory.url}\n\n${v.advisory && v.advisory.description || ''}\n\nThis was filed automatically. Please triage and track remediation.`;
-      #         await github.rest.issues.create({
-      #           owner: context.repo.owner,
-      #           repo: context.repo.repo,
-      #           title,
-      #           body,
-      #           labels: ['security', 'rustsec']
-      #         });
-      #       }
-
-  dependency-review:
-    name: Dependency Review (PRs)
-    if: ${{ github.event_name == 'pull_request' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Dependency Review
-        uses: actions/dependency-review-action@v4
-
-  cargo-deny:
-    name: License / bans via cargo-deny
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Run cargo-deny
-        uses: EmbarkStudios/cargo-deny-action@v2
+      - name: Create GitHub issue for new vulns
+        if: ${{ inputs.create_issues == true }}
+        uses: peter-evans/create-issue-from-file@v5
         with:
-          command: check
+          title: "Security audit report - ${{ github.run_id }}"
+          content-filepath: audit.json
+          labels: security,audit

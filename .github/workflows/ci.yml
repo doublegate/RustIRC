@@ -2,139 +2,83 @@ name: CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [ main ]
   workflow_dispatch:
     inputs:
       rust_version:
-        type: choice
-        default: stable
-        options: [stable, beta, nightly]
-      skip_tests:
-        type: boolean
-        default: false
-  workflow_call:
-    inputs:
-      rust_version:
-        description: 'Rust toolchain version'
-        type: string
+        description: 'Rust toolchain to test'
+        required: false
         default: 'stable'
-      skip_tests:
-        description: 'Skip running tests'
-        type: boolean
-        default: false
+        type: choice
+        options: [ stable, beta, nightly ]
 
-env:
-  CARGO_TERM_COLOR: always
-  RUST_BACKTRACE: 1
-  SCCACHE_GHA_ENABLED: "true"
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}-${{ github.workflow }}-${{ github.run_id }}
+  cancel-in-progress: false
 
 jobs:
   test:
-    name: Test
-    if: ${{ !inputs.skip_tests }}
+    name: Test (${{ matrix.os }}, ${{ matrix.rust }})
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-14, windows-2022]   # pinned to avoid image migrations
-        rust: [stable, beta]
-        exclude:
-          - os: macos-14
-            rust: beta
-          - os: windows-2022
-            rust: beta
-    runs-on: ${{ matrix.os }}
+        os: [ ubuntu-latest, macos-14, windows-2022 ]
+        rust: [ ${{ inputs.rust_version || 'stable' }} ]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Persist helpers
-        shell: bash
-        run: |
-          echo "BASH_ENV=$RUNNER_TEMP/ci_helpers.sh" >> "$GITHUB_ENV"
-          cat >"$RUNNER_TEMP/ci_helpers.sh" <<'EOF'
-          run_with_timeout() {
-            local duration="$1"; shift
-            if command -v timeout >/dev/null 2>&1; then
-              timeout "$duration" "$@"
-            else
-              perl -e "alarm $duration; exec @ARGV" "$@"
-            fi
-          }
-          export -f run_with_timeout
-          EOF
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+          components: clippy
 
-      - uses: dtolnay/rust-toolchain@${{ matrix.rust }}
-
-      # Let rust-cache manage per-OS keys; no cross-OS key injection
-      - uses: Swatinem/rust-cache@v2
-
-      - name: Configure sccache
-        id: scc
-        shell: bash
-        env:
-          SCCACHE_ERROR_LOG: ${{ runner.temp }}/sccache.err.log
-        run: |
-          set -euo pipefail
-          ok=false; wrapper=""
-          if command -v sccache >/dev/null 2>&1; then
-            if sccache --start-server >/dev/null 2>>"$SCCACHE_ERROR_LOG"; then
-              if run_with_timeout 10s sccache --show-stats >/dev/null 2>&1; then
-                ok=true; wrapper=sccache
-              else
-                echo "Degraded GHA backend, using local disk cache"
-                echo "SCCACHE_GHA_ENABLED=false" >> "$GITHUB_ENV"
-                echo "SCCACHE_DIR=$HOME/.cache/sccache" >> "$GITHUB_ENV"
-                echo "SCCACHE_CACHE_SIZE=10G" >> "$GITHUB_ENV"
-                ok=true; wrapper=sccache
-              fi
-            fi
-          fi
-          echo "available=$ok"    >> "$GITHUB_OUTPUT"
-          echo "rustc_wrapper=$wrapper" >> "$GITHUB_OUTPUT"
-
-      # Cache CLI tools uniquely per OS+Rust to avoid 409 collisions
-      - name: Cache cargo-nextest
-        id: cache-nextest
+      # Cargo registry/git cache to reduce network churn. Keys are unique per OS+toolchain to avoid 409s.
+      - name: Cache cargo registry + git + target
+        id: cargo-cache
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cargo/bin/cargo-nextest
-            ~/.cargo/.crates.toml
-            ~/.cargo/.crates2.json
-          key: cargo-nextest-${{ runner.os }}-${{ matrix.rust }}
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ matrix.rust }}-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            cargo-nextest-${{ runner.os }}-
+            ${{ runner.os }}-cargo-${{ matrix.rust }}-
 
-      - name: Install cargo-nextest
-        if: steps.cache-nextest.outputs.cache-hit != 'true'
-        run: cargo install cargo-nextest --locked
+      # sccache (uses GitHub cache storage under the hood)
+      - name: Enable sccache
+        uses: Mozilla-Actions/sccache-action@v0.0.9
+        with:
+          # keep default (GHA backend). The action sets RUSTC_WRAPPER & SCCACHE_GHA_ENABLED.
+          # We keep this step early so subsequent cargo steps benefit.
+          version: 'v0.10.0'
 
-      - name: Build (release)
-        shell: bash
-        env:
-          RUSTC_WRAPPER: ${{ steps.scc.outputs.rustc_wrapper }}
+      - name: Show tool versions
         run: |
-          if [ "${{ steps.scc.outputs.available }}" = "true" ]; then
-            if ! run_with_timeout 900s cargo build --all-features --all-targets --release; then
-              unset RUSTC_WRAPPER; run_with_timeout 900s cargo build --all-features --all-targets --release
-            fi
-          else
-            run_with_timeout 900s cargo build --all-features --all-targets --release
-          fi
+          rustc -Vv
+          cargo -V
+          sccache --version || true
 
-      - name: Tests (nextest, with fallback)
-        shell: bash
+      - name: Build (debug)
+        run: cargo build --all-features --all-targets
+
+      - name: Clippy (deny warnings)
+        run: cargo clippy --all-features --all-targets -- -D warnings
+
+      - name: Tests
         env:
-          RUSTC_WRAPPER: ${{ steps.scc.outputs.rustc_wrapper }}
+          RUST_TEST_THREADS: 1
+        run: cargo test --all-features --all-targets --locked
+
+      - name: Doc build (no-deps)
+        run: cargo doc --no-deps
+
+      - name: Print sccache stats
+        if: always()
         run: |
-          if [ "${{ steps.scc.outputs.available }}" = "true" ]; then
-            if ! run_with_timeout 900s cargo nextest run --all-features --profile ci; then
-              unset RUSTC_WRAPPER
-              if ! run_with_timeout 900s cargo nextest run --all-features --profile ci; then
-                run_with_timeout 900s cargo test --all-features
-              fi
-            fi
-          else
-            if ! run_with_timeout 900s cargo nextest run --all-features --profile ci; then
-              run_with_timeout 900s cargo test --all-features
-            fi
-          fi
+          sccache --show-stats || true
