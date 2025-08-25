@@ -1,6 +1,6 @@
 //! Sidebar component for server and channel navigation
 
-use crate::context::{IrcState, ConnectionInfo, ChannelInfo};
+use crate::context::{ChannelInfo, ConnectionInfo, IrcState};
 use dioxus::prelude::*;
 use std::collections::HashMap;
 
@@ -13,13 +13,13 @@ pub fn Sidebar() -> Element {
     let current_channel = irc_state.current_channel.read();
 
     rsx! {
-        div { 
+        div {
             class: "h-full flex flex-col",
-            
+
             // Sidebar header
-            div { 
+            div {
                 class: "p-3 border-b border-[var(--border-color)] flex items-center justify-between",
-                h2 { 
+                h2 {
                     class: "text-sm font-medium text-[var(--text-secondary)] uppercase tracking-wide",
                     "Servers"
                 }
@@ -32,19 +32,19 @@ pub fn Sidebar() -> Element {
                     "+"
                 }
             }
-            
+
             // Server list
-            div { 
+            div {
                 class: "flex-1 overflow-auto custom-scrollbar",
                 if connections.is_empty() {
-                    div { 
+                    div {
                         class: "p-4 text-center text-[var(--text-muted)]",
                         p { "No servers connected" }
                         p { class: "text-xs mt-2", "Click + to connect to a server" }
                     }
                 } else {
                     for (server_id, connection) in connections.iter() {
-                        ServerItem { 
+                        ServerItem {
                             key: "{server_id}",
                             server_id: server_id.clone(),
                             connection: connection.clone(),
@@ -68,7 +68,7 @@ fn ServerItem(
 ) -> Element {
     let mut expanded = use_signal(|| true);
     let irc_state = use_context::<IrcState>();
-    
+
     let status_color = match connection.state {
         rustirc_core::ConnectionState::Connected => "text-[var(--success)]",
         rustirc_core::ConnectionState::Connecting => "text-[var(--warning)]",
@@ -77,15 +77,15 @@ fn ServerItem(
     };
 
     rsx! {
-        div { 
+        div {
             class: "mb-1",
-            
+
             // Server header
-            div { 
-                class: if is_current { 
-                    "flex items-center p-2 mx-2 rounded irc-channel-active cursor-pointer" 
-                } else { 
-                    "flex items-center p-2 mx-2 rounded hover:bg-[var(--bg-tertiary)] cursor-pointer transition-colors" 
+            div {
+                class: if is_current {
+                    "flex items-center p-2 mx-2 rounded irc-channel-active cursor-pointer"
+                } else {
+                    "flex items-center p-2 mx-2 rounded hover:bg-[var(--bg-tertiary)] cursor-pointer transition-colors"
                 },
                 onclick: move |_| {
                     irc_state.current_server.set(Some(server_id.clone()));
@@ -97,7 +97,7 @@ fn ServerItem(
                     let ui_state = use_context::<crate::context::UiState>();
                     ui_state.show_context_menu(evt.data.client_coordinates().x as f32, evt.data.client_coordinates().y as f32);
                 },
-                
+
                 // Expand/collapse button
                 button {
                     class: "mr-2 text-xs w-4 h-4 flex items-center justify-center",
@@ -107,32 +107,32 @@ fn ServerItem(
                     },
                     if expanded() { "▼" } else { "▶" }
                 }
-                
+
                 // Connection status indicator
-                div { 
+                div {
                     class: "w-2 h-2 rounded-full mr-2 {status_color}",
                     style: "background-color: currentColor;"
                 }
-                
+
                 // Server name
-                span { 
+                span {
                     class: "flex-1 text-sm truncate",
                     title: "{connection.server}:{connection.port}",
                     "{connection.server}"
                 }
-                
+
                 // Channel count
                 if !connection.channels.is_empty() {
-                    span { 
+                    span {
                         class: "text-xs text-[var(--text-muted)] ml-2",
                         "{connection.channels.len()}"
                     }
                 }
             }
-            
+
             // Channel list (collapsible)
             if expanded() {
-                div { 
+                div {
                     class: "ml-8 space-y-1",
                     for (channel_name, channel_info) in connection.channels.iter() {
                         ChannelItem {
@@ -158,7 +158,7 @@ fn ChannelItem(
     is_current: bool,
 ) -> Element {
     let irc_state = use_context::<IrcState>();
-    
+
     let channel_class = if is_current {
         "flex items-center p-1 px-3 mr-2 rounded irc-channel-active cursor-pointer"
     } else if channel_info.unread_count > 0 {
@@ -168,13 +168,13 @@ fn ChannelItem(
     };
 
     rsx! {
-        div { 
+        div {
             class: "{channel_class}",
             onclick: move |_| {
                 irc_state.current_server.set(Some(server_id.clone()));
                 irc_state.current_channel.set(Some(channel_name.clone()));
                 irc_state.active_tab.set(format!("{}:{}", server_id, channel_name));
-                
+
                 // Clear unread count
                 if let Some(connection) = irc_state.connections.write().get_mut(&server_id) {
                     if let Some(channel) = connection.channels.get_mut(&channel_name) {
@@ -187,17 +187,17 @@ fn ChannelItem(
                 let ui_state = use_context::<crate::context::UiState>();
                 ui_state.show_context_menu(evt.data.client_coordinates().x as f32, evt.data.client_coordinates().y as f32);
             },
-            
+
             // Channel prefix
-            span { 
+            span {
                 class: "text-[var(--text-muted)] mr-1",
-                if channel_name.starts_with('#') { "#" } 
-                else if channel_name.starts_with('&') { "&" } 
+                if channel_name.starts_with('#') { "#" }
+                else if channel_name.starts_with('&') { "&" }
                 else { "" }
             }
-            
+
             // Channel name
-            span { 
+            span {
                 class: "flex-1 text-sm truncate",
                 title: "{channel_name}",
                 if channel_name.starts_with('#') || channel_name.starts_with('&') {
@@ -206,19 +206,19 @@ fn ChannelItem(
                     "{channel_name}"
                 }
             }
-            
+
             // Unread count
             if channel_info.unread_count > 0 {
-                span { 
+                span {
                     class: "bg-[var(--accent-primary)] text-white text-xs rounded-full px-1.5 py-0.5 min-w-[18px] text-center",
                     style: "font-size: 10px;",
                     "{channel_info.unread_count}"
                 }
             }
-            
+
             // User count
             if !channel_info.users.is_empty() {
-                span { 
+                span {
                     class: "text-xs text-[var(--text-muted)] ml-2",
                     "{channel_info.users.len()}"
                 }

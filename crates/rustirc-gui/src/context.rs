@@ -121,11 +121,13 @@ impl IrcState {
             channels: HashMap::new(),
             client: None,
         };
-        
-        self.connections.write().insert(connection_id.clone(), connection);
+
+        self.connections
+            .write()
+            .insert(connection_id.clone(), connection);
         self.current_server.set(Some(connection_id));
     }
-    
+
     /// Join a channel on the current server
     pub fn join_channel(&self, channel: String) {
         if let Some(server_id) = self.current_server.read().as_ref() {
@@ -144,9 +146,16 @@ impl IrcState {
             }
         }
     }
-    
+
     /// Add a message to a channel
-    pub fn add_message(&self, server_id: String, target: String, sender: Option<String>, content: String, msg_type: MessageType) {
+    pub fn add_message(
+        &self,
+        server_id: String,
+        target: String,
+        sender: Option<String>,
+        content: String,
+        msg_type: MessageType,
+    ) {
         if let Some(connection) = self.connections.write().get_mut(&server_id) {
             if let Some(channel) = connection.channels.get_mut(&target) {
                 let message = ChatMessage {
@@ -158,7 +167,7 @@ impl IrcState {
                     formatted: false,
                 };
                 channel.messages.push(message);
-                
+
                 // Update unread count if not current channel
                 let current_tab = self.active_tab.read();
                 let expected_tab = format!("{}:{}", server_id, target);
@@ -192,7 +201,7 @@ impl ThemeState {
         // Update CSS custom properties based on theme
         self.update_css_variables(theme);
     }
-    
+
     fn update_css_variables(&self, theme: ThemeType) {
         let css = match theme {
             ThemeType::Dark => include_str!("../assets/themes/dark.css"),
@@ -232,19 +241,19 @@ impl UiState {
     pub fn show_dialog(&self, dialog: DialogType) {
         self.active_dialogs.write().insert(dialog);
     }
-    
+
     pub fn hide_dialog(&self, dialog: DialogType) {
         self.active_dialogs.write().remove(&dialog);
     }
-    
+
     pub fn is_dialog_open(&self, dialog: &DialogType) -> bool {
         self.active_dialogs.read().contains(dialog)
     }
-    
+
     pub fn show_context_menu(&self, x: f32, y: f32) {
         self.context_menu_position.set(Some((x, y)));
     }
-    
+
     pub fn hide_context_menu(&self) {
         self.context_menu_position.set(None);
     }
@@ -256,6 +265,6 @@ pub fn ContextProvider(children: Element) -> Element {
     use_context_provider(|| IrcState::default());
     use_context_provider(|| ThemeState::default());
     use_context_provider(|| UiState::default());
-    
+
     rsx! { {children} }
 }

@@ -13,7 +13,7 @@ pub fn InputArea() -> Element {
     let active_tab = irc_state.active_tab.read();
     let current_server = irc_state.current_server.read();
     let current_channel = irc_state.current_channel.read();
-    
+
     let is_connected = current_server.is_some();
     let placeholder = if *active_tab == "welcome" {
         "Welcome to RustIRC! Connect to a server to start chatting."
@@ -24,12 +24,12 @@ pub fn InputArea() -> Element {
     };
 
     rsx! {
-        div { 
+        div {
             class: "p-3 border-t border-[var(--border-color)]",
-            
-            div { 
+
+            div {
                 class: "flex items-center space-x-3",
-                
+
                 // Main input field
                 input {
                     class: "flex-1 irc-input",
@@ -37,23 +37,23 @@ pub fn InputArea() -> Element {
                     placeholder: "{placeholder}",
                     disabled: !is_connected && *active_tab != "welcome",
                     value: "{input_text}",
-                    
+
                     oninput: move |evt| {
                         input_text.set(evt.value());
                     },
-                    
+
                     onkeydown: move |evt| {
                         match evt.key().as_str() {
                             "Enter" => {
                                 if !input_text().trim().is_empty() {
                                     send_message(&input_text(), &irc_state, &current_server, &current_channel);
-                                    
+
                                     // Add to command history
                                     command_history.write().push(input_text());
                                     if command_history().len() > 100 {
                                         command_history.write().remove(0);
                                     }
-                                    
+
                                     input_text.set(String::new());
                                     history_index.set(command_history().len());
                                 }
@@ -87,7 +87,7 @@ pub fn InputArea() -> Element {
                         }
                     },
                 }
-                
+
                 // Send button
                 button {
                     class: "irc-button px-4",
@@ -100,11 +100,11 @@ pub fn InputArea() -> Element {
                     },
                     "Send"
                 }
-                
+
                 // Formatting tools (future enhancement)
-                div { 
+                div {
                     class: "flex items-center space-x-1 text-sm text-[var(--text-muted)]",
-                    
+
                     button {
                         class: "px-2 py-1 rounded hover:bg-[var(--bg-tertiary)] transition-colors",
                         title: "Bold (Ctrl+B)",
@@ -113,7 +113,7 @@ pub fn InputArea() -> Element {
                         },
                         "B"
                     }
-                    
+
                     button {
                         class: "px-2 py-1 rounded hover:bg-[var(--bg-tertiary)] transition-colors",
                         title: "Italic (Ctrl+I)",
@@ -122,7 +122,7 @@ pub fn InputArea() -> Element {
                         },
                         "I"
                     }
-                    
+
                     button {
                         class: "px-2 py-1 rounded hover:bg-[var(--bg-tertiary)] transition-colors",
                         title: "Upload file",
@@ -133,13 +133,13 @@ pub fn InputArea() -> Element {
                     }
                 }
             }
-            
+
             // Status/typing indicators could go here
             if is_connected {
-                div { 
+                div {
                     class: "text-xs text-[var(--text-muted)] mt-2 flex items-center justify-between",
-                    
-                    div { 
+
+                    div {
                         if let Some(server_id) = current_server.as_ref() {
                             if let Some(channel) = current_channel.as_ref() {
                                 span { "Connected to {server_id} in {channel}" }
@@ -148,8 +148,8 @@ pub fn InputArea() -> Element {
                             }
                         }
                     }
-                    
-                    div { 
+
+                    div {
                         class: "text-right",
                         span { "{input_text().len()}/512" }
                     }
@@ -162,15 +162,15 @@ pub fn InputArea() -> Element {
 /// Send a message or execute a command
 fn send_message(
     text: &str,
-    irc_state: &IrcState, 
+    irc_state: &IrcState,
     current_server: &Option<String>,
-    current_channel: &Option<String>
+    current_channel: &Option<String>,
 ) {
     let text = text.trim();
     if text.is_empty() {
         return;
     }
-    
+
     // Handle IRC commands
     if text.starts_with('/') {
         execute_irc_command(text, irc_state, current_server, current_channel);
@@ -184,16 +184,16 @@ fn send_message(
 fn execute_irc_command(
     command: &str,
     irc_state: &IrcState,
-    current_server: &Option<String>, 
-    current_channel: &Option<String>
+    current_server: &Option<String>,
+    current_channel: &Option<String>,
 ) {
     let parts: Vec<&str> = command.split_whitespace().collect();
     if parts.is_empty() {
         return;
     }
-    
+
     let cmd = parts[0].to_lowercase();
-    
+
     match cmd.as_str() {
         "/join" | "/j" => {
             if parts.len() >= 2 {
@@ -203,56 +203,101 @@ fn execute_irc_command(
                     // TODO: Send JOIN command to IRC server
                 }
             } else {
-                add_system_message(irc_state, current_server, "Usage: /join <channel>", MessageType::Error);
+                add_system_message(
+                    irc_state,
+                    current_server,
+                    "Usage: /join <channel>",
+                    MessageType::Error,
+                );
             }
-        },
+        }
         "/part" | "/leave" => {
             if let Some(channel) = current_channel {
                 if let Some(server_id) = current_server {
                     // TODO: Send PART command to IRC server
-                    add_system_message(irc_state, current_server, &format!("Left {}", channel), MessageType::System);
+                    add_system_message(
+                        irc_state,
+                        current_server,
+                        &format!("Left {}", channel),
+                        MessageType::System,
+                    );
                 }
             } else {
-                add_system_message(irc_state, current_server, "Not in a channel", MessageType::Error);
+                add_system_message(
+                    irc_state,
+                    current_server,
+                    "Not in a channel",
+                    MessageType::Error,
+                );
             }
-        },
+        }
         "/quit" => {
-            let quit_message = if parts.len() > 1 { 
+            let quit_message = if parts.len() > 1 {
                 parts[1..].join(" ")
-            } else { 
+            } else {
                 "RustIRC".to_string()
             };
-            
+
             // TODO: Send QUIT command and disconnect
-            add_system_message(irc_state, current_server, &format!("Quit: {}", quit_message), MessageType::System);
-        },
+            add_system_message(
+                irc_state,
+                current_server,
+                &format!("Quit: {}", quit_message),
+                MessageType::System,
+            );
+        }
         "/nick" => {
             if parts.len() >= 2 {
                 let new_nick = parts[1];
                 // TODO: Send NICK command to IRC server
-                add_system_message(irc_state, current_server, &format!("Changing nickname to {}", new_nick), MessageType::System);
+                add_system_message(
+                    irc_state,
+                    current_server,
+                    &format!("Changing nickname to {}", new_nick),
+                    MessageType::System,
+                );
             } else {
-                add_system_message(irc_state, current_server, "Usage: /nick <nickname>", MessageType::Error);
+                add_system_message(
+                    irc_state,
+                    current_server,
+                    "Usage: /nick <nickname>",
+                    MessageType::Error,
+                );
             }
-        },
+        }
         "/msg" | "/query" => {
             if parts.len() >= 3 {
                 let target = parts[1];
                 let message = parts[2..].join(" ");
                 // TODO: Send PRIVMSG to target
-                add_system_message(irc_state, current_server, &format!("-> {}: {}", target, message), MessageType::System);
+                add_system_message(
+                    irc_state,
+                    current_server,
+                    &format!("-> {}: {}", target, message),
+                    MessageType::System,
+                );
             } else {
-                add_system_message(irc_state, current_server, "Usage: /msg <nick> <message>", MessageType::Error);
+                add_system_message(
+                    irc_state,
+                    current_server,
+                    "Usage: /msg <nick> <message>",
+                    MessageType::Error,
+                );
             }
-        },
+        }
         "/me" => {
             if parts.len() >= 2 {
                 let action = parts[1..].join(" ");
                 send_action_message(&action, irc_state, current_server, current_channel);
             } else {
-                add_system_message(irc_state, current_server, "Usage: /me <action>", MessageType::Error);
+                add_system_message(
+                    irc_state,
+                    current_server,
+                    "Usage: /me <action>",
+                    MessageType::Error,
+                );
             }
-        },
+        }
         "/help" => {
             let help_text = r#"Available commands:
 /join <channel> - Join a channel
@@ -263,9 +308,14 @@ fn execute_irc_command(
 /me <action> - Send action message
 /help - Show this help"#;
             add_system_message(irc_state, current_server, help_text, MessageType::System);
-        },
+        }
         _ => {
-            add_system_message(irc_state, current_server, &format!("Unknown command: {}", cmd), MessageType::Error);
+            add_system_message(
+                irc_state,
+                current_server,
+                &format!("Unknown command: {}", cmd),
+                MessageType::Error,
+            );
         }
     }
 }
@@ -275,7 +325,7 @@ fn send_regular_message(
     text: &str,
     irc_state: &IrcState,
     current_server: &Option<String>,
-    current_channel: &Option<String>
+    current_channel: &Option<String>,
 ) {
     if let (Some(server_id), Some(channel)) = (current_server, current_channel) {
         // Add message to local state (will be echoed back from server in real implementation)
@@ -284,12 +334,17 @@ fn send_regular_message(
             channel.clone(),
             Some("YourNick".to_string()), // TODO: Get actual nickname
             text.to_string(),
-            MessageType::Normal
+            MessageType::Normal,
         );
-        
+
         // TODO: Send PRIVMSG to IRC server
     } else if let Some(server_id) = current_server {
-        add_system_message(irc_state, current_server, "Not in a channel. Use /join <channel> to join a channel.", MessageType::Error);
+        add_system_message(
+            irc_state,
+            current_server,
+            "Not in a channel. Use /join <channel> to join a channel.",
+            MessageType::Error,
+        );
     }
 }
 
@@ -298,7 +353,7 @@ fn send_action_message(
     action: &str,
     irc_state: &IrcState,
     current_server: &Option<String>,
-    current_channel: &Option<String>
+    current_channel: &Option<String>,
 ) {
     if let (Some(server_id), Some(channel)) = (current_server, current_channel) {
         irc_state.add_message(
@@ -306,9 +361,9 @@ fn send_action_message(
             channel.clone(),
             Some("YourNick".to_string()), // TODO: Get actual nickname
             action.to_string(),
-            MessageType::Action
+            MessageType::Action,
         );
-        
+
         // TODO: Send CTCP ACTION to IRC server
     }
 }
@@ -318,7 +373,7 @@ fn add_system_message(
     irc_state: &IrcState,
     current_server: &Option<String>,
     message: &str,
-    msg_type: MessageType
+    msg_type: MessageType,
 ) {
     if let Some(server_id) = current_server {
         // Add to server messages or current channel
@@ -327,13 +382,13 @@ fn add_system_message(
         } else {
             server_id.clone() // Server-level message
         };
-        
+
         irc_state.add_message(
             server_id.clone(),
             target,
             None, // System message has no sender
             message.to_string(),
-            msg_type
+            msg_type,
         );
     }
 }
@@ -341,10 +396,10 @@ fn add_system_message(
 /// Insert formatting around selected text or at cursor
 fn insert_formatting(input_text: &mut Signal<String>, start_marker: &str, end_marker: &str) {
     let current = input_text();
-    
+
     // For now, just append the markers - could enhance with selection support
     let new_text = format!("{}{}{}{}", current, start_marker, end_marker, "");
     input_text.set(new_text);
-    
+
     // TODO: Handle text selection and cursor positioning
 }

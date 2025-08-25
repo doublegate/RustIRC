@@ -1,6 +1,6 @@
 //! Dialog components for various user interactions
 
-use crate::context::{IrcState, UiState, ThemeState, ThemeType, DialogType};
+use crate::context::{DialogType, IrcState, ThemeState, ThemeType, UiState};
 use dioxus::prelude::*;
 
 /// Main dialog dispatcher component
@@ -8,7 +8,7 @@ use dioxus::prelude::*;
 pub fn DialogProvider() -> Element {
     let ui_state = use_context::<UiState>();
     let current_dialog = ui_state.current_dialog.read();
-    
+
     if let Some(dialog_type) = current_dialog.as_ref() {
         rsx! {
             div {
@@ -16,13 +16,13 @@ pub fn DialogProvider() -> Element {
                 onclick: move |_| {
                     ui_state.hide_dialog();
                 },
-                
+
                 div {
                     class: "bg-[var(--bg-primary)] rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden",
                     onclick: move |e| {
                         e.stop_propagation();
                     },
-                    
+
                     match dialog_type {
                         DialogType::Connect => rsx! { ConnectDialog {} },
                         DialogType::Settings => rsx! { SettingsDialog {} },
@@ -56,7 +56,7 @@ fn ConnectDialog() -> Element {
     rsx! {
         div {
             class: "flex flex-col h-full",
-            
+
             // Header
             div {
                 class: "p-4 border-b border-[var(--border-color)]",
@@ -65,11 +65,11 @@ fn ConnectDialog() -> Element {
                     "Connect to IRC Server"
                 }
             }
-            
+
             // Content
             div {
                 class: "p-4 space-y-4 overflow-y-auto flex-1",
-                
+
                 // Server settings
                 div {
                     class: "space-y-2",
@@ -85,7 +85,7 @@ fn ConnectDialog() -> Element {
                         oninput: move |evt| server.set(evt.value()),
                     }
                 }
-                
+
                 div {
                     class: "grid grid-cols-2 gap-2",
                     div {
@@ -116,7 +116,7 @@ fn ConnectDialog() -> Element {
                         }
                     }
                 }
-                
+
                 // User settings
                 div {
                     class: "space-y-2",
@@ -132,7 +132,7 @@ fn ConnectDialog() -> Element {
                         oninput: move |evt| nickname.set(evt.value()),
                     }
                 }
-                
+
                 div {
                     class: "space-y-2",
                     label {
@@ -147,7 +147,7 @@ fn ConnectDialog() -> Element {
                         oninput: move |evt| username.set(evt.value()),
                     }
                 }
-                
+
                 div {
                     class: "space-y-2",
                     label {
@@ -162,7 +162,7 @@ fn ConnectDialog() -> Element {
                         oninput: move |evt| realname.set(evt.value()),
                     }
                 }
-                
+
                 div {
                     class: "space-y-2",
                     label {
@@ -182,11 +182,11 @@ fn ConnectDialog() -> Element {
                     }
                 }
             }
-            
+
             // Footer
             div {
                 class: "p-4 border-t border-[var(--border-color)] flex justify-end space-x-2",
-                
+
                 button {
                     class: "px-4 py-2 rounded border border-[var(--border-color)] hover:bg-[var(--bg-tertiary)] transition-colors",
                     onclick: move |_| {
@@ -194,7 +194,7 @@ fn ConnectDialog() -> Element {
                     },
                     "Cancel"
                 }
-                
+
                 button {
                     class: "irc-button px-4 py-2",
                     onclick: move |_| {
@@ -223,11 +223,11 @@ fn SettingsDialog() -> Element {
     let ui_state = use_context::<UiState>();
     let theme_state = use_context::<ThemeState>();
     let current_theme = theme_state.current_theme.read();
-    
+
     rsx! {
         div {
             class: "flex flex-col h-full max-h-[600px]",
-            
+
             // Header
             div {
                 class: "p-4 border-b border-[var(--border-color)]",
@@ -236,11 +236,11 @@ fn SettingsDialog() -> Element {
                     "Settings"
                 }
             }
-            
+
             // Content
             div {
                 class: "p-4 space-y-6 overflow-y-auto flex-1",
-                
+
                 // Appearance settings
                 div {
                     class: "space-y-3",
@@ -248,7 +248,7 @@ fn SettingsDialog() -> Element {
                         class: "font-medium text-[var(--text-primary)] border-b border-[var(--border-color)] pb-1",
                         "Appearance"
                     }
-                    
+
                     div {
                         class: "space-y-2",
                         label {
@@ -263,7 +263,7 @@ fn SettingsDialog() -> Element {
                                     theme_state.set_theme(theme);
                                 }
                             },
-                            
+
                             option { value: "Dark", "Dark" }
                             option { value: "Light", "Light" }
                             option { value: "Discord", "Discord" }
@@ -274,7 +274,7 @@ fn SettingsDialog() -> Element {
                         }
                     }
                 }
-                
+
                 // Chat settings
                 div {
                     class: "space-y-3",
@@ -282,7 +282,7 @@ fn SettingsDialog() -> Element {
                         class: "font-medium text-[var(--text-primary)] border-b border-[var(--border-color)] pb-1",
                         "Chat"
                     }
-                    
+
                     div {
                         class: "flex items-center",
                         input {
@@ -297,7 +297,7 @@ fn SettingsDialog() -> Element {
                             "Show timestamps"
                         }
                     }
-                    
+
                     div {
                         class: "flex items-center",
                         input {
@@ -312,7 +312,7 @@ fn SettingsDialog() -> Element {
                             "Compact message view"
                         }
                     }
-                    
+
                     div {
                         class: "flex items-center",
                         input {
@@ -328,7 +328,7 @@ fn SettingsDialog() -> Element {
                         }
                     }
                 }
-                
+
                 // Notification settings
                 div {
                     class: "space-y-3",
@@ -336,7 +336,7 @@ fn SettingsDialog() -> Element {
                         class: "font-medium text-[var(--text-primary)] border-b border-[var(--border-color)] pb-1",
                         "Notifications"
                     }
-                    
+
                     div {
                         class: "flex items-center",
                         input {
@@ -351,7 +351,7 @@ fn SettingsDialog() -> Element {
                             "Desktop notifications"
                         }
                     }
-                    
+
                     div {
                         class: "flex items-center",
                         input {
@@ -368,11 +368,11 @@ fn SettingsDialog() -> Element {
                     }
                 }
             }
-            
+
             // Footer
             div {
                 class: "p-4 border-t border-[var(--border-color)] flex justify-end space-x-2",
-                
+
                 button {
                     class: "px-4 py-2 rounded border border-[var(--border-color)] hover:bg-[var(--bg-tertiary)] transition-colors",
                     onclick: move |_| {
@@ -380,7 +380,7 @@ fn SettingsDialog() -> Element {
                     },
                     "Cancel"
                 }
-                
+
                 button {
                     class: "irc-button px-4 py-2",
                     onclick: move |_| {
@@ -398,11 +398,11 @@ fn SettingsDialog() -> Element {
 #[component]
 fn AboutDialog() -> Element {
     let ui_state = use_context::<UiState>();
-    
+
     rsx! {
         div {
             class: "flex flex-col h-full",
-            
+
             // Header
             div {
                 class: "p-4 border-b border-[var(--border-color)]",
@@ -411,11 +411,11 @@ fn AboutDialog() -> Element {
                     "About RustIRC"
                 }
             }
-            
+
             // Content
             div {
                 class: "p-6 space-y-4 text-center",
-                
+
                 div {
                     class: "space-y-2",
                     h3 {
@@ -431,7 +431,7 @@ fn AboutDialog() -> Element {
                         "Modern IRC client built with Rust and Dioxus"
                     }
                 }
-                
+
                 div {
                     class: "space-y-2",
                     p {
@@ -443,18 +443,18 @@ fn AboutDialog() -> Element {
                         "Built with ❤️ using Rust, Dioxus, and modern web technologies"
                     }
                 }
-                
+
                 div {
                     class: "pt-4 space-y-2 text-xs text-[var(--text-muted)]",
                     p { "© 2025 RustIRC Project" }
                     p { "Licensed under MIT License" }
                 }
             }
-            
+
             // Footer
             div {
                 class: "p-4 border-t border-[var(--border-color)] flex justify-center",
-                
+
                 button {
                     class: "irc-button px-6 py-2",
                     onclick: move |_| {
@@ -471,11 +471,11 @@ fn AboutDialog() -> Element {
 #[component]
 fn UserInfoDialog(username: String) -> Element {
     let ui_state = use_context::<UiState>();
-    
+
     rsx! {
         div {
             class: "flex flex-col h-full",
-            
+
             // Header
             div {
                 class: "p-4 border-b border-[var(--border-color)]",
@@ -484,11 +484,11 @@ fn UserInfoDialog(username: String) -> Element {
                     "User Information"
                 }
             }
-            
+
             // Content
             div {
                 class: "p-4 space-y-4",
-                
+
                 div {
                     class: "text-center space-y-2",
                     div {
@@ -503,7 +503,7 @@ fn UserInfoDialog(username: String) -> Element {
                         "{username}"
                     }
                 }
-                
+
                 div {
                     class: "space-y-3",
                     div {
@@ -517,7 +517,7 @@ fn UserInfoDialog(username: String) -> Element {
                             "Online"
                         }
                     }
-                    
+
                     div {
                         class: "flex justify-between",
                         span {
@@ -529,7 +529,7 @@ fn UserInfoDialog(username: String) -> Element {
                             "user.example.com"
                         }
                     }
-                    
+
                     div {
                         class: "flex justify-between",
                         span {
@@ -541,7 +541,7 @@ fn UserInfoDialog(username: String) -> Element {
                             "#rust, #programming"
                         }
                     }
-                    
+
                     div {
                         class: "flex justify-between",
                         span {
@@ -554,7 +554,7 @@ fn UserInfoDialog(username: String) -> Element {
                         }
                     }
                 }
-                
+
                 div {
                     class: "pt-4 space-y-2",
                     button {
@@ -567,11 +567,11 @@ fn UserInfoDialog(username: String) -> Element {
                     }
                 }
             }
-            
+
             // Footer
             div {
                 class: "p-4 border-t border-[var(--border-color)] flex justify-end",
-                
+
                 button {
                     class: "px-4 py-2 rounded border border-[var(--border-color)] hover:bg-[var(--bg-tertiary)] transition-colors",
                     onclick: move |_| {
@@ -589,7 +589,7 @@ fn UserInfoDialog(username: String) -> Element {
 fn ChannelListDialog() -> Element {
     let ui_state = use_context::<UiState>();
     let mut search = use_signal(|| String::new());
-    
+
     // Mock channel data
     let channels = vec![
         ("#rust", 1234, "The Rust programming language"),
@@ -598,11 +598,11 @@ fn ChannelListDialog() -> Element {
         ("#javascript", 432, "JavaScript development"),
         ("#python", 321, "Python programming"),
     ];
-    
+
     rsx! {
         div {
             class: "flex flex-col h-full max-h-[600px]",
-            
+
             // Header
             div {
                 class: "p-4 border-b border-[var(--border-color)]",
@@ -611,7 +611,7 @@ fn ChannelListDialog() -> Element {
                     "Channel List"
                 }
             }
-            
+
             // Search
             div {
                 class: "p-4 border-b border-[var(--border-color)]",
@@ -623,7 +623,7 @@ fn ChannelListDialog() -> Element {
                     oninput: move |evt| search.set(evt.value()),
                 }
             }
-            
+
             // Channel list
             div {
                 class: "flex-1 overflow-y-auto",
@@ -634,7 +634,7 @@ fn ChannelListDialog() -> Element {
                             // TODO: Join channel
                             ui_state.hide_dialog();
                         },
-                        
+
                         div {
                             class: "flex items-center justify-between",
                             div {
@@ -656,11 +656,11 @@ fn ChannelListDialog() -> Element {
                     }
                 }
             }
-            
+
             // Footer
             div {
                 class: "p-4 border-t border-[var(--border-color)] flex justify-end",
-                
+
                 button {
                     class: "px-4 py-2 rounded border border-[var(--border-color)] hover:bg-[var(--bg-tertiary)] transition-colors",
                     onclick: move |_| {
@@ -680,11 +680,11 @@ fn JoinChannelDialog() -> Element {
     let irc_state = use_context::<IrcState>();
     let mut channel_name = use_signal(|| String::new());
     let mut channel_key = use_signal(|| String::new());
-    
+
     rsx! {
         div {
             class: "flex flex-col h-full",
-            
+
             // Header
             div {
                 class: "p-4 border-b border-[var(--border-color)]",
@@ -693,11 +693,11 @@ fn JoinChannelDialog() -> Element {
                     "Join Channel"
                 }
             }
-            
+
             // Content
             div {
                 class: "p-4 space-y-4",
-                
+
                 div {
                     class: "space-y-2",
                     label {
@@ -718,7 +718,7 @@ fn JoinChannelDialog() -> Element {
                         },
                     }
                 }
-                
+
                 div {
                     class: "space-y-2",
                     label {
@@ -738,11 +738,11 @@ fn JoinChannelDialog() -> Element {
                     }
                 }
             }
-            
+
             // Footer
             div {
                 class: "p-4 border-t border-[var(--border-color)] flex justify-end space-x-2",
-                
+
                 button {
                     class: "px-4 py-2 rounded border border-[var(--border-color)] hover:bg-[var(--bg-tertiary)] transition-colors",
                     onclick: move |_| {
@@ -750,7 +750,7 @@ fn JoinChannelDialog() -> Element {
                     },
                     "Cancel"
                 }
-                
+
                 button {
                     class: "irc-button px-4 py-2",
                     disabled: channel_name().trim().is_empty(),
@@ -771,11 +771,11 @@ fn JoinChannelDialog() -> Element {
 #[component]
 fn PreferencesDialog() -> Element {
     let ui_state = use_context::<UiState>();
-    
+
     rsx! {
         div {
             class: "flex flex-col h-full max-h-[700px]",
-            
+
             // Header
             div {
                 class: "p-4 border-b border-[var(--border-color)]",
@@ -784,11 +784,11 @@ fn PreferencesDialog() -> Element {
                     "Preferences"
                 }
             }
-            
+
             // Content with tabs (simplified for now)
             div {
                 class: "p-4 space-y-6 overflow-y-auto flex-1",
-                
+
                 // Interface preferences
                 div {
                     class: "space-y-3",
@@ -796,7 +796,7 @@ fn PreferencesDialog() -> Element {
                         class: "font-medium text-[var(--text-primary)] border-b border-[var(--border-color)] pb-1",
                         "Interface"
                     }
-                    
+
                     div {
                         class: "space-y-2",
                         label {
@@ -810,7 +810,7 @@ fn PreferencesDialog() -> Element {
                             option { value: "large", "Large" }
                         }
                     }
-                    
+
                     div {
                         class: "flex items-center",
                         input {
@@ -825,7 +825,7 @@ fn PreferencesDialog() -> Element {
                             "Show user list by default"
                         }
                     }
-                    
+
                     div {
                         class: "flex items-center",
                         input {
@@ -841,7 +841,7 @@ fn PreferencesDialog() -> Element {
                         }
                     }
                 }
-                
+
                 // Advanced settings
                 div {
                     class: "space-y-3",
@@ -849,7 +849,7 @@ fn PreferencesDialog() -> Element {
                         class: "font-medium text-[var(--text-primary)] border-b border-[var(--border-color)] pb-1",
                         "Advanced"
                     }
-                    
+
                     div {
                         class: "space-y-2",
                         label {
@@ -864,7 +864,7 @@ fn PreferencesDialog() -> Element {
                             max: "10000",
                         }
                     }
-                    
+
                     div {
                         class: "flex items-center",
                         input {
@@ -879,7 +879,7 @@ fn PreferencesDialog() -> Element {
                             "Auto-reconnect on disconnect"
                         }
                     }
-                    
+
                     div {
                         class: "flex items-center",
                         input {
@@ -896,11 +896,11 @@ fn PreferencesDialog() -> Element {
                     }
                 }
             }
-            
+
             // Footer
             div {
                 class: "p-4 border-t border-[var(--border-color)] flex justify-end space-x-2",
-                
+
                 button {
                     class: "px-4 py-2 rounded border border-[var(--border-color)] hover:bg-[var(--bg-tertiary)] transition-colors",
                     onclick: move |_| {
@@ -908,7 +908,7 @@ fn PreferencesDialog() -> Element {
                     },
                     "Cancel"
                 }
-                
+
                 button {
                     class: "irc-button px-4 py-2",
                     onclick: move |_| {

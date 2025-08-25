@@ -27,7 +27,7 @@ pub use menus::{ContextMenu, MenuBar, MenuMessage};
 pub use platform::NotificationManager;
 
 // Dioxus exports
+pub use context::{ContextProvider, IrcState, ThemeState, UiState};
 pub use dioxus_app::launch_app;
-pub use context::{IrcState, ThemeState, UiState, ContextProvider};
 
 // pub use simple_app::{SimpleApp, run_simple_test};

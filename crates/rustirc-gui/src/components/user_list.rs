@@ -11,24 +11,24 @@ pub fn UserList() -> Element {
     let current_server = irc_state.current_server.read();
     let current_channel = irc_state.current_channel.read();
     let connections = irc_state.connections.read();
-    
+
     // Get users for current channel
     let users = get_channel_users(&*current_server, &*current_channel, &*connections);
-    
+
     rsx! {
-        div { 
+        div {
             class: "h-full flex flex-col",
-            
+
             // Header
-            div { 
+            div {
                 class: "p-3 border-b border-[var(--border-color)] flex items-center justify-between",
-                h3 { 
+                h3 {
                     class: "text-sm font-medium text-[var(--text-secondary)] uppercase tracking-wide",
                     "Users ({users.len()})"
                 }
-                
+
                 // User list options
-                div { 
+                div {
                     class: "flex items-center space-x-1",
                     button {
                         class: "text-xs px-2 py-1 rounded hover:bg-[var(--bg-tertiary)] transition-colors",
@@ -37,13 +37,13 @@ pub fn UserList() -> Element {
                     }
                 }
             }
-            
+
             // User list
-            div { 
+            div {
                 class: "flex-1 overflow-y-auto custom-scrollbar",
-                
+
                 if users.is_empty() {
-                    div { 
+                    div {
                         class: "p-4 text-center text-[var(--text-muted)] text-sm",
                         if current_channel.is_some() {
                             p { "No users in this channel" }
@@ -52,7 +52,7 @@ pub fn UserList() -> Element {
                         }
                     }
                 } else {
-                    div { 
+                    div {
                         class: "py-2",
                         for user in users.iter() {
                             UserItem {
@@ -71,7 +71,7 @@ pub fn UserList() -> Element {
 #[component]
 fn UserItem(user: UserInfo) -> Element {
     let ui_state = use_context::<crate::context::UiState>();
-    
+
     // Determine user styling based on modes and status
     let user_class = if user.modes.contains(&'o') {
         "flex items-center px-3 py-1 hover:bg-[var(--bg-tertiary)] cursor-pointer transition-colors irc-user-op"
@@ -82,11 +82,11 @@ fn UserItem(user: UserInfo) -> Element {
     } else {
         "flex items-center px-3 py-1 hover:bg-[var(--bg-tertiary)] cursor-pointer transition-colors"
     };
-    
+
     let mode_prefix = get_mode_prefix(&user.modes);
 
     rsx! {
-        div { 
+        div {
             class: "{user_class}",
             onclick: move |_| {
                 ui_state.show_dialog(crate::context::DialogType::UserInfo(user.nickname.clone()));
@@ -95,15 +95,15 @@ fn UserItem(user: UserInfo) -> Element {
                 evt.prevent_default();
                 ui_state.show_context_menu(evt.data.client_coordinates().x as f32, evt.data.client_coordinates().y as f32);
             },
-            
+
             // Mode indicator
-            span { 
+            span {
                 class: "w-4 text-center text-xs font-bold flex-shrink-0",
                 "{mode_prefix}"
             }
-            
+
             // Nickname
-            span { 
+            span {
                 class: "flex-1 text-sm truncate",
                 title: if let Some(realname) = &user.realname {
                     format!("{} ({})", user.nickname, realname)
@@ -112,10 +112,10 @@ fn UserItem(user: UserInfo) -> Element {
                 },
                 "{user.nickname}"
             }
-            
+
             // Away indicator
             if user.away {
-                span { 
+                span {
                     class: "text-xs text-[var(--text-muted)] ml-1",
                     title: "Away",
                     "💤"
@@ -128,31 +128,31 @@ fn UserItem(user: UserInfo) -> Element {
 /// Get users for the specified channel
 fn get_channel_users(
     server_id: &Option<String>,
-    channel_name: &Option<String>, 
-    connections: &HashMap<String, crate::context::ConnectionInfo>
+    channel_name: &Option<String>,
+    connections: &HashMap<String, crate::context::ConnectionInfo>,
 ) -> Vec<UserInfo> {
     if let (Some(server_id), Some(channel_name)) = (server_id, channel_name) {
         if let Some(connection) = connections.get(server_id) {
             if let Some(channel) = connection.channels.get(channel_name) {
                 let mut users: Vec<UserInfo> = channel.users.values().cloned().collect();
-                
+
                 // Sort users by mode (ops first, then voiced, then regular)
                 users.sort_by(|a, b| {
                     let a_priority = get_user_priority(a);
                     let b_priority = get_user_priority(b);
-                    
+
                     if a_priority != b_priority {
                         a_priority.cmp(&b_priority)
                     } else {
                         a.nickname.to_lowercase().cmp(&b.nickname.to_lowercase())
                     }
                 });
-                
+
                 return users;
             }
         }
     }
-    
+
     Vec::new()
 }
 
@@ -161,7 +161,7 @@ fn get_user_priority(user: &UserInfo) -> u8 {
     if user.modes.contains(&'o') {
         0 // Operators first
     } else if user.modes.contains(&'v') {
-        1 // Voiced users second  
+        1 // Voiced users second
     } else {
         2 // Regular users last
     }
@@ -182,13 +182,13 @@ fn get_mode_prefix(modes: &std::collections::HashSet<char>) -> &'static str {
 #[component]
 fn UserContextMenu(user: UserInfo, x: f32, y: f32) -> Element {
     let ui_state = use_context::<crate::context::UiState>();
-    
+
     rsx! {
         div {
             class: "fixed context-menu z-50",
             style: "left: {x}px; top: {y}px;",
-            
-            div { 
+
+            div {
                 class: "context-menu-item",
                 onclick: move |_| {
                     // TODO: Open private message with user
@@ -196,7 +196,7 @@ fn UserContextMenu(user: UserInfo, x: f32, y: f32) -> Element {
                 },
                 "Send Message"
             }
-            div { 
+            div {
                 class: "context-menu-item",
                 onclick: move |_| {
                     ui_state.show_dialog(crate::context::DialogType::UserInfo(user.nickname.clone()));
@@ -204,7 +204,7 @@ fn UserContextMenu(user: UserInfo, x: f32, y: f32) -> Element {
                 },
                 "User Info"
             }
-            div { 
+            div {
                 class: "context-menu-item",
                 onclick: move |_| {
                     // TODO: Add to friends list
@@ -212,11 +212,11 @@ fn UserContextMenu(user: UserInfo, x: f32, y: f32) -> Element {
                 },
                 "Add Friend"
             }
-            
+
             hr { class: "border-[var(--border-color)] my-1" }
-            
+
             // Moderator actions (if user has permissions)
-            div { 
+            div {
                 class: "context-menu-item text-[var(--warning)]",
                 onclick: move |_| {
                     // TODO: Kick user
@@ -224,7 +224,7 @@ fn UserContextMenu(user: UserInfo, x: f32, y: f32) -> Element {
                 },
                 "Kick"
             }
-            div { 
+            div {
                 class: "context-menu-item text-[var(--error)]",
                 onclick: move |_| {
                     // TODO: Ban user

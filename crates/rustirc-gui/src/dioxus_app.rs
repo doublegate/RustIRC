@@ -9,15 +9,11 @@
 //! - Cross-platform desktop support
 
 use crate::components::{
-    input_area::InputArea,
-    message_view::MessageView, 
-    sidebar::Sidebar,
-    status_bar::StatusBar,
-    tab_bar::TabBar,
-    user_list::UserList,
+    input_area::InputArea, message_view::MessageView, sidebar::Sidebar, status_bar::StatusBar,
+    tab_bar::TabBar, user_list::UserList,
 };
-use crate::context::{ContextProvider, IrcState, ThemeState, UiState, DialogType, ThemeType};
-use crate::dialogs::{ConnectDialog, SettingsDialog, AboutDialog};
+use crate::context::{ContextProvider, DialogType, IrcState, ThemeState, ThemeType, UiState};
+use crate::dialogs::{AboutDialog, ConnectDialog, SettingsDialog};
 use dioxus::prelude::*;
 
 /// Main application entry point
@@ -30,7 +26,7 @@ pub fn launch_app() {
 fn App() -> Element {
     rsx! {
         ContextProvider {
-            div { 
+            div {
                 class: "irc-window font-mono",
                 id: "app-root",
                 AppShell {}
@@ -47,7 +43,7 @@ fn AppShell() -> Element {
     let ui_state = use_context::<UiState>();
     let user_list_visible = ui_state.user_list_visible.read();
     let sidebar_width = ui_state.sidebar_width.read();
-    
+
     rsx! {
         div {
             class: if *user_list_visible {
@@ -55,46 +51,46 @@ fn AppShell() -> Element {
             } else {
                 "h-full grid grid-cols-irc-layout-no-userlist grid-rows-irc-layout"
             },
-            
+
             // Tab bar (spans full width)
-            header { 
+            header {
                 class: "col-span-full border-b border-[var(--border-color)] irc-panel",
                 TabBar {}
             }
-            
+
             // Sidebar with server/channel list
-            aside { 
+            aside {
                 class: "border-r border-[var(--border-color)] overflow-auto custom-scrollbar irc-panel",
                 Sidebar {}
             }
-            
+
             // Main content area
-            main { 
+            main {
                 class: "flex flex-col overflow-hidden",
-                
+
                 // Message view (expandable)
-                div { 
+                div {
                     class: "flex-1 overflow-hidden",
                     MessageView {}
                 }
-                
+
                 // Input area (fixed at bottom)
-                div { 
+                div {
                     class: "border-t border-[var(--border-color)] irc-panel",
                     InputArea {}
                 }
             }
-            
+
             // User list (conditionally rendered)
             if *user_list_visible {
-                aside { 
+                aside {
                     class: "border-l border-[var(--border-color)] overflow-auto custom-scrollbar irc-panel",
                     UserList {}
                 }
             }
-            
+
             // Status bar (spans full width)
-            footer { 
+            footer {
                 class: "col-span-full border-t border-[var(--border-color)] irc-panel",
                 StatusBar {}
             }
@@ -107,17 +103,17 @@ fn AppShell() -> Element {
 fn DialogProvider() -> Element {
     let ui_state = use_context::<UiState>();
     let active_dialogs = ui_state.active_dialogs.read();
-    
+
     rsx! {
         for dialog in active_dialogs.iter() {
             match dialog {
                 DialogType::Connect => rsx! { ConnectDialog {} },
                 DialogType::Settings => rsx! { SettingsDialog {} },
                 DialogType::About => rsx! { AboutDialog {} },
-                DialogType::ChannelList => rsx! { 
+                DialogType::ChannelList => rsx! {
                     div { class: "modal-backdrop", "Channel List Coming Soon..." }
                 },
-                DialogType::UserInfo(username) => rsx! { 
+                DialogType::UserInfo(username) => rsx! {
                     div { class: "modal-backdrop", "User Info for {username} Coming Soon..." }
                 },
             }
@@ -130,14 +126,14 @@ fn DialogProvider() -> Element {
 fn ContextMenuProvider() -> Element {
     let ui_state = use_context::<UiState>();
     let context_menu_pos = ui_state.context_menu_position.read();
-    
+
     rsx! {
         if let Some((x, y)) = *context_menu_pos {
             div {
                 class: "fixed context-menu z-50",
                 style: "left: {x}px; top: {y}px;",
-                
-                div { 
+
+                div {
                     class: "context-menu-item",
                     onclick: move |_| {
                         let ui_state = use_context::<UiState>();
@@ -146,7 +142,7 @@ fn ContextMenuProvider() -> Element {
                     },
                     "Connect to Server"
                 }
-                div { 
+                div {
                     class: "context-menu-item",
                     onclick: move |_| {
                         let ui_state = use_context::<UiState>();
@@ -155,7 +151,7 @@ fn ContextMenuProvider() -> Element {
                     },
                     "Settings"
                 }
-                div { 
+                div {
                     class: "context-menu-item",
                     onclick: move |_| {
                         let ui_state = use_context::<UiState>();
@@ -165,7 +161,7 @@ fn ContextMenuProvider() -> Element {
                     "Channel List"
                 }
                 hr { class: "border-[var(--border-color)] my-1" }
-                div { 
+                div {
                     class: "context-menu-item text-[var(--text-muted)]",
                     onclick: move |_| {
                         let ui_state = use_context::<UiState>();
@@ -183,43 +179,44 @@ fn ContextMenuProvider() -> Element {
 fn KeyboardShortcuts() -> Element {
     let ui_state = use_context::<UiState>();
     let theme_state = use_context::<ThemeState>();
-    
+
     // Handle global keyboard shortcuts
     use_effect(move || {
         let document = web_sys::window().unwrap().document().unwrap();
-        
-        let closure = wasm_bindgen::closure::Closure::wrap(Box::new(move |event: web_sys::KeyboardEvent| {
-            // Ctrl/Cmd + K: Show connect dialog
-            if (event.ctrl_key() || event.meta_key()) && event.key() == "k" {
-                event.prevent_default();
-                ui_state.show_dialog(DialogType::Connect);
-            }
-            // Ctrl/Cmd + T: New tab (future)
-            else if (event.ctrl_key() || event.meta_key()) && event.key() == "t" {
-                event.prevent_default();
-                // TODO: Implement new tab functionality
-            }
-            // Ctrl/Cmd + ,: Settings
-            else if (event.ctrl_key() || event.meta_key()) && event.key() == "," {
-                event.prevent_default();
-                ui_state.show_dialog(DialogType::Settings);
-            }
-            // F1: About
-            else if event.key() == "F1" {
-                event.prevent_default();
-                ui_state.show_dialog(DialogType::About);
-            }
-            // Escape: Close all dialogs/menus
-            else if event.key() == "Escape" {
-                ui_state.active_dialogs.write().clear();
-                ui_state.hide_context_menu();
-            }
-        }) as Box<dyn FnMut(_)>);
-        
+
+        let closure =
+            wasm_bindgen::closure::Closure::wrap(Box::new(move |event: web_sys::KeyboardEvent| {
+                // Ctrl/Cmd + K: Show connect dialog
+                if (event.ctrl_key() || event.meta_key()) && event.key() == "k" {
+                    event.prevent_default();
+                    ui_state.show_dialog(DialogType::Connect);
+                }
+                // Ctrl/Cmd + T: New tab (future)
+                else if (event.ctrl_key() || event.meta_key()) && event.key() == "t" {
+                    event.prevent_default();
+                    // TODO: Implement new tab functionality
+                }
+                // Ctrl/Cmd + ,: Settings
+                else if (event.ctrl_key() || event.meta_key()) && event.key() == "," {
+                    event.prevent_default();
+                    ui_state.show_dialog(DialogType::Settings);
+                }
+                // F1: About
+                else if event.key() == "F1" {
+                    event.prevent_default();
+                    ui_state.show_dialog(DialogType::About);
+                }
+                // Escape: Close all dialogs/menus
+                else if event.key() == "Escape" {
+                    ui_state.active_dialogs.write().clear();
+                    ui_state.hide_context_menu();
+                }
+            }) as Box<dyn FnMut(_)>);
+
         document
             .add_event_listener_with_callback("keydown", closure.as_ref().unchecked_ref())
             .unwrap();
-        
+
         // Cleanup
         move || {
             document
@@ -228,8 +225,8 @@ fn KeyboardShortcuts() -> Element {
             closure.forget(); // Prevent memory leak
         }
     });
-    
-    rsx! { 
+
+    rsx! {
         // This component doesn't render anything visible
         span { hidden: true }
     }
@@ -241,31 +238,33 @@ fn ThemeProvider() -> Element {
     let theme_state = use_context::<ThemeState>();
     let current_theme = theme_state.current_theme.read();
     let custom_css = theme_state.custom_css.read();
-    
+
     // Update document theme attribute
     use_effect(move || {
         let document = web_sys::window().unwrap().document().unwrap();
         let html_element = document.document_element().unwrap();
-        
+
         let theme_name = match *current_theme {
             ThemeType::Dark => "dark",
-            ThemeType::Light => "light", 
+            ThemeType::Light => "light",
             ThemeType::Discord => "discord",
             ThemeType::Nord => "nord",
             _ => "dark",
         };
-        
-        html_element.set_attribute("data-theme", theme_name).unwrap();
+
+        html_element
+            .set_attribute("data-theme", theme_name)
+            .unwrap();
     });
-    
+
     rsx! {
         // Inject custom CSS
         if !custom_css.is_empty() {
-            style { 
+            style {
                 dangerous_inner_html: "{custom_css}"
             }
         }
-        
+
         // Include Tailwind CSS
         link {
             rel: "stylesheet",

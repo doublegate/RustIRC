@@ -12,11 +12,15 @@ pub fn StatusBar() -> Element {
     let current_channel = irc_state.current_channel.read();
     let connections = irc_state.connections.read();
     let current_theme = theme_state.current_theme.read();
-    
+
     // Get connection status for current server
     let connection_status = if let Some(server_id) = current_server.as_ref() {
         if let Some(connection) = connections.get(server_id) {
-            Some((connection.server.clone(), connection.state.clone(), connection.nickname.clone()))
+            Some((
+                connection.server.clone(),
+                connection.state.clone(),
+                connection.nickname.clone(),
+            ))
         } else {
             None
         }
@@ -25,20 +29,20 @@ pub fn StatusBar() -> Element {
     };
 
     rsx! {
-        div { 
+        div {
             class: "h-6 px-3 flex items-center justify-between text-xs bg-[var(--bg-secondary)] border-t border-[var(--border-color)]",
-            
+
             // Left side - Connection status
-            div { 
+            div {
                 class: "flex items-center space-x-4",
-                
+
                 // Connection indicator
                 if let Some((server, state, nickname)) = connection_status {
-                    div { 
+                    div {
                         class: "flex items-center space-x-2",
-                        
+
                         // Status dot
-                        div { 
+                        div {
                             class: match state {
                                 rustirc_core::ConnectionState::Connected => "w-2 h-2 rounded-full bg-[var(--success)]",
                                 rustirc_core::ConnectionState::Connecting => "w-2 h-2 rounded-full bg-[var(--warning)]",
@@ -46,45 +50,45 @@ pub fn StatusBar() -> Element {
                                 rustirc_core::ConnectionState::Disconnected => "w-2 h-2 rounded-full bg-[var(--error)]",
                             }
                         }
-                        
+
                         // Connection info
-                        span { 
+                        span {
                             class: "text-[var(--text-secondary)]",
                             "{nickname} @ {server} ({state:?})"
                         }
                     }
                 } else {
-                    div { 
+                    div {
                         class: "flex items-center space-x-2 text-[var(--text-muted)]",
                         div { class: "w-2 h-2 rounded-full bg-[var(--text-muted)]" }
                         span { "Not connected" }
                     }
                 }
-                
+
                 // Current channel indicator
                 if let Some(channel) = current_channel.as_ref() {
-                    div { 
+                    div {
                         class: "text-[var(--text-secondary)]",
                         "#{channel}"
                     }
                 }
             }
-            
+
             // Right side - App status and controls
-            div { 
+            div {
                 class: "flex items-center space-x-4",
-                
+
                 // Connection count
-                div { 
+                div {
                     class: "text-[var(--text-muted)]",
                     "{connections.len()} connection{if connections.len() == 1 { \"\" } else { \"s\" }}"
                 }
-                
+
                 // Theme switcher
                 ThemeSelector { current_theme: *current_theme }
-                
+
                 // Version info
-                div { 
+                div {
                     class: "text-[var(--text-muted)]",
                     "RustIRC v0.3.7"
                 }
@@ -98,7 +102,7 @@ pub fn StatusBar() -> Element {
 fn ThemeSelector(current_theme: ThemeType) -> Element {
     let mut show_dropdown = use_signal(|| false);
     let theme_state = use_context::<ThemeState>();
-    
+
     let themes = vec![
         (ThemeType::Dark, "Dark"),
         (ThemeType::Light, "Light"),
@@ -108,36 +112,37 @@ fn ThemeSelector(current_theme: ThemeType) -> Element {
         (ThemeType::MaterialDesign, "Material"),
         (ThemeType::Catppuccin, "Catppuccin"),
     ];
-    
-    let current_theme_name = themes.iter()
+
+    let current_theme_name = themes
+        .iter()
         .find(|(theme, _)| *theme == current_theme)
         .map(|(_, name)| *name)
         .unwrap_or("Unknown");
 
     rsx! {
-        div { 
+        div {
             class: "relative",
-            
+
             // Theme selector button
             button {
                 class: "px-2 py-1 rounded hover:bg-[var(--bg-tertiary)] transition-colors text-[var(--text-secondary)] flex items-center space-x-1",
                 onclick: move |_| {
                     show_dropdown.set(!show_dropdown());
                 },
-                
+
                 span { "🎨" }
                 span { "{current_theme_name}" }
-                span { 
+                span {
                     class: "text-xs",
                     if show_dropdown() { "▲" } else { "▼" }
                 }
             }
-            
+
             // Dropdown menu
             if show_dropdown() {
-                div { 
+                div {
                     class: "absolute bottom-full right-0 mb-1 context-menu",
-                    
+
                     for (theme, name) in themes.iter() {
                         button {
                             class: if *theme == current_theme {
@@ -163,15 +168,15 @@ fn ThemeSelector(current_theme: ThemeType) -> Element {
 pub fn ConnectionStatus() -> Element {
     let irc_state = use_context::<IrcState>();
     let connections = irc_state.connections.read();
-    
+
     let (connected_count, total_count) = count_connections(&*connections);
-    
+
     rsx! {
-        div { 
+        div {
             class: "flex items-center space-x-2 text-xs",
-            
+
             // Connection indicator
-            div { 
+            div {
                 class: if connected_count == total_count && total_count > 0 {
                     "w-2 h-2 rounded-full bg-[var(--success)]"
                 } else if connected_count > 0 {
@@ -180,9 +185,9 @@ pub fn ConnectionStatus() -> Element {
                     "w-2 h-2 rounded-full bg-[var(--error)]"
                 }
             }
-            
+
             // Connection text
-            span { 
+            span {
                 class: "text-[var(--text-secondary)]",
                 if total_count == 0 {
                     "No servers"
@@ -199,7 +204,7 @@ pub fn ConnectionStatus() -> Element {
 pub fn NetworkStatus() -> Element {
     // TODO: Implement actual network monitoring
     let mut last_ping = use_signal(|| 0u32); // Milliseconds
-    
+
     // Simulate network status updates
     use_future(move || async move {
         loop {
@@ -208,7 +213,7 @@ pub fn NetworkStatus() -> Element {
             last_ping.set(fastrand::u32(20..200));
         }
     });
-    
+
     let ping = last_ping();
     let status_class = if ping < 50 {
         "text-[var(--success)]"
@@ -219,7 +224,7 @@ pub fn NetworkStatus() -> Element {
     };
 
     rsx! {
-        div { 
+        div {
             class: "flex items-center space-x-1 text-xs {status_class}",
             span { "📶" }
             span { "{ping}ms" }
@@ -228,11 +233,14 @@ pub fn NetworkStatus() -> Element {
 }
 
 /// Count connected vs total connections
-fn count_connections(connections: &std::collections::HashMap<String, crate::context::ConnectionInfo>) -> (usize, usize) {
+fn count_connections(
+    connections: &std::collections::HashMap<String, crate::context::ConnectionInfo>,
+) -> (usize, usize) {
     let total = connections.len();
-    let connected = connections.values()
+    let connected = connections
+        .values()
         .filter(|conn| matches!(conn.state, rustirc_core::ConnectionState::Connected))
         .count();
-    
+
     (connected, total)
 }

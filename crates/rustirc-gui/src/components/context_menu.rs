@@ -1,6 +1,6 @@
 //! Context menu component for right-click actions
 
-use crate::context::{UiState, IrcState};
+use crate::context::{IrcState, UiState};
 use dioxus::prelude::*;
 
 /// Context menu provider component
@@ -8,7 +8,7 @@ use dioxus::prelude::*;
 pub fn ContextMenuProvider() -> Element {
     let ui_state = use_context::<UiState>();
     let context_menu = ui_state.context_menu.read();
-    
+
     if let Some((x, y)) = context_menu.as_ref() {
         rsx! {
             div {
@@ -16,14 +16,14 @@ pub fn ContextMenuProvider() -> Element {
                 onclick: move |_| {
                     ui_state.hide_context_menu();
                 },
-                
+
                 div {
                     class: "context-menu",
                     style: "left: {x}px; top: {y}px;",
                     onclick: move |e| {
                         e.stop_propagation();
                     },
-                    
+
                     ContextMenuContent {}
                 }
             }
@@ -40,21 +40,21 @@ fn ContextMenuContent() -> Element {
     let irc_state = use_context::<IrcState>();
     let current_server = irc_state.current_server.read();
     let current_channel = irc_state.current_channel.read();
-    
+
     rsx! {
         div {
             class: "context-menu-content",
-            
+
             // Server actions (when in server context)
             if current_server.is_some() && current_channel.is_none() {
                 ServerContextMenu {}
             }
-            
+
             // Channel actions (when in channel context)
             if current_server.is_some() && current_channel.is_some() {
                 ChannelContextMenu {}
             }
-            
+
             // General actions (always available)
             GeneralContextMenu {}
         }
@@ -67,7 +67,7 @@ fn ServerContextMenu() -> Element {
     let ui_state = use_context::<UiState>();
     let irc_state = use_context::<IrcState>();
     let current_server = irc_state.current_server.read();
-    
+
     rsx! {
         div {
             class: "context-menu-item",
@@ -77,7 +77,7 @@ fn ServerContextMenu() -> Element {
             },
             "Join Channel..."
         }
-        
+
         div {
             class: "context-menu-item",
             onclick: move |_| {
@@ -86,9 +86,9 @@ fn ServerContextMenu() -> Element {
             },
             "Channel List..."
         }
-        
+
         hr { class: "border-[var(--border-color)] my-1" }
-        
+
         div {
             class: "context-menu-item",
             onclick: move |_| {
@@ -97,7 +97,7 @@ fn ServerContextMenu() -> Element {
             },
             "Server Info"
         }
-        
+
         div {
             class: "context-menu-item text-[var(--warning)]",
             onclick: move |_| {
@@ -117,7 +117,7 @@ fn ChannelContextMenu() -> Element {
     let ui_state = use_context::<UiState>();
     let irc_state = use_context::<IrcState>();
     let current_channel = irc_state.current_channel.read();
-    
+
     rsx! {
         div {
             class: "context-menu-item",
@@ -127,7 +127,7 @@ fn ChannelContextMenu() -> Element {
             },
             "Edit Topic"
         }
-        
+
         div {
             class: "context-menu-item",
             onclick: move |_| {
@@ -136,7 +136,7 @@ fn ChannelContextMenu() -> Element {
             },
             "Channel Modes"
         }
-        
+
         div {
             class: "context-menu-item",
             onclick: move |_| {
@@ -145,9 +145,9 @@ fn ChannelContextMenu() -> Element {
             },
             "Ban List"
         }
-        
+
         hr { class: "border-[var(--border-color)] my-1" }
-        
+
         div {
             class: "context-menu-item",
             onclick: move |_| {
@@ -156,7 +156,7 @@ fn ChannelContextMenu() -> Element {
             },
             "Invite User..."
         }
-        
+
         div {
             class: "context-menu-item",
             onclick: move |_| {
@@ -165,9 +165,9 @@ fn ChannelContextMenu() -> Element {
             },
             "Clear Messages"
         }
-        
+
         hr { class: "border-[var(--border-color)] my-1" }
-        
+
         div {
             class: "context-menu-item text-[var(--warning)]",
             onclick: move |_| {
@@ -185,7 +185,7 @@ fn ChannelContextMenu() -> Element {
 #[component]
 fn GeneralContextMenu() -> Element {
     let ui_state = use_context::<UiState>();
-    
+
     rsx! {
         div {
             class: "context-menu-item",
@@ -195,9 +195,9 @@ fn GeneralContextMenu() -> Element {
             },
             "New Connection..."
         }
-        
+
         hr { class: "border-[var(--border-color)] my-1" }
-        
+
         div {
             class: "context-menu-item",
             onclick: move |_| {
@@ -206,7 +206,7 @@ fn GeneralContextMenu() -> Element {
             },
             "Settings"
         }
-        
+
         div {
             class: "context-menu-item",
             onclick: move |_| {
@@ -215,9 +215,9 @@ fn GeneralContextMenu() -> Element {
             },
             "Preferences"
         }
-        
+
         hr { class: "border-[var(--border-color)] my-1" }
-        
+
         div {
             class: "context-menu-item",
             onclick: move |_| {
@@ -234,21 +234,21 @@ fn GeneralContextMenu() -> Element {
 pub fn UserContextMenu(username: String, x: f32, y: f32) -> Element {
     let ui_state = use_context::<UiState>();
     let irc_state = use_context::<IrcState>();
-    
+
     rsx! {
         div {
             class: "fixed inset-0 z-40",
             onclick: move |_| {
                 ui_state.hide_context_menu();
             },
-            
+
             div {
                 class: "context-menu",
                 style: "left: {x}px; top: {y}px;",
                 onclick: move |e| {
                     e.stop_propagation();
                 },
-                
+
                 div {
                     class: "context-menu-item",
                     onclick: move |_| {
@@ -257,7 +257,7 @@ pub fn UserContextMenu(username: String, x: f32, y: f32) -> Element {
                     },
                     "Send Private Message"
                 }
-                
+
                 div {
                     class: "context-menu-item",
                     onclick: move |_| {
@@ -266,7 +266,7 @@ pub fn UserContextMenu(username: String, x: f32, y: f32) -> Element {
                     },
                     "User Info"
                 }
-                
+
                 div {
                     class: "context-menu-item",
                     onclick: move |_| {
@@ -275,9 +275,9 @@ pub fn UserContextMenu(username: String, x: f32, y: f32) -> Element {
                     },
                     "WHOIS"
                 }
-                
+
                 hr { class: "border-[var(--border-color)] my-1" }
-                
+
                 div {
                     class: "context-menu-item",
                     onclick: move |_| {
@@ -286,7 +286,7 @@ pub fn UserContextMenu(username: String, x: f32, y: f32) -> Element {
                     },
                     "Add to Friends"
                 }
-                
+
                 div {
                     class: "context-menu-item",
                     onclick: move |_| {
@@ -295,9 +295,9 @@ pub fn UserContextMenu(username: String, x: f32, y: f32) -> Element {
                     },
                     "Ignore User"
                 }
-                
+
                 hr { class: "border-[var(--border-color)] my-1" }
-                
+
                 // Moderator actions (if user has permissions)
                 div {
                     class: "context-menu-item text-[var(--warning)]",
@@ -307,7 +307,7 @@ pub fn UserContextMenu(username: String, x: f32, y: f32) -> Element {
                     },
                     "Kick"
                 }
-                
+
                 div {
                     class: "context-menu-item text-[var(--error)]",
                     onclick: move |_| {
@@ -325,21 +325,21 @@ pub fn UserContextMenu(username: String, x: f32, y: f32) -> Element {
 #[component]
 pub fn MessageContextMenu(message_id: String, sender: Option<String>, x: f32, y: f32) -> Element {
     let ui_state = use_context::<UiState>();
-    
+
     rsx! {
         div {
             class: "fixed inset-0 z-40",
             onclick: move |_| {
                 ui_state.hide_context_menu();
             },
-            
+
             div {
                 class: "context-menu",
                 style: "left: {x}px; top: {y}px;",
                 onclick: move |e| {
                     e.stop_propagation();
                 },
-                
+
                 div {
                     class: "context-menu-item",
                     onclick: move |_| {
@@ -348,7 +348,7 @@ pub fn MessageContextMenu(message_id: String, sender: Option<String>, x: f32, y:
                     },
                     "Copy Message"
                 }
-                
+
                 div {
                     class: "context-menu-item",
                     onclick: move |_| {
@@ -357,10 +357,10 @@ pub fn MessageContextMenu(message_id: String, sender: Option<String>, x: f32, y:
                     },
                     "Reply"
                 }
-                
+
                 if let Some(username) = &sender {
                     hr { class: "border-[var(--border-color)] my-1" }
-                    
+
                     div {
                         class: "context-menu-item",
                         onclick: move |_| {
@@ -369,7 +369,7 @@ pub fn MessageContextMenu(message_id: String, sender: Option<String>, x: f32, y:
                         },
                         "Message {username}"
                     }
-                    
+
                     div {
                         class: "context-menu-item",
                         onclick: move |_| {
@@ -379,9 +379,9 @@ pub fn MessageContextMenu(message_id: String, sender: Option<String>, x: f32, y:
                         "User Info"
                     }
                 }
-                
+
                 hr { class: "border-[var(--border-color)] my-1" }
-                
+
                 div {
                     class: "context-menu-item text-[var(--error)]",
                     onclick: move |_| {
