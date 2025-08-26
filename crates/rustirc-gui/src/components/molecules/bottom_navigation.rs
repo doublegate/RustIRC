@@ -1,13 +1,13 @@
 //! Material Design 3 Bottom Navigation component
 
 use iced::{
-    widget::{container, row, button, column, text},
-    Element, Length, Background, Border, Color, Theme, Renderer,
     alignment::{Horizontal, Vertical},
+    widget::{button, column, container, row, text},
+    Background, Border, Color, Element, Length, Renderer, Theme,
 };
 
-use crate::themes::material_design_3::MaterialTheme;
 use crate::components::atoms::icon::MaterialIcon;
+use crate::themes::material_design_3::MaterialTheme;
 
 /// Material Design 3 Bottom Navigation component
 #[derive(Debug, Clone)]
@@ -54,15 +54,13 @@ impl<Message: Clone> MaterialBottomNavigation<Message> {
     }
 
     pub fn view(self) -> Element<'static, Message, Theme, Renderer> {
-        let mut nav_items = row![]
-            .spacing(0)
-            .align_items(iced::Alignment::Center);
+        let mut nav_items = row![].spacing(0).align_items(iced::Alignment::Center);
 
         let item_width = Length::Fill;
-        
+
         for (index, item) in self.items.iter().enumerate() {
             let is_selected = index == self.selected_index;
-            
+
             // Icon
             let icon_text = if is_selected {
                 item.selected_icon.as_ref().unwrap_or(&item.icon)
@@ -76,15 +74,14 @@ impl<Message: Clone> MaterialBottomNavigation<Message> {
                 self.theme.scheme.on_surface_variant
             };
 
-            let mut item_content = column![]
-                                .spacing(4);
+            let mut item_content = column![].spacing(4);
 
             // Icon with badge
             let mut icon_container = container(
                 MaterialIcon::new(icon_text)
                     .size(24.0)
                     .color(icon_color)
-                    .view::<Message>()
+                    .view::<Message>(),
             )
             .padding(4);
 
@@ -103,47 +100,39 @@ impl<Message: Clone> MaterialBottomNavigation<Message> {
                     self.theme.scheme.on_surface_variant
                 };
 
-                item_content = item_content.push(
-                    text(&item.label)
-                        .size(12)
-                        .color(label_color)
-                );
+                item_content = item_content.push(text(&item.label).size(12).color(label_color));
             }
 
             // Navigation item button
-            let nav_item = button(
-                container(item_content)
-                    .width(Length::Fill)
-                    .center_x()
-            )
-            .on_press(item.on_press.clone())
-            .width(item_width)
-            .padding([12, 8])
-            .style(move |_theme: &Theme, status| {
-                let background_color = if is_selected {
-                    Some(Background::Color(self.theme.scheme.secondary_container))
-                } else {
-                    match status {
-                        button::Status::Hovered => Some(Background::Color(
-                            self.theme.scheme.on_surface.scale_alpha(0.08)
-                        )),
-                        button::Status::Pressed => Some(Background::Color(
-                            self.theme.scheme.on_surface.scale_alpha(0.12)
-                        )),
-                        _ => Some(Background::Color(Color::TRANSPARENT)),
-                    }
-                };
+            let nav_item = button(container(item_content).width(Length::Fill).center_x())
+                .on_press(item.on_press.clone())
+                .width(item_width)
+                .padding([12, 8])
+                .style(move |_theme: &Theme, status| {
+                    let background_color = if is_selected {
+                        Some(Background::Color(self.theme.scheme.secondary_container))
+                    } else {
+                        match status {
+                            button::Status::Hovered => Some(Background::Color(
+                                self.theme.scheme.on_surface.scale_alpha(0.08),
+                            )),
+                            button::Status::Pressed => Some(Background::Color(
+                                self.theme.scheme.on_surface.scale_alpha(0.12),
+                            )),
+                            _ => Some(Background::Color(Color::TRANSPARENT)),
+                        }
+                    };
 
-                button::Style {
-                    background: background_color,
-                    border: Border {
-                        radius: 16.0.into(),
+                    button::Style {
+                        background: background_color,
+                        border: Border {
+                            radius: 16.0.into(),
+                            ..Default::default()
+                        },
+                        shadow: iced::Shadow::default(),
                         ..Default::default()
-                    },
-                    shadow: iced::Shadow::default(),
-                    ..Default::default()
-                }
-            });
+                    }
+                });
 
             nav_items = nav_items.push(nav_item);
         }

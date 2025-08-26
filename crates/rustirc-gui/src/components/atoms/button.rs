@@ -1,12 +1,12 @@
 //! Modern Material Design 3 Button Components
-//! 
+//!
 //! This module implements Material Design 3 button variants with proper
 //! accessibility, animations, and theming support.
 
-use crate::themes::material_design_3::{MaterialTheme, FontWeight};
+use crate::themes::material_design_3::{FontWeight, MaterialTheme};
 use iced::{
     widget::{button, text},
-    Element, Length, Color, Background, Border, Vector,
+    Background, Border, Color, Element, Length, Vector,
 };
 
 /// Material Design 3 Button variants
@@ -25,9 +25,9 @@ pub enum ButtonVariant {
 /// Button size variants
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ButtonSize {
-    Small,   // 32px height
-    Medium,  // 40px height  
-    Large,   // 56px height
+    Small,  // 32px height
+    Medium, // 40px height
+    Large,  // 56px height
 }
 
 /// Button state for animations and styling
@@ -138,8 +138,9 @@ impl<Message> MaterialButton<Message> {
         };
 
         let (bg_color, text_color, border_color, border_width) = self.get_colors();
-        
+
         let content = self.build_content(font_size, icon_size, text_color);
+        let disabled = self.disabled;
 
         let btn = button(content)
             .height(height)
@@ -160,7 +161,7 @@ impl<Message> MaterialButton<Message> {
             });
 
         if let Some(on_press) = self.on_press {
-            if !self.disabled {
+            if !disabled {
                 btn.on_press(on_press).into()
             } else {
                 btn.into()
@@ -171,25 +172,25 @@ impl<Message> MaterialButton<Message> {
     }
 
     /// Build button content with icon and text
-    fn build_content(&self, font_size: f32, icon_size: f32, text_color: Color) -> Element<'static, Message>
+    fn build_content(
+        &self,
+        font_size: f32,
+        icon_size: f32,
+        text_color: Color,
+    ) -> Element<'static, Message>
     where
         Message: Clone + 'static,
     {
         match (&self.icon, self.icon_position) {
             (Some(icon), IconPosition::Only) => {
                 // Icon only button
-                text(icon)
-                    .size(icon_size)
-                    .color(text_color)
-                                        .into()
+                text(icon.clone()).size(icon_size).color(text_color).into()
             }
             (Some(icon), IconPosition::Left) => {
                 // Icon + text (icon left)
                 iced::widget::row![
-                    text(icon)
-                        .size(icon_size)
-                        .color(text_color),
-                    text(&self.label)
+                    text(icon.clone()).size(icon_size).color(text_color),
+                    text(self.label.clone())
                         .size(font_size)
                         .color(text_color)
                         .font(iced::Font {
@@ -203,30 +204,28 @@ impl<Message> MaterialButton<Message> {
             (Some(icon), IconPosition::Right) => {
                 // Icon + text (icon right)
                 iced::widget::row![
-                    text(&self.label)
+                    text(self.label.clone())
                         .size(font_size)
                         .color(text_color)
                         .font(iced::Font {
                             weight: iced::font::Weight::Medium,
                             ..Default::default()
                         }),
-                    text(icon)
-                        .size(icon_size)
-                        .color(text_color),
+                    text(icon.clone()).size(icon_size).color(text_color),
                 ]
                 .spacing(self.theme.spacing.sm)
                 .into()
             }
             (None, _) => {
                 // Text only button
-                text(&self.label)
+                text(self.label.clone())
                     .size(font_size)
                     .color(text_color)
                     .font(iced::Font {
                         weight: iced::font::Weight::Medium,
                         ..Default::default()
                     })
-                                        .into()
+                    .into()
             }
         }
     }
@@ -235,50 +234,50 @@ impl<Message> MaterialButton<Message> {
     fn get_colors(&self) -> (Color, Color, Color, f32) {
         match (self.variant, self.disabled) {
             (ButtonVariant::Filled, false) => (
-                self.theme.scheme.primary,
-                self.theme.scheme.on_primary,
+                self.theme.scheme.primary.into(),
+                self.theme.scheme.on_primary.into(),
                 Color::TRANSPARENT,
                 0.0,
             ),
             (ButtonVariant::Filled, true) => (
-                self.theme.scheme.surface_container_highest,
-                self.theme.scheme.on_surface_variant,
+                self.theme.scheme.surface_container_highest.into(),
+                self.theme.scheme.on_surface_variant.into(),
                 Color::TRANSPARENT,
                 0.0,
             ),
             (ButtonVariant::FilledTonal, false) => (
-                self.theme.scheme.secondary_container,
-                self.theme.scheme.on_secondary_container,
+                self.theme.scheme.secondary_container.into(),
+                self.theme.scheme.on_secondary_container.into(),
                 Color::TRANSPARENT,
                 0.0,
             ),
             (ButtonVariant::FilledTonal, true) => (
-                self.theme.scheme.surface_container_highest,
-                self.theme.scheme.on_surface_variant,
+                self.theme.scheme.surface_container_highest.into(),
+                self.theme.scheme.on_surface_variant.into(),
                 Color::TRANSPARENT,
                 0.0,
             ),
             (ButtonVariant::Outlined, false) => (
                 Color::TRANSPARENT,
-                self.theme.scheme.primary,
-                self.theme.scheme.outline,
+                self.theme.scheme.primary.into(),
+                self.theme.scheme.outline.into(),
                 1.0,
             ),
             (ButtonVariant::Outlined, true) => (
                 Color::TRANSPARENT,
-                self.theme.scheme.on_surface_variant,
-                self.theme.scheme.outline_variant,
+                self.theme.scheme.on_surface_variant.into(),
+                self.theme.scheme.outline_variant.into(),
                 1.0,
             ),
             (ButtonVariant::Text, false) => (
                 Color::TRANSPARENT,
-                self.theme.scheme.primary,
+                self.theme.scheme.primary.into(),
                 Color::TRANSPARENT,
                 0.0,
             ),
             (ButtonVariant::Text, true) => (
                 Color::TRANSPARENT,
-                self.theme.scheme.on_surface_variant,
+                self.theme.scheme.on_surface_variant.into(),
                 Color::TRANSPARENT,
                 0.0,
             ),
@@ -288,26 +287,30 @@ impl<Message> MaterialButton<Message> {
     /// Get colors for specific button status (hover, pressed, etc.)
     fn get_colors_for_status(&self, status: button::Status) -> (Background, Color, Color) {
         let (base_bg, text_color, border_color, _) = self.get_colors();
-        
+
         let background = match status {
             button::Status::Active => Background::Color(base_bg),
             button::Status::Hovered => {
                 // Apply hover overlay
                 let overlay_color = match self.variant {
-                    ButtonVariant::Filled => self.theme.scheme.on_primary,
-                    ButtonVariant::FilledTonal => self.theme.scheme.on_secondary_container,
-                    ButtonVariant::Outlined | ButtonVariant::Text => self.theme.scheme.primary,
+                    ButtonVariant::Filled => self.theme.scheme.on_primary.into(),
+                    ButtonVariant::FilledTonal => self.theme.scheme.on_secondary_container.into(),
+                    ButtonVariant::Outlined | ButtonVariant::Text => self.theme.scheme.primary.into(),
                 };
                 Background::Color(self.blend_colors(base_bg, overlay_color, 0.08))
             }
             button::Status::Pressed => {
                 // Apply pressed overlay
                 let overlay_color = match self.variant {
-                    ButtonVariant::Filled => self.theme.scheme.on_primary,
-                    ButtonVariant::FilledTonal => self.theme.scheme.on_secondary_container,
-                    ButtonVariant::Outlined | ButtonVariant::Text => self.theme.scheme.primary,
+                    ButtonVariant::Filled => self.theme.scheme.on_primary.into(),
+                    ButtonVariant::FilledTonal => self.theme.scheme.on_secondary_container.into(),
+                    ButtonVariant::Outlined | ButtonVariant::Text => self.theme.scheme.primary.into(),
                 };
                 Background::Color(self.blend_colors(base_bg, overlay_color, 0.12))
+            }
+            button::Status::Disabled => {
+                // Disabled state - use muted colors
+                Background::Color(self.theme.scheme.on_surface.scale_alpha(0.12).into())
             }
         };
 
@@ -322,7 +325,7 @@ impl<Message> MaterialButton<Message> {
                     color: self.theme.elevation.level1.shadow_color,
                     offset: Vector::new(
                         self.theme.elevation.level1.shadow_offset_x,
-                        self.theme.elevation.level1.shadow_offset_y
+                        self.theme.elevation.level1.shadow_offset_y,
                     ),
                     blur_radius: self.theme.elevation.level1.shadow_blur,
                 }
@@ -332,7 +335,7 @@ impl<Message> MaterialButton<Message> {
                     color: self.theme.elevation.level2.shadow_color,
                     offset: Vector::new(
                         self.theme.elevation.level2.shadow_offset_x,
-                        self.theme.elevation.level2.shadow_offset_y
+                        self.theme.elevation.level2.shadow_offset_y,
                     ),
                     blur_radius: self.theme.elevation.level2.shadow_blur,
                 }
@@ -430,7 +433,7 @@ impl<Message> FloatingActionButton<Message> {
         let content = if self.extended && self.label.is_some() {
             // Extended FAB
             iced::widget::row![
-                text(&self.icon)
+                text(self.icon.as_deref().unwrap_or(""))
                     .size(icon_size)
                     .color(self.theme.scheme.on_primary_container),
                 text(self.label.as_ref().unwrap())
@@ -445,10 +448,10 @@ impl<Message> FloatingActionButton<Message> {
             .into()
         } else {
             // Normal FAB
-            text(&self.icon)
+            text(self.icon.as_deref().unwrap_or(""))
                 .size(icon_size)
                 .color(self.theme.scheme.on_primary_container)
-                                                .into()
+                .into()
         };
 
         let width = if self.extended {
@@ -481,7 +484,7 @@ impl<Message> FloatingActionButton<Message> {
                         color: self.theme.elevation.level3.shadow_color,
                         offset: Vector::new(
                             self.theme.elevation.level3.shadow_offset_x,
-                            self.theme.elevation.level3.shadow_offset_y
+                            self.theme.elevation.level3.shadow_offset_y,
                         ),
                         blur_radius: self.theme.elevation.level3.shadow_blur,
                     },
@@ -489,7 +492,7 @@ impl<Message> FloatingActionButton<Message> {
                         color: self.theme.elevation.level4.shadow_color,
                         offset: Vector::new(
                             self.theme.elevation.level4.shadow_offset_x,
-                            self.theme.elevation.level4.shadow_offset_y
+                            self.theme.elevation.level4.shadow_offset_y,
                         ),
                         blur_radius: self.theme.elevation.level4.shadow_blur,
                     },
@@ -497,7 +500,7 @@ impl<Message> FloatingActionButton<Message> {
                         color: self.theme.elevation.level2.shadow_color,
                         offset: Vector::new(
                             self.theme.elevation.level2.shadow_offset_x,
-                            self.theme.elevation.level2.shadow_offset_y
+                            self.theme.elevation.level2.shadow_offset_y,
                         ),
                         blur_radius: self.theme.elevation.level2.shadow_blur,
                     },
@@ -559,8 +562,7 @@ pub fn text_button<Message>(label: impl Into<String>) -> MaterialButton<Message>
 }
 
 pub fn icon_button<Message>(icon: impl Into<String>) -> MaterialButton<Message> {
-    MaterialButton::new("")
-        .icon(icon, IconPosition::Only)
+    MaterialButton::new("").icon(icon, IconPosition::Only)
 }
 
 pub fn fab<Message>(icon: impl Into<String>) -> FloatingActionButton<Message> {
@@ -568,8 +570,8 @@ pub fn fab<Message>(icon: impl Into<String>) -> FloatingActionButton<Message> {
 }
 
 pub fn extended_fab<Message>(
-    icon: impl Into<String>, 
-    label: impl Into<String>
+    icon: impl Into<String>,
+    label: impl Into<String>,
 ) -> FloatingActionButton<Message> {
     FloatingActionButton::new(icon).extended(label)
 }

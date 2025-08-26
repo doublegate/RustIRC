@@ -1,8 +1,8 @@
 //! Material Design 3 Input components
 
 use iced::{
-    widget::{text_input, container, column, text},
-    Element, Length, Background, Border, Color, Theme, Renderer,
+    widget::{column, container, text, text_input},
+    Background, Border, Color, Element, Length, Renderer, Theme,
 };
 
 use crate::themes::material_design_3::MaterialTheme;
@@ -91,7 +91,7 @@ impl<'a, Message: 'a + Clone> MaterialInput<'a, Message> {
         self
     }
 
-    pub fn on_input<F>(mut self, f: F) -> Self 
+    pub fn on_input<F>(mut self, f: F) -> Self
     where
         F: 'a + Fn(String) -> Message,
     {
@@ -105,89 +105,98 @@ impl<'a, Message: 'a + Clone> MaterialInput<'a, Message> {
     }
 
     pub fn view(self) -> Element<'a, Message, Theme, Renderer> {
+        // Extract all values we need to avoid lifetime issues
+        let label = self.label.clone();
+        let error_text = self.error_text.clone();
+        let helper_text = self.helper_text.clone();
+        let is_enabled = self.is_enabled;
+        let theme = self.theme.clone();
+        let placeholder = self.placeholder.clone();
+        let value = self.value.clone();
+        let width = self.width;
+        let on_input = self.on_input;
+        let on_submit = self.on_submit;
+        let is_secure = self.is_secure;
+        let variant = self.variant.clone();
+
         let mut input_column = column![];
 
         // Label
-        if let Some(label) = &self.label {
-            input_column = input_column.push(
-                text(label)
-                    .size(12)
-                    .color(if self.error_text.is_some() {
-                        self.theme.scheme.error
-                    } else if self.is_enabled {
-                        self.theme.scheme.on_surface_variant
-                    } else {
-                        self.theme.scheme.on_surface.scale_alpha(0.38)
-                    })
-            );
+        if let Some(label_text) = label {
+            input_column =
+                input_column.push(text(label_text).size(12).color(if error_text.is_some() {
+                    theme.scheme.error
+                } else if is_enabled {
+                    theme.scheme.on_surface_variant
+                } else {
+                    theme.scheme.on_surface.scale_alpha(0.38)
+                }));
         }
 
         // Input field
-        let mut input = text_input(&self.placeholder, &self.value)
-            .width(self.width)
+        let mut input = text_input(&placeholder, &value)
+            .width(width)
             .padding(16)
             .size(16);
 
-        if let Some(on_input_fn) = self.on_input {
+        if let Some(on_input_fn) = on_input {
             input = input.on_input(on_input_fn);
         }
 
-        if let Some(on_submit_msg) = self.on_submit {
+        if let Some(on_submit_msg) = on_submit {
             input = input.on_submit(on_submit_msg);
         }
 
-        if self.is_secure {
+        if is_secure {
             input = input.secure(true);
         }
 
-        let styled_input = input.style(move |theme: &Theme, status| {
+        // Values for the styling closure
+        let has_error = error_text.is_some();
+        let theme_clone = theme.clone();
+
+        let styled_input = input.style(move |_theme: &Theme, status| {
             let is_focused = matches!(status, text_input::Status::Focused);
-            let is_error = self.error_text.is_some();
 
-            let (background_color, border_color, border_width) = match (&self.variant, is_focused, is_error, self.is_enabled) {
-                (InputVariant::Filled, _, true, true) => (
-                    self.theme.scheme.error_container.scale_alpha(0.08),
-                    self.theme.scheme.error,
-                    2.0,
-                ),
-                (InputVariant::Filled, true, false, true) => (
-                    self.theme.scheme.surface_container_highest,
-                    self.theme.scheme.primary,
-                    2.0,
-                ),
-                (InputVariant::Filled, false, false, true) => (
-                    self.theme.scheme.surface_container_highest,
-                    self.theme.scheme.on_surface_variant,
-                    1.0,
-                ),
-                (InputVariant::Filled, _, _, false) => (
-                    self.theme.scheme.on_surface.scale_alpha(0.04),
-                    self.theme.scheme.on_surface.scale_alpha(0.38),
-                    1.0,
-                ),
-                (InputVariant::Outlined, _, true, true) => (
-                    Color::TRANSPARENT,
-                    self.theme.scheme.error,
-                    2.0,
-                ),
-                (InputVariant::Outlined, true, false, true) => (
-                    Color::TRANSPARENT,
-                    self.theme.scheme.primary,
-                    2.0,
-                ),
-                (InputVariant::Outlined, false, false, true) => (
-                    Color::TRANSPARENT,
-                    self.theme.scheme.outline,
-                    1.0,
-                ),
-                (InputVariant::Outlined, _, _, false) => (
-                    Color::TRANSPARENT,
-                    self.theme.scheme.on_surface.scale_alpha(0.38),
-                    1.0,
-                ),
-            };
+            let (background_color, border_color, border_width) =
+                match (&variant, is_focused, has_error, is_enabled) {
+                    (InputVariant::Filled, _, true, true) => (
+                        theme_clone.scheme.error_container.scale_alpha(0.08),
+                        theme_clone.scheme.error,
+                        2.0,
+                    ),
+                    (InputVariant::Filled, true, false, true) => (
+                        theme_clone.scheme.surface_container_highest,
+                        theme_clone.scheme.primary,
+                        2.0,
+                    ),
+                    (InputVariant::Filled, false, false, true) => (
+                        theme_clone.scheme.surface_container_highest,
+                        theme_clone.scheme.on_surface_variant,
+                        1.0,
+                    ),
+                    (InputVariant::Filled, _, _, false) => (
+                        theme_clone.scheme.on_surface.scale_alpha(0.04),
+                        theme_clone.scheme.on_surface.scale_alpha(0.38),
+                        1.0,
+                    ),
+                    (InputVariant::Outlined, _, true, true) => {
+                        (Color::TRANSPARENT, theme_clone.scheme.error, 2.0)
+                    }
+                    (InputVariant::Outlined, true, false, true) => {
+                        (Color::TRANSPARENT, theme_clone.scheme.primary, 2.0)
+                    }
+                    (InputVariant::Outlined, false, false, true) => {
+                        (Color::TRANSPARENT, theme_clone.scheme.outline, 1.0)
+                    }
+                    (InputVariant::Outlined, _, _, false) => (
+                        Color::TRANSPARENT,
+                        theme_clone.scheme.on_surface.scale_alpha(0.38),
+                        1.0,
+                    ),
+                };
 
-            let border_radius = match self.variant {
+            let border_radius = match &variant {
                 InputVariant::Filled => [4.0, 4.0, 0.0, 0.0],
                 InputVariant::Outlined => [4.0, 4.0, 4.0, 4.0],
             };
@@ -199,40 +208,30 @@ impl<'a, Message: 'a + Clone> MaterialInput<'a, Message> {
                     width: border_width,
                     radius: 4.0.into(),
                 },
-                icon: self.theme.scheme.on_surface_variant,
-                placeholder: self.theme.scheme.on_surface_variant.scale_alpha(0.6),
-                value: if self.is_enabled {
-                    self.theme.scheme.on_surface
+                icon: theme_clone.scheme.on_surface_variant,
+                placeholder: theme_clone.scheme.on_surface_variant.scale_alpha(0.6),
+                value: if is_enabled {
+                    theme_clone.scheme.on_surface
                 } else {
-                    self.theme.scheme.on_surface.scale_alpha(0.38)
+                    theme_clone.scheme.on_surface.scale_alpha(0.38)
                 },
-                selection: self.theme.scheme.primary.scale_alpha(0.2),
+                selection: theme_clone.scheme.primary.scale_alpha(0.2),
             }
         });
 
         input_column = input_column.push(styled_input);
 
         // Helper or error text
-        if let Some(error) = &self.error_text {
-            input_column = input_column.push(
-                text(error)
-                    .size(12)
-                    .color(self.theme.scheme.error)
-            );
-        } else if let Some(helper) = &self.helper_text {
-            input_column = input_column.push(
-                text(helper)
-                    .size(12)
-                    .color(if self.is_enabled {
-                        self.theme.scheme.on_surface_variant
-                    } else {
-                        self.theme.scheme.on_surface.scale_alpha(0.38)
-                    })
-            );
+        if let Some(error) = error_text {
+            input_column = input_column.push(text(error).size(12).color(theme.scheme.error));
+        } else if let Some(helper) = helper_text {
+            input_column = input_column.push(text(helper).size(12).color(if is_enabled {
+                theme.scheme.on_surface_variant
+            } else {
+                theme.scheme.on_surface.scale_alpha(0.38)
+            }));
         }
 
-        container(input_column.spacing(4))
-            .width(self.width)
-            .into()
+        container(input_column.spacing(4)).width(width).into()
     }
 }

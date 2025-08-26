@@ -1,9 +1,9 @@
 //! Material Design 3 Chip components
 
 use iced::{
-    widget::{button, container, row, text},
-    Element, Length, Background, Border, Color, Theme, Renderer,
     alignment::{Horizontal, Vertical},
+    widget::{button, container, row, text},
+    Background, Border, Color, Element, Length, Renderer, Theme,
 };
 
 use crate::themes::material_design_3::MaterialTheme;
@@ -35,7 +35,7 @@ pub struct MaterialChip<'a, Message> {
     trailing_icon: Option<&'a str>,
 }
 
-impl<'a, Message: Clone> MaterialChip<'a, Message> {
+impl<'a, Message: Clone + 'a> MaterialChip<'a, Message> {
     pub fn new(label: impl Into<String>) -> Self {
         Self {
             label: label.into(),
@@ -91,107 +91,116 @@ impl<'a, Message: Clone> MaterialChip<'a, Message> {
     }
 
     pub fn view(self) -> Element<'a, Message, Theme, Renderer> {
+        // Extract all values we need to avoid lifetime issues
+        let label = self.label.clone();
+        let enabled = self.enabled;
+        let selected = self.selected;
+        let variant = self.variant.clone();
+        let theme = self.theme.clone();
+        let on_press = self.on_press.clone();
+        let on_remove = self.on_remove.clone();
+        let leading_icon = self.leading_icon;
+        let trailing_icon = self.trailing_icon;
+
         let mut content = row![];
 
         // Leading icon
-        if let Some(icon) = self.leading_icon {
-            content = content.push(
-                text(icon)
-                    .size(18)
-                    .color(if self.enabled {
-                        if self.selected {
-                            self.theme.scheme.on_secondary_container
-                        } else {
-                            self.theme.scheme.primary
-                        }
-                    } else {
-                        self.theme.scheme.on_surface.scale_alpha(0.38)
-                    })
-            );
+        if let Some(icon) = leading_icon {
+            content = content.push(text(icon).size(18).color(if enabled {
+                if selected {
+                    theme.scheme.on_secondary_container
+                } else {
+                    theme.scheme.primary
+                }
+            } else {
+                theme.scheme.on_surface.scale_alpha(0.38)
+            }));
         }
 
         // Label
-        content = content.push(
-            text(&self.label)
-                .size(14)
-                .color(if self.enabled {
-                    if self.selected {
-                        match self.variant {
-                            ChipVariant::Filter => self.theme.scheme.on_secondary_container,
-                            _ => self.theme.scheme.on_surface,
-                        }
-                    } else {
-                        self.theme.scheme.on_surface
-                    }
-                } else {
-                    self.theme.scheme.on_surface.scale_alpha(0.38)
-                })
-        );
+        content = content.push(text(label).size(14).color(if enabled {
+            if selected {
+                match variant {
+                    ChipVariant::Filter => theme.scheme.on_secondary_container,
+                    _ => theme.scheme.on_surface,
+                }
+            } else {
+                theme.scheme.on_surface
+            }
+        } else {
+            theme.scheme.on_surface.scale_alpha(0.38)
+        }));
 
         // Trailing icon or remove button
-        if let Some(message) = &self.on_remove {
-            content = content.push(
-                button(text("×").size(16))
-                    .on_press(message.clone())
-                    .style(|_theme: &Theme, _status| button::Style {
-                        background: None,
-                        border: Border::default(),
-                        shadow: iced::Shadow::default(),
-                        ..Default::default()
-                    })
-            );
-        } else if let Some(icon) = self.trailing_icon {
-            content = content.push(
-                text(icon)
-                    .size(18)
-                    .color(if self.enabled {
-                        self.theme.scheme.on_surface_variant
-                    } else {
-                        self.theme.scheme.on_surface.scale_alpha(0.38)
-                    })
-            );
+        if let Some(message) = &on_remove {
+            content = content.push(button(text("×").size(16)).on_press(message.clone()).style(
+                |_theme: &Theme, _status| button::Style {
+                    background: None,
+                    border: Border::default(),
+                    shadow: iced::Shadow::default(),
+                    ..Default::default()
+                },
+            ));
+        } else if let Some(icon) = trailing_icon {
+            content = content.push(text(icon).size(18).color(if enabled {
+                theme.scheme.on_surface_variant
+            } else {
+                theme.scheme.on_surface.scale_alpha(0.38)
+            }));
         }
 
-        let chip_content = container(content.spacing(8))
-            .padding([8, 16])
-            .style(move |_theme: &Theme| {
-                let (background_color, border_color) = match (&self.variant, self.selected, self.enabled) {
-                    (ChipVariant::Filter, true, true) => (
-                        self.theme.scheme.secondary_container,
-                        Color::TRANSPARENT,
-                    ),
-                    (ChipVariant::Input, _, true) => (
-                        self.theme.scheme.surface_container_low,
-                        self.theme.scheme.outline,
-                    ),
-                    (_, false, true) => (
-                        Color::TRANSPARENT,
-                        self.theme.scheme.outline,
-                    ),
-                    (_, _, false) => (
-                        self.theme.scheme.on_surface.scale_alpha(0.12),
-                        self.theme.scheme.on_surface.scale_alpha(0.12),
-                    ),
-                };
+        let chip_content =
+            container(content.spacing(8))
+                .padding([8, 16])
+                .style(move |_theme: &Theme| {
+                    let (background_color, border_color) =
+                        match (&variant, selected, enabled) {
+                            (ChipVariant::Filter, true, true) => {
+                                (theme.scheme.secondary_container, Color::TRANSPARENT)
+                            }
+                            (ChipVariant::Input, _, true) => (
+                                theme.scheme.surface_container_low,
+                                theme.scheme.outline,
+                            ),
+                            (ChipVariant::Assist, true, true) => {
+                                (theme.scheme.surface_container_low, Color::TRANSPARENT)
+                            }
+                            (ChipVariant::Suggestion, true, true) => {
+                                (theme.scheme.surface_container_low, Color::TRANSPARENT)
+                            }
+                            (_, false, true) => (Color::TRANSPARENT, theme.scheme.outline),
+                            (_, _, false) => (
+                                theme.scheme.on_surface.scale_alpha(0.12),
+                                theme.scheme.on_surface.scale_alpha(0.12),
+                            ),
+                        };
 
-                container::Style {
-                    background: Some(Background::Color(background_color)),
-                    border: Border {
-                        color: border_color,
-                        width: if border_color == Color::TRANSPARENT { 0.0 } else { 1.0 },
-                        radius: 8.0.into(),
-                    },
-                    ..Default::default()
-                }
-            });
+                    container::Style {
+                        background: Some(Background::Color(background_color)),
+                        border: Border {
+                            color: border_color,
+                            width: if border_color == Color::TRANSPARENT {
+                                0.0
+                            } else {
+                                1.0
+                            },
+                            radius: 8.0.into(),
+                        },
+                        ..Default::default()
+                    }
+                });
 
-        if let Some(message) = self.on_press {
+        if let Some(message) = on_press {
             button(chip_content)
                 .on_press(message)
                 .style(move |_theme: &Theme, status| {
                     let hover_color = match status {
-                        button::Status::Hovered => Some(self.theme.scheme.on_surface.scale_alpha(0.08)),
-                        button::Status::Pressed => Some(self.theme.scheme.on_surface.scale_alpha(0.12)),
+                        button::Status::Hovered => {
+                            Some(theme.scheme.on_surface.scale_alpha(0.08))
+                        }
+                        button::Status::Pressed => {
+                            Some(theme.scheme.on_surface.scale_alpha(0.12))
+                        }
                         _ => None,
                     };
 

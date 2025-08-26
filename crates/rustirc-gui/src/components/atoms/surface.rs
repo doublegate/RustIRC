@@ -1,11 +1,8 @@
 //! Material Design 3 Surface component
 
-use iced::{
-    widget::container,
-    Element, Length, Background, Border, Color, Theme, Renderer,
-};
+use iced::{widget::container, Background, Border, Color, Element, Length, Renderer, Theme};
 
-use crate::themes::material_design_3::{MaterialTheme, ElevationLevel};
+use crate::themes::material_design_3::{ElevationLevel, MaterialTheme};
 
 /// Material Design 3 Surface component
 /// Surfaces are foundational elements that affect how components are perceived
@@ -88,7 +85,7 @@ where
 
     pub fn view(self) -> Element<'a, Message, T, R> {
         let surface_color = self.get_surface_color();
-        
+
         container(self.content)
             .width(self.width)
             .height(self.height)

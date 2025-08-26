@@ -1,13 +1,13 @@
 //! Material Design 3 List Item component
 
 use iced::{
-    widget::{container, row, column, text, button},
-    Element, Length, Background, Border, Color, Theme, Renderer,
     alignment::{Horizontal, Vertical},
+    widget::{button, column, container, row, text},
+    Background, Border, Color, Element, Length, Renderer, Theme,
 };
 
-use crate::themes::material_design_3::MaterialTheme;
 use crate::components::atoms::icon::MaterialIcon;
+use crate::themes::material_design_3::MaterialTheme;
 
 /// Material Design 3 List Item component
 #[derive(Debug, Clone)]
@@ -126,27 +126,24 @@ impl<Message: Clone> MaterialListItem<Message> {
     }
 
     pub fn view(self) -> Element<'static, Message, Theme, Renderer> {
-        let mut content_row = row![]
-                        .spacing(16);
+        let mut content_row = row![].spacing(16);
 
         // Leading content
         if let Some(leading) = &self.leading_content {
-            let leading_element = match leading {
-                ListLeading::Icon(icon) => {
-                    MaterialIcon::new(icon)
+            let leading_element =
+                match leading {
+                    ListLeading::Icon(icon) => MaterialIcon::new(icon)
                         .size(24.0)
                         .color(if self.enabled {
                             self.theme.scheme.on_surface_variant
                         } else {
                             self.theme.scheme.on_surface.scale_alpha(0.38)
                         })
-                        .view()
-                },
-                ListLeading::Avatar(initial) => {
-                    container(
+                        .view(),
+                    ListLeading::Avatar(initial) => container(
                         text(initial)
                             .size(16)
-                            .color(self.theme.scheme.on_primary_container)
+                            .color(self.theme.scheme.on_primary_container),
                     )
                     .width(Length::Fixed(40.0))
                     .height(Length::Fixed(40.0))
@@ -160,155 +157,125 @@ impl<Message: Clone> MaterialListItem<Message> {
                         },
                         ..Default::default()
                     })
-                    .into()
-                },
-                ListLeading::Checkbox(checked) => {
-                    // TODO: Replace with proper checkbox when available
-                    container(
-                        text(if *checked { "☑" } else { "☐" })
-                            .size(20)
-                            .color(if *checked {
+                    .into(),
+                    ListLeading::Checkbox(checked) => {
+                        // TODO: Replace with proper checkbox when available
+                        container(text(if *checked { "☑" } else { "☐" }).size(20).color(
+                            if *checked {
                                 self.theme.scheme.primary
                             } else {
                                 self.theme.scheme.on_surface_variant
-                            })
-                    )
-                    .into()
-                },
-                ListLeading::Radio(selected) => {
-                    // TODO: Replace with proper radio button when available
-                    container(
-                        text(if *selected { "●" } else { "○" })
-                            .size(20)
-                            .color(if *selected {
-                                self.theme.scheme.primary
-                            } else {
-                                self.theme.scheme.on_surface_variant
-                            })
-                    )
-                    .into()
-                },
-                ListLeading::Custom => {
-                    // Placeholder for custom content
-                    container(text(""))
-                        .width(Length::Fixed(40.0))
-                        .height(Length::Fixed(40.0))
+                            },
+                        ))
                         .into()
-                },
-            };
+                    }
+                    ListLeading::Radio(selected) => {
+                        // TODO: Replace with proper radio button when available
+                        container(text(if *selected { "●" } else { "○" }).size(20).color(
+                            if *selected {
+                                self.theme.scheme.primary
+                            } else {
+                                self.theme.scheme.on_surface_variant
+                            },
+                        ))
+                        .into()
+                    }
+                    ListLeading::Custom => {
+                        // Placeholder for custom content
+                        container(text(""))
+                            .width(Length::Fixed(40.0))
+                            .height(Length::Fixed(40.0))
+                            .into()
+                    }
+                };
 
             content_row = content_row.push(leading_element);
         }
 
         // Text content
-        let mut text_content = column![]
-            .spacing(2);
+        let mut text_content = column![].spacing(2);
 
         // Primary text
-        text_content = text_content.push(
-            text(&self.primary_text)
-                .size(16)
-                .color(if self.enabled {
-                    self.theme.scheme.on_surface
-                } else {
-                    self.theme.scheme.on_surface.scale_alpha(0.38)
-                })
-        );
+        text_content =
+            text_content.push(text(&self.primary_text).size(16).color(if self.enabled {
+                self.theme.scheme.on_surface
+            } else {
+                self.theme.scheme.on_surface.scale_alpha(0.38)
+            }));
 
         // Secondary text
         if let Some(secondary) = &self.secondary_text {
-            text_content = text_content.push(
-                text(secondary)
-                    .size(14)
-                    .color(if self.enabled {
-                        self.theme.scheme.on_surface_variant
-                    } else {
-                        self.theme.scheme.on_surface.scale_alpha(0.38)
-                    })
-            );
+            text_content = text_content.push(text(secondary).size(14).color(if self.enabled {
+                self.theme.scheme.on_surface_variant
+            } else {
+                self.theme.scheme.on_surface.scale_alpha(0.38)
+            }));
         }
 
         // Tertiary text
         if let Some(tertiary) = &self.tertiary_text {
-            text_content = text_content.push(
-                text(tertiary)
-                    .size(12)
-                    .color(if self.enabled {
-                        self.theme.scheme.on_surface_variant
-                    } else {
-                        self.theme.scheme.on_surface.scale_alpha(0.38)
-                    })
-            );
+            text_content = text_content.push(text(tertiary).size(12).color(if self.enabled {
+                self.theme.scheme.on_surface_variant
+            } else {
+                self.theme.scheme.on_surface.scale_alpha(0.38)
+            }));
         }
 
-        content_row = content_row.push(
-            container(text_content)
-                .width(Length::Fill)
-        );
+        content_row = content_row.push(container(text_content).width(Length::Fill));
 
         // Trailing content
         if let Some(trailing) = &self.trailing_content {
             let trailing_element = match trailing {
-                ListTrailing::Text(text_val) => {
-                    text(text_val)
-                        .size(14)
-                        .color(self.theme.scheme.on_surface_variant)
-                        .into()
-                },
-                ListTrailing::IconButton { icon, on_press } => {
-                    button(
-                        MaterialIcon::new(icon)
-                            .size(24.0)
-                            .color(self.theme.scheme.on_surface_variant)
-                            .view()
-                    )
-                    .on_press(on_press.clone())
-                    .style(|_theme: &Theme, _status| button::Style {
-                        background: Some(Background::Color(Color::TRANSPARENT)),
-                        border: Border::default(),
-                        shadow: iced::Shadow::default(),
-                        ..Default::default()
-                    })
-                    .into()
-                },
-                ListTrailing::Switch(enabled) => {
-                    // TODO: Replace with proper switch when available
-                    container(
-                        text(if *enabled { "🔛" } else { "🔘" })
-                            .size(20)
-                            .color(if *enabled {
-                                self.theme.scheme.primary
-                            } else {
-                                self.theme.scheme.outline
-                            })
-                    )
-                    .into()
-                },
-                ListTrailing::Checkbox { checked, on_toggle } => {
-                    button(
-                        text(if *checked { "☑" } else { "☐" })
-                            .size(20)
-                            .color(if *checked {
-                                self.theme.scheme.primary
-                            } else {
-                                self.theme.scheme.on_surface_variant
-                            })
-                    )
-                    .on_press(on_toggle.clone())
-                    .style(|_theme: &Theme, _status| button::Style {
-                        background: Some(Background::Color(Color::TRANSPARENT)),
-                        border: Border::default(),
-                        shadow: iced::Shadow::default(),
-                        ..Default::default()
-                    })
-                    .into()
-                },
-                ListTrailing::Menu => {
-                    MaterialIcon::new("⋮")
+                ListTrailing::Text(text_val) => text(text_val)
+                    .size(14)
+                    .color(self.theme.scheme.on_surface_variant)
+                    .into(),
+                ListTrailing::IconButton { icon, on_press } => button(
+                    MaterialIcon::new(icon)
                         .size(24.0)
                         .color(self.theme.scheme.on_surface_variant)
-                        .view()
-                },
+                        .view(),
+                )
+                .on_press(on_press.clone())
+                .style(|_theme: &Theme, _status| button::Style {
+                    background: Some(Background::Color(Color::TRANSPARENT)),
+                    border: Border::default(),
+                    shadow: iced::Shadow::default(),
+                    ..Default::default()
+                })
+                .into(),
+                ListTrailing::Switch(enabled) => {
+                    // TODO: Replace with proper switch when available
+                    container(text(if *enabled { "🔛" } else { "🔘" }).size(20).color(
+                        if *enabled {
+                            self.theme.scheme.primary
+                        } else {
+                            self.theme.scheme.outline
+                        },
+                    ))
+                    .into()
+                }
+                ListTrailing::Checkbox { checked, on_toggle } => button(
+                    text(if *checked { "☑" } else { "☐" })
+                        .size(20)
+                        .color(if *checked {
+                            self.theme.scheme.primary
+                        } else {
+                            self.theme.scheme.on_surface_variant
+                        }),
+                )
+                .on_press(on_toggle.clone())
+                .style(|_theme: &Theme, _status| button::Style {
+                    background: Some(Background::Color(Color::TRANSPARENT)),
+                    border: Border::default(),
+                    shadow: iced::Shadow::default(),
+                    ..Default::default()
+                })
+                .into(),
+                ListTrailing::Menu => MaterialIcon::new("⋮")
+                    .size(24.0)
+                    .color(self.theme.scheme.on_surface_variant)
+                    .view(),
             };
 
             content_row = content_row.push(trailing_element);
@@ -341,8 +308,12 @@ impl<Message: Clone> MaterialListItem<Message> {
                 .width(Length::Fill)
                 .style(move |_theme: &Theme, status| {
                     let hover_color = match status {
-                        button::Status::Hovered => Some(self.theme.scheme.on_surface.scale_alpha(0.08)),
-                        button::Status::Pressed => Some(self.theme.scheme.on_surface.scale_alpha(0.12)),
+                        button::Status::Hovered => {
+                            Some(self.theme.scheme.on_surface.scale_alpha(0.08))
+                        }
+                        button::Status::Pressed => {
+                            Some(self.theme.scheme.on_surface.scale_alpha(0.12))
+                        }
                         _ => None,
                     };
 

@@ -1,13 +1,13 @@
 //! Material Design 3 Search Bar component
 
 use iced::{
-    widget::{container, row, text_input, button},
-    Element, Length, Background, Border, Color, Theme, Renderer,
     alignment::{Horizontal, Vertical},
+    widget::{button, container, row, text_input},
+    Background, Border, Color, Element, Length, Renderer, Theme,
 };
 
-use crate::themes::material_design_3::MaterialTheme;
 use crate::components::atoms::icon::MaterialIcon;
+use crate::themes::material_design_3::MaterialTheme;
 
 /// Material Design 3 Search Bar component
 #[derive()]
@@ -85,7 +85,7 @@ impl<'a, Message: 'a + Clone> MaterialSearchBar<'a, Message> {
         self
     }
 
-    pub fn on_input<F>(mut self, f: F) -> Self 
+    pub fn on_input<F>(mut self, f: F) -> Self
     where
         F: 'a + Fn(String) -> Message,
     {
@@ -114,8 +114,7 @@ impl<'a, Message: 'a + Clone> MaterialSearchBar<'a, Message> {
     }
 
     pub fn view(self) -> Element<'a, Message, Theme, Renderer> {
-        let mut search_content = row![]
-                        .spacing(12);
+        let mut search_content = row![].spacing(12);
 
         // Leading icon
         if self.show_leading_icon {
@@ -128,10 +127,7 @@ impl<'a, Message: 'a + Clone> MaterialSearchBar<'a, Message> {
                 })
                 .view::<Message>();
 
-            search_content = search_content.push(
-                container(search_icon)
-                    .padding([0, 4])
-            );
+            search_content = search_content.push(container(search_icon).padding([0, 4]));
         }
 
         // Search input
@@ -170,7 +166,7 @@ impl<'a, Message: 'a + Clone> MaterialSearchBar<'a, Message> {
                     MaterialIcon::new("×")
                         .size(24.0)
                         .color(self.theme.scheme.on_surface_variant)
-                        .view::<Message>()
+                        .view::<Message>(),
                 )
                 .on_press(clear_message.clone())
                 .style(|_theme: &Theme, status| button::Style {
@@ -192,7 +188,7 @@ impl<'a, Message: 'a + Clone> MaterialSearchBar<'a, Message> {
                     MaterialIcon::new("×")
                         .size(24.0)
                         .color(self.theme.scheme.on_surface_variant.scale_alpha(0.38))
-                        .view::<Message>()
+                        .view::<Message>(),
                 )
                 .style(|_theme: &Theme, _status| button::Style {
                     background: Some(Background::Color(Color::TRANSPARENT)),
@@ -224,7 +220,7 @@ impl<'a, Message: 'a + Clone> MaterialSearchBar<'a, Message> {
                         } else {
                             self.theme.scheme.surface_container
                         }
-                    },
+                    }
                     SearchBarVariant::FullWidth => self.theme.scheme.surface_container,
                 };
 

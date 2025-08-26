@@ -1,9 +1,9 @@
 //! Material Design 3 Icon component
 
 use iced::{
-    widget::text,
-    Element, Color, Theme, Renderer,
     font::{self, Font},
+    widget::text,
+    Color, Element, Renderer, Theme,
 };
 
 use crate::themes::material_design_3::MaterialTheme;
@@ -102,7 +102,7 @@ pub mod icons {
     pub const WARNING: &str = "⚠";
     pub const ERROR: &str = "⚠";
     pub const SUCCESS: &str = "✓";
-    
+
     // IRC specific icons
     pub const CONNECT: &str = "🔗";
     pub const DISCONNECT: &str = "🔌";

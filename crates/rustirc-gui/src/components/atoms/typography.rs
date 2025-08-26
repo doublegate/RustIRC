@@ -1,12 +1,12 @@
 //! Material Design 3 Typography System
-//! 
+//!
 //! This module provides semantic typography components following
 //! Material Design 3 specifications with proper accessibility.
 
-use crate::themes::material_design_3::{MaterialTheme, TypographyToken, FontWeight};
+use crate::themes::material_design_3::{FontWeight, MaterialTheme, TypographyToken};
 use iced::{
-    widget::{text, rich_text, span, text_input, container},
-    Element, Color, Font, Length,
+    widget::text,
+    Color, Element, Font,
 };
 
 /// Typography variant based on Material Design 3 type scale
@@ -119,11 +119,19 @@ impl MaterialText {
     where
         Message: 'static,
     {
-        let token = self.get_typography_token();
+        let token = self.get_typography_token().clone();
         let text_color = self.color.unwrap_or_else(|| self.get_default_color());
-        
+
+        // Use static font family for lifetime requirements
+        let font_family = match token.font_family.as_str() {
+            "Inter" => iced::font::Family::Name("Inter"),
+            "Roboto" => iced::font::Family::Name("Roboto"),
+            "System UI" => iced::font::Family::Name("System UI"),
+            _ => iced::font::Family::SansSerif, // Fallback to default sans-serif font
+        };
+
         let font = Font {
-            family: iced::font::Family::Name(&token.font_family),
+            family: font_family,
             weight: self.convert_font_weight(token.font_weight),
             stretch: iced::font::Stretch::Normal,
             style: iced::font::Style::Normal,
@@ -136,15 +144,14 @@ impl MaterialText {
             TextAlign::Justify => iced::alignment::Horizontal::Left, // Iced doesn't support justify
         };
 
-        let mut txt = text(&self.content)
+        let mut txt = text(self.content.clone())
             .size(token.font_size)
             .color(text_color)
-            .font(font)
-            ;
+            .font(font);
 
         // Apply line height through container if needed
         if token.line_height != token.font_size {
-            // Note: Iced doesn't directly support line-height, 
+            // Note: Iced doesn't directly support line-height,
             // this would need custom implementation
         }
 
@@ -186,19 +193,20 @@ impl MaterialText {
             | TypographyVariant::HeadlineSmall
             | TypographyVariant::TitleLarge
             | TypographyVariant::BodyLarge => self.theme.scheme.on_surface,
-            
+
             TypographyVariant::TitleMedium
             | TypographyVariant::TitleSmall
             | TypographyVariant::BodyMedium
             | TypographyVariant::CodeLarge
             | TypographyVariant::CodeMedium => self.theme.scheme.on_surface_variant,
-            
+
             TypographyVariant::LabelLarge
             | TypographyVariant::LabelMedium
             | TypographyVariant::LabelSmall => self.theme.scheme.primary,
-            
-            TypographyVariant::BodySmall
-            | TypographyVariant::CodeSmall => self.theme.scheme.on_surface_variant,
+
+            TypographyVariant::BodySmall | TypographyVariant::CodeSmall => {
+                self.theme.scheme.on_surface_variant
+            }
         }
     }
 
@@ -269,47 +277,52 @@ impl RichText {
     /// Build rich text element
     pub fn build<Message>(self) -> Element<'static, Message>
     where
-        Message: 'static,
+        Message: 'static + Clone,
     {
-        // Create rich text spans
-        let mut rich_spans = Vec::new();
-        
-        for text_span in self.spans {
-            let color = text_span.color.unwrap_or(self.theme.scheme.on_surface);
-            let weight = text_span.weight.unwrap_or(FontWeight::Regular);
-            
+        // For now, we'll combine all spans into one text widget
+        // A full rich text implementation would need custom widget development
+        let combined_text = self.spans
+            .iter()
+            .map(|span| span.text.as_str())
+            .collect::<Vec<_>>()
+            .join("");
+
+        // Use the first span's formatting if any exists
+        let (font, color) = if let Some(first_span) = self.spans.first() {
+            let span_color = first_span.color.unwrap_or(self.theme.scheme.on_surface);
+            let weight = first_span.weight.unwrap_or(FontWeight::Regular);
+
             let font = Font {
-                family: if text_span.code {
+                family: if first_span.code {
                     iced::font::Family::Name("JetBrains Mono")
                 } else {
                     iced::font::Family::Name("Inter")
                 },
                 weight: self.convert_font_weight(weight),
                 stretch: iced::font::Stretch::Normal,
-                style: if text_span.italic {
+                style: if first_span.italic {
                     iced::font::Style::Italic
                 } else {
                     iced::font::Style::Normal
                 },
             };
+            (font, span_color)
+        } else {
+            (
+                Font {
+                    family: iced::font::Family::Name("Inter"),
+                    weight: iced::font::Weight::Normal,
+                    stretch: iced::font::Stretch::Normal,
+                    style: iced::font::Style::Normal,
+                },
+                self.theme.scheme.on_surface,
+            )
+        };
 
-            let mut rich_span = span(&text_span.text)
-                .color(color)
-                .font(font);
-
-            if text_span.underline {
-                rich_span = rich_span.underline(true);
-            }
-
-            if text_span.strikethrough {
-                rich_span = rich_span.strikethrough(true);
-            }
-
-            rich_spans.push(rich_span);
-        }
-
-        rich_text(rich_spans)
+        text(combined_text)
             .size(self.theme.typography.body_medium.font_size)
+            .color(color)
+            .font(font)
             .into()
     }
 
@@ -392,75 +405,173 @@ impl Default for RichText {
     }
 }
 
-// Convenience functions for common text styles
-pub fn display_large<Message>(text: impl Into<String>) -> MaterialText {
-    MaterialText::new(text).variant(TypographyVariant::DisplayLarge)
+// Convenience functions for common text styles that return Element
+pub fn display_large<Message>(text_content: impl Into<String>) -> Element<'static, Message>
+where
+    Message: 'static,
+{
+    MaterialText::new(text_content).variant(TypographyVariant::DisplayLarge).build()
 }
 
-pub fn display_medium<Message>(text: impl Into<String>) -> MaterialText {
-    MaterialText::new(text).variant(TypographyVariant::DisplayMedium)
+pub fn display_medium<Message>(text_content: impl Into<String>) -> Element<'static, Message>
+where
+    Message: 'static,
+{
+    MaterialText::new(text_content).variant(TypographyVariant::DisplayMedium).build()
 }
 
-pub fn display_small<Message>(text: impl Into<String>) -> MaterialText {
-    MaterialText::new(text).variant(TypographyVariant::DisplaySmall)
+pub fn display_small<Message>(text_content: impl Into<String>) -> Element<'static, Message>
+where
+    Message: 'static,
+{
+    MaterialText::new(text_content).variant(TypographyVariant::DisplaySmall).build()
 }
 
-pub fn headline_large<Message>(text: impl Into<String>) -> MaterialText {
-    MaterialText::new(text).variant(TypographyVariant::HeadlineLarge)
+pub fn headline_large<Message>(text_content: impl Into<String>) -> Element<'static, Message>
+where
+    Message: 'static,
+{
+    MaterialText::new(text_content).variant(TypographyVariant::HeadlineLarge).build()
 }
 
-pub fn headline_medium<Message>(text: impl Into<String>) -> MaterialText {
-    MaterialText::new(text).variant(TypographyVariant::HeadlineMedium)
+pub fn headline_medium<Message>(text_content: impl Into<String>) -> Element<'static, Message>
+where
+    Message: 'static,
+{
+    MaterialText::new(text_content).variant(TypographyVariant::HeadlineMedium).build()
 }
 
-pub fn headline_small<Message>(text: impl Into<String>) -> MaterialText {
-    MaterialText::new(text).variant(TypographyVariant::HeadlineSmall)
+pub fn headline_small<Message>(text_content: impl Into<String>) -> Element<'static, Message>
+where
+    Message: 'static,
+{
+    MaterialText::new(text_content).variant(TypographyVariant::HeadlineSmall).build()
 }
 
-pub fn title_large<Message>(text: impl Into<String>) -> MaterialText {
-    MaterialText::new(text).variant(TypographyVariant::TitleLarge)
+pub fn title_large<Message>(text_content: impl Into<String>) -> Element<'static, Message>
+where
+    Message: 'static,
+{
+    MaterialText::new(text_content).variant(TypographyVariant::TitleLarge).build()
 }
 
-pub fn title_medium<Message>(text: impl Into<String>) -> MaterialText {
-    MaterialText::new(text).variant(TypographyVariant::TitleMedium)
+pub fn title_medium<Message>(text_content: impl Into<String>) -> Element<'static, Message>
+where
+    Message: 'static,
+{
+    MaterialText::new(text_content).variant(TypographyVariant::TitleMedium).build()
 }
 
-pub fn title_small<Message>(text: impl Into<String>) -> MaterialText {
-    MaterialText::new(text).variant(TypographyVariant::TitleSmall)
+pub fn title_small<Message>(text_content: impl Into<String>) -> Element<'static, Message>
+where
+    Message: 'static,
+{
+    MaterialText::new(text_content).variant(TypographyVariant::TitleSmall).build()
 }
 
-pub fn body_large<Message>(text: impl Into<String>) -> MaterialText {
-    MaterialText::new(text).variant(TypographyVariant::BodyLarge)
+pub fn body_large<Message>(text_content: impl Into<String>) -> Element<'static, Message>
+where
+    Message: 'static,
+{
+    MaterialText::new(text_content).variant(TypographyVariant::BodyLarge).build()
 }
 
-pub fn body_medium<Message>(text: impl Into<String>) -> MaterialText {
-    MaterialText::new(text).variant(TypographyVariant::BodyMedium)
+pub fn body_medium<Message>(text_content: impl Into<String>) -> Element<'static, Message>
+where
+    Message: 'static,
+{
+    MaterialText::new(text_content).variant(TypographyVariant::BodyMedium).build()
 }
 
-pub fn body_small<Message>(text: impl Into<String>) -> MaterialText {
-    MaterialText::new(text).variant(TypographyVariant::BodySmall)
+pub fn body_small<Message>(text_content: impl Into<String>) -> Element<'static, Message>
+where
+    Message: 'static,
+{
+    MaterialText::new(text_content).variant(TypographyVariant::BodySmall).build()
 }
 
-pub fn label_large<Message>(text: impl Into<String>) -> MaterialText {
-    MaterialText::new(text).variant(TypographyVariant::LabelLarge)
+pub fn label_large<Message>(text_content: impl Into<String>) -> Element<'static, Message>
+where
+    Message: 'static,
+{
+    MaterialText::new(text_content).variant(TypographyVariant::LabelLarge).build()
 }
 
-pub fn label_medium<Message>(text: impl Into<String>) -> MaterialText {
-    MaterialText::new(text).variant(TypographyVariant::LabelMedium)
+pub fn label_medium<Message>(text_content: impl Into<String>) -> Element<'static, Message>
+where
+    Message: 'static,
+{
+    MaterialText::new(text_content).variant(TypographyVariant::LabelMedium).build()
 }
 
-pub fn label_small<Message>(text: impl Into<String>) -> MaterialText {
-    MaterialText::new(text).variant(TypographyVariant::LabelSmall)
+pub fn label_small<Message>(text_content: impl Into<String>) -> Element<'static, Message>
+where
+    Message: 'static,
+{
+    MaterialText::new(text_content).variant(TypographyVariant::LabelSmall).build()
 }
 
-pub fn code_large<Message>(text: impl Into<String>) -> MaterialText {
-    MaterialText::new(text).variant(TypographyVariant::CodeLarge)
+pub fn code_large<Message>(text_content: impl Into<String>) -> Element<'static, Message>
+where
+    Message: 'static,
+{
+    MaterialText::new(text_content).variant(TypographyVariant::CodeLarge).build()
 }
 
-pub fn code_medium<Message>(text: impl Into<String>) -> MaterialText {
-    MaterialText::new(text).variant(TypographyVariant::CodeMedium)
+pub fn code_medium<Message>(text_content: impl Into<String>) -> Element<'static, Message>
+where
+    Message: 'static,
+{
+    MaterialText::new(text_content).variant(TypographyVariant::CodeMedium).build()
 }
 
-pub fn code_small<Message>(text: impl Into<String>) -> MaterialText {
-    MaterialText::new(text).variant(TypographyVariant::CodeSmall)
+pub fn code_small<Message>(text_content: impl Into<String>) -> Element<'static, Message>
+where
+    Message: 'static,
+{
+    MaterialText::new(text_content).variant(TypographyVariant::CodeSmall).build()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_typography_variants() {
+        let text = MaterialText::new("Hello, World!")
+            .variant(TypographyVariant::HeadlineLarge)
+            .color(Color::BLACK);
+        
+        assert_eq!(text.variant, TypographyVariant::HeadlineLarge);
+        assert_eq!(text.color, Some(Color::BLACK));
+    }
+
+    #[test]
+    fn test_rich_text_creation() {
+        let rich_text = RichText::new()
+            .span(TextSpan::new("Bold").bold())
+            .span(TextSpan::new(" and ").italic())
+            .span(TextSpan::new("code").code());
+        
+        assert_eq!(rich_text.spans.len(), 3);
+        assert!(rich_text.spans[0].weight == Some(FontWeight::Bold));
+        assert!(rich_text.spans[1].italic);
+        assert!(rich_text.spans[2].code);
+    }
+
+    #[test]
+    fn test_text_span_formatting() {
+        let span = TextSpan::new("Formatted text")
+            .bold()
+            .italic()
+            .underline()
+            .strikethrough()
+            .color(Color::from_rgb(0.5, 0.5, 0.5));
+        
+        assert_eq!(span.weight, Some(FontWeight::Bold));
+        assert!(span.italic);
+        assert!(span.underline);
+        assert!(span.strikethrough);
+        assert!(span.color.is_some());
+    }
 }

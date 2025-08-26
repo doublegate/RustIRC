@@ -1,19 +1,19 @@
 use iced::{
-    widget::{column, container, row, pane_grid, scrollable, horizontal_space},
-    Element, Length, Size, Background, Border, Color, Theme, Renderer,
     alignment::{Horizontal, Vertical},
+    widget::{column, container, horizontal_space, pane_grid, row, scrollable},
+    Background, Border, Color, Element, Length, Renderer, Size, Theme,
 };
 use pane_grid::{Axis, Configuration, Pane, PaneGrid, Split, State};
 use std::collections::HashMap;
 
-use crate::themes::material_design_3::{MaterialTheme, ElevationLevel};
-use crate::components::MessageBubble;
 use crate::components::molecules::message_bubble::ChatMessage;
 use crate::components::organisms::{
-    sidebar::{ModernSidebar, SidebarMessage},
     // message_bubble::{MessageBubble, ChatMessage},
     rich_text_editor::{RichTextEditor, RichTextMessage},
+    sidebar::{ModernSidebar, SidebarMessage},
 };
+use crate::components::MessageBubble;
+use crate::themes::material_design_3::{ElevationLevel, MaterialTheme};
 
 // Responsive breakpoints based on Material Design
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -28,11 +28,11 @@ pub enum Breakpoint {
 // Layout configurations for different screen sizes
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LayoutMode {
-    SinglePane,      // Mobile: only content
-    SidebarOverlay,  // Mobile landscape: sidebar as overlay
-    TwoPane,         // Tablet: sidebar + content
-    ThreePane,       // Desktop: sidebar + content + details
-    FourPane,        // Large desktop: sidebar + channels + content + details
+    SinglePane,     // Mobile: only content
+    SidebarOverlay, // Mobile landscape: sidebar as overlay
+    TwoPane,        // Tablet: sidebar + content
+    ThreePane,      // Desktop: sidebar + content + details
+    FourPane,       // Large desktop: sidebar + channels + content + details
 }
 
 // Golden ratio proportions for layout
@@ -82,10 +82,10 @@ pub enum LayoutMessage {
 impl ResponsiveLayout {
     pub fn new(theme: MaterialTheme) -> Self {
         let sidebar = ModernSidebar::new(theme.clone());
-        
+
         // Initialize with default configuration
         let (pane_state, _) = State::new(PaneContent::ChatArea);
-        
+
         Self {
             pane_state,
             current_breakpoint: Breakpoint::Large,
@@ -115,7 +115,8 @@ impl ResponsiveLayout {
                 }
             }
             LayoutMessage::PaneResized(resize_event) => {
-                self.pane_state.resize(&resize_event.split, resize_event.ratio);
+                self.pane_state
+                    .resize(&resize_event.split, resize_event.ratio);
             }
             LayoutMessage::ToggleSidebar => {
                 self.sidebar_collapsed = !self.sidebar_collapsed;
@@ -144,7 +145,7 @@ impl ResponsiveLayout {
     pub fn view(&self) -> Element<'_, LayoutMessage, Theme, Renderer> {
         match self.current_breakpoint {
             Breakpoint::Compact => self.compact_view(),
-            Breakpoint::Medium => self.medium_view(), 
+            Breakpoint::Medium => self.medium_view(),
             _ => self.desktop_view(),
         }
     }
@@ -152,31 +153,27 @@ impl ResponsiveLayout {
     fn compact_view(&self) -> Element<'_, LayoutMessage, Theme, Renderer> {
         // Mobile portrait: single pane with overlay sidebar
         let main_content = self.create_chat_content();
-        
+
         if self.show_overlay {
             // Show sidebar as overlay
-            let sidebar_overlay = container(
-                self.sidebar.view().map(LayoutMessage::Sidebar)
-            )
-            .width(Length::Fixed(SIDEBAR_MIN_WIDTH))
-            .height(Length::Fill)
-            .style(move |_theme: &Theme| container::Style {
-                background: Some(Background::Color(self.theme.scheme.surface_container)),
-                border: Border {
-                    color: self.theme.scheme.outline_variant,
-                    width: 1.0,
-                    radius: 12.0.into(),
-                },
-                ..Default::default()
-            });
+            let sidebar_overlay = container(self.sidebar.view().map(LayoutMessage::Sidebar))
+                .width(Length::Fixed(SIDEBAR_MIN_WIDTH))
+                .height(Length::Fill)
+                .style(move |_theme: &Theme| container::Style {
+                    background: Some(Background::Color(self.theme.scheme.surface_container)),
+                    border: Border {
+                        color: self.theme.scheme.outline_variant,
+                        width: 1.0,
+                        radius: 12.0.into(),
+                    },
+                    ..Default::default()
+                });
 
             // Overlay layout
-            container(
-                row![
-                    sidebar_overlay,
-                    horizontal_space().width(Length::FillPortion(1))
-                ]
-            )
+            container(row![
+                sidebar_overlay,
+                horizontal_space().width(Length::FillPortion(1))
+            ])
             .width(Length::Fill)
             .height(Length::Fill)
             .into()
@@ -230,27 +227,22 @@ impl ResponsiveLayout {
             .into()
     }
 
-    fn create_pane_content(&self, content: &PaneContent) -> Element<'_, LayoutMessage, Theme, Renderer> {
+    fn create_pane_content(
+        &self,
+        content: &PaneContent,
+    ) -> Element<'_, LayoutMessage, Theme, Renderer> {
         match content {
-            PaneContent::Sidebar => {
-                container(self.sidebar.view().map(LayoutMessage::Sidebar))
-                    .width(Length::Fill)
-                    .height(Length::Fill)
-                    .into()
-            }
+            PaneContent::Sidebar => container(self.sidebar.view().map(LayoutMessage::Sidebar))
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .into(),
             PaneContent::ChannelList => {
                 // Simplified channel list for four-pane layout
                 self.create_channel_list()
             }
-            PaneContent::ChatArea => {
-                self.create_chat_content()
-            }
-            PaneContent::UserDetails => {
-                self.create_user_details()
-            }
-            PaneContent::Settings => {
-                self.create_settings_pane()
-            }
+            PaneContent::ChatArea => self.create_chat_content(),
+            PaneContent::UserDetails => self.create_user_details(),
+            PaneContent::Settings => self.create_settings_pane(),
         }
     }
 
@@ -264,7 +256,6 @@ impl ResponsiveLayout {
             container(scrollable(chat_messages))
                 .height(Length::FillPortion(8))
                 .padding(self.adaptive_padding()),
-            
             // Input area
             container(input_area)
                 .height(Length::Shrink)
@@ -312,58 +303,60 @@ impl ResponsiveLayout {
         ];
 
         let mut messages_column = column![];
-        
+
         for message in demo_messages {
             let message_bubble = MessageBubble::new(message, self.theme.clone());
-            messages_column = messages_column.push(
-                container(message_bubble.view())
-                    .padding([4, 0])
-            );
+            messages_column =
+                messages_column.push(container(message_bubble.view()).padding([4, 0]));
         }
 
         messages_column.spacing(self.adaptive_spacing()).into()
     }
 
     fn create_input_area(&self) -> Element<'_, LayoutMessage, Theme, Renderer> {
-        let editor = RichTextEditor::new(self.theme.clone())
-            .placeholder("Type a message...")
-            .multiline(false)
-            .max_length(Some(512));
-
-        container(editor.view().map(LayoutMessage::RichTextEditor))
-            .width(Length::Fill)
-            .into()
+        // For now, use a simple text input instead of the rich text editor to avoid lifetime issues
+        use iced::widget::text_input;
+        
+        container(
+            text_input("Type a message...", "")
+                .on_input(|text| LayoutMessage::RichTextEditor(crate::components::organisms::rich_text_editor::RichTextMessage::TextChanged(text)))
+        )
+        .width(Length::Fill)
+        .into()
     }
 
     fn create_channel_list(&self) -> Element<'_, LayoutMessage, Theme, Renderer> {
         // Simplified channel list for desktop layouts
-        container(
-            column![
-                container(
-                    crate::components::atoms::typography::MaterialText::new("Channels")
-                        .variant(crate::components::atoms::typography::TypographyVariant::HeadlineSmall)
-                        .color(self.theme.scheme.on_surface)
-                )
-                .padding(16),
-                
-                // Demo channels
-                container(
-                    column![
-                        crate::components::atoms::typography::MaterialText::new("# rust")
-                            .variant(crate::components::atoms::typography::TypographyVariant::LabelLarge)
-                            .color(self.theme.scheme.primary),
-                        crate::components::atoms::typography::MaterialText::new("# programming")
-                            .variant(crate::components::atoms::typography::TypographyVariant::LabelLarge)
-                            .color(self.theme.scheme.on_surface),
-                        crate::components::atoms::typography::MaterialText::new("# linux")
-                            .variant(crate::components::atoms::typography::TypographyVariant::LabelLarge)
-                            .color(self.theme.scheme.on_surface),
-                    ]
-                    .spacing(8)
-                )
-                .padding([0, 16])
-            ]
-        )
+        container(column![
+            container(
+                crate::components::atoms::typography::MaterialText::new("Channels")
+                    .variant(crate::components::atoms::typography::TypographyVariant::HeadlineSmall)
+                    .color(self.theme.scheme.on_surface)
+            )
+            .padding(16),
+            // Demo channels
+            container(
+                column![
+                    crate::components::atoms::typography::MaterialText::new("# rust")
+                        .variant(
+                            crate::components::atoms::typography::TypographyVariant::LabelLarge
+                        )
+                        .color(self.theme.scheme.primary),
+                    crate::components::atoms::typography::MaterialText::new("# programming")
+                        .variant(
+                            crate::components::atoms::typography::TypographyVariant::LabelLarge
+                        )
+                        .color(self.theme.scheme.on_surface),
+                    crate::components::atoms::typography::MaterialText::new("# linux")
+                        .variant(
+                            crate::components::atoms::typography::TypographyVariant::LabelLarge
+                        )
+                        .color(self.theme.scheme.on_surface),
+                ]
+                .spacing(8)
+            )
+            .padding([0, 16])
+        ])
         .style(move |_theme: &Theme| container::Style {
             background: Some(Background::Color(self.theme.scheme.surface_container)),
             border: Border {
@@ -377,33 +370,36 @@ impl ResponsiveLayout {
     }
 
     fn create_user_details(&self) -> Element<'_, LayoutMessage, Theme, Renderer> {
-        container(
-            column![
-                container(
-                    crate::components::atoms::typography::MaterialText::new("User Details")
-                        .variant(crate::components::atoms::typography::TypographyVariant::HeadlineSmall)
-                        .color(self.theme.scheme.on_surface)
-                )
-                .padding(16),
-                
-                // Demo user info
-                container(
-                    column![
-                        crate::components::atoms::typography::MaterialText::new("Alice")
-                            .variant(crate::components::atoms::typography::TypographyVariant::TitleMedium)
-                            .color(self.theme.scheme.on_surface),
-                        crate::components::atoms::typography::MaterialText::new("Online")
-                            .variant(crate::components::atoms::typography::TypographyVariant::LabelMedium)
-                            .color(self.theme.scheme.primary),
-                        crate::components::atoms::typography::MaterialText::new("Rust developer")
-                            .variant(crate::components::atoms::typography::TypographyVariant::BodyMedium)
-                            .color(self.theme.scheme.on_surface_variant),
-                    ]
-                    .spacing(4)
-                )
-                .padding([0, 16])
-            ]
-        )
+        container(column![
+            container(
+                crate::components::atoms::typography::MaterialText::new("User Details")
+                    .variant(crate::components::atoms::typography::TypographyVariant::HeadlineSmall)
+                    .color(self.theme.scheme.on_surface)
+            )
+            .padding(16),
+            // Demo user info
+            container(
+                column![
+                    crate::components::atoms::typography::MaterialText::new("Alice")
+                        .variant(
+                            crate::components::atoms::typography::TypographyVariant::TitleMedium
+                        )
+                        .color(self.theme.scheme.on_surface),
+                    crate::components::atoms::typography::MaterialText::new("Online")
+                        .variant(
+                            crate::components::atoms::typography::TypographyVariant::LabelMedium
+                        )
+                        .color(self.theme.scheme.primary),
+                    crate::components::atoms::typography::MaterialText::new("Rust developer")
+                        .variant(
+                            crate::components::atoms::typography::TypographyVariant::BodyMedium
+                        )
+                        .color(self.theme.scheme.on_surface_variant),
+                ]
+                .spacing(4)
+            )
+            .padding([0, 16])
+        ])
         .style(move |_theme: &Theme| container::Style {
             background: Some(Background::Color(self.theme.scheme.surface_container)),
             border: Border {
@@ -417,33 +413,36 @@ impl ResponsiveLayout {
     }
 
     fn create_settings_pane(&self) -> Element<'_, LayoutMessage, Theme, Renderer> {
-        container(
-            column![
-                container(
-                    crate::components::atoms::typography::MaterialText::new("Settings")
-                        .variant(crate::components::atoms::typography::TypographyVariant::HeadlineSmall)
-                        .color(self.theme.scheme.on_surface)
-                )
-                .padding(16),
-                
-                // Demo settings
-                container(
-                    column![
-                        crate::components::atoms::typography::MaterialText::new("Theme")
-                            .variant(crate::components::atoms::typography::TypographyVariant::LabelLarge)
-                            .color(self.theme.scheme.on_surface),
-                        crate::components::atoms::typography::MaterialText::new("Notifications")
-                            .variant(crate::components::atoms::typography::TypographyVariant::LabelLarge)
-                            .color(self.theme.scheme.on_surface),
-                        crate::components::atoms::typography::MaterialText::new("Privacy")
-                            .variant(crate::components::atoms::typography::TypographyVariant::LabelLarge)
-                            .color(self.theme.scheme.on_surface),
-                    ]
-                    .spacing(8)
-                )
-                .padding([0, 16])
-            ]
-        )
+        container(column![
+            container(
+                crate::components::atoms::typography::MaterialText::new("Settings")
+                    .variant(crate::components::atoms::typography::TypographyVariant::HeadlineSmall)
+                    .color(self.theme.scheme.on_surface)
+            )
+            .padding(16),
+            // Demo settings
+            container(
+                column![
+                    crate::components::atoms::typography::MaterialText::new("Theme")
+                        .variant(
+                            crate::components::atoms::typography::TypographyVariant::LabelLarge
+                        )
+                        .color(self.theme.scheme.on_surface),
+                    crate::components::atoms::typography::MaterialText::new("Notifications")
+                        .variant(
+                            crate::components::atoms::typography::TypographyVariant::LabelLarge
+                        )
+                        .color(self.theme.scheme.on_surface),
+                    crate::components::atoms::typography::MaterialText::new("Privacy")
+                        .variant(
+                            crate::components::atoms::typography::TypographyVariant::LabelLarge
+                        )
+                        .color(self.theme.scheme.on_surface),
+                ]
+                .spacing(8)
+            )
+            .padding([0, 16])
+        ])
         .style(move |_theme: &Theme| container::Style {
             background: Some(Background::Color(self.theme.scheme.surface_container)),
             border: Border {
@@ -500,9 +499,7 @@ impl ResponsiveLayout {
     fn rebuild_pane_layout(&mut self) {
         // Rebuild pane grid based on current layout mode
         let (new_state, _) = match self.layout_mode {
-            LayoutMode::SinglePane => {
-                State::new(PaneContent::ChatArea)
-            }
+            LayoutMode::SinglePane => State::new(PaneContent::ChatArea),
             LayoutMode::TwoPane => {
                 let (state, pane) = State::new(PaneContent::Sidebar);
                 let (state, _) = state.split(Axis::Vertical, &pane, PaneContent::ChatArea);
@@ -510,15 +507,20 @@ impl ResponsiveLayout {
             }
             LayoutMode::ThreePane => {
                 let (state, pane) = State::new(PaneContent::Sidebar);
-                let (state, content_pane) = state.split(Axis::Vertical, &pane, PaneContent::ChatArea);
-                let (state, _) = state.split(Axis::Vertical, &content_pane, PaneContent::UserDetails);
+                let (state, content_pane) =
+                    state.split(Axis::Vertical, &pane, PaneContent::ChatArea);
+                let (state, _) =
+                    state.split(Axis::Vertical, &content_pane, PaneContent::UserDetails);
                 (state, pane)
             }
             LayoutMode::FourPane => {
                 let (state, pane) = State::new(PaneContent::Sidebar);
-                let (state, channel_pane) = state.split(Axis::Vertical, &pane, PaneContent::ChannelList);
-                let (state, content_pane) = state.split(Axis::Vertical, &channel_pane, PaneContent::ChatArea);
-                let (state, _) = state.split(Axis::Vertical, &content_pane, PaneContent::UserDetails);
+                let (state, channel_pane) =
+                    state.split(Axis::Vertical, &pane, PaneContent::ChannelList);
+                let (state, content_pane) =
+                    state.split(Axis::Vertical, &channel_pane, PaneContent::ChatArea);
+                let (state, _) =
+                    state.split(Axis::Vertical, &content_pane, PaneContent::UserDetails);
                 (state, pane)
             }
             _ => State::new(PaneContent::ChatArea),

@@ -1,13 +1,13 @@
 //! Material Design 3 App Bar components
 
 use iced::{
-    widget::{container, row, text, button},
-    Element, Length, Background, Border, Color, Theme, Renderer,
     alignment::{Horizontal, Vertical},
+    widget::{button, container, row, text},
+    Background, Border, Color, Element, Length, Renderer, Theme,
 };
 
-use crate::themes::material_design_3::MaterialTheme;
 use crate::components::atoms::icon::MaterialIcon;
+use crate::themes::material_design_3::MaterialTheme;
 
 /// Material Design 3 App Bar component
 #[derive(Debug, Clone)]
@@ -71,8 +71,8 @@ impl<Message: Clone> MaterialAppBar<Message> {
     }
 
     pub fn variant(mut self, variant: AppBarVariant) -> Self {
-        self.variant = variant;
-        
+        self.variant = variant.clone();
+
         // Adjust height based on variant
         self.height = match variant {
             AppBarVariant::Small => 48.0,
@@ -80,7 +80,7 @@ impl<Message: Clone> MaterialAppBar<Message> {
             AppBarVariant::Medium => 112.0,
             AppBarVariant::Large => 152.0,
         };
-        
+
         self
     }
 
@@ -94,7 +94,7 @@ impl<Message: Clone> MaterialAppBar<Message> {
                     MaterialIcon::new(&leading.icon)
                         .size(24.0)
                         .color(self.theme.scheme.on_surface)
-                        .view()
+                        .view(),
                 )
                 .on_press(message.clone())
                 .style(|_theme: &Theme, _status| button::Style {
@@ -111,55 +111,43 @@ impl<Message: Clone> MaterialAppBar<Message> {
                     .view()
             };
 
-            content = content.push(
-                container(leading_button)
-                    .padding(16)
-                    .center_y()
-            );
+            content = content.push(container(leading_button).padding(16).center_y());
         }
 
         // Title
         let title_element = match self.variant {
-            AppBarVariant::CenterAligned => {
-                container(
-                    text(&self.title)
-                        .size(22)
-                        .color(self.theme.scheme.on_surface)
-                )
-                .width(Length::Fill)
-                .center_x()
-                .center_y()
-            },
-            AppBarVariant::Large => {
-                container(
-                    text(&self.title)
-                        .size(32)
-                        .color(self.theme.scheme.on_surface)
-                )
-                .width(Length::Fill)
-                .padding([24, 16])
-                .align_y(iced::alignment::Vertical::Bottom)
-            },
-            AppBarVariant::Medium => {
-                container(
-                    text(&self.title)
-                        .size(28)
-                        .color(self.theme.scheme.on_surface)
-                )
-                .width(Length::Fill)
-                .padding([16, 16])
-                .align_y(iced::alignment::Vertical::Bottom)
-            },
-            _ => {
-                container(
-                    text(&self.title)
-                        .size(22)
-                        .color(self.theme.scheme.on_surface)
-                )
-                .width(Length::Fill)
-                .center_y()
-                .padding([0, 16])
-            }
+            AppBarVariant::CenterAligned => container(
+                text(&self.title)
+                    .size(22)
+                    .color(self.theme.scheme.on_surface),
+            )
+            .width(Length::Fill)
+            .center_x()
+            .center_y(),
+            AppBarVariant::Large => container(
+                text(&self.title)
+                    .size(32)
+                    .color(self.theme.scheme.on_surface),
+            )
+            .width(Length::Fill)
+            .padding([24, 16])
+            .align_y(iced::alignment::Vertical::Bottom),
+            AppBarVariant::Medium => container(
+                text(&self.title)
+                    .size(28)
+                    .color(self.theme.scheme.on_surface),
+            )
+            .width(Length::Fill)
+            .padding([16, 16])
+            .align_y(iced::alignment::Vertical::Bottom),
+            _ => container(
+                text(&self.title)
+                    .size(22)
+                    .color(self.theme.scheme.on_surface),
+            )
+            .width(Length::Fill)
+            .center_y()
+            .padding([0, 16]),
         };
 
         content = content.push(title_element);
@@ -172,7 +160,7 @@ impl<Message: Clone> MaterialAppBar<Message> {
                     MaterialIcon::new(&action.icon)
                         .size(24.0)
                         .color(self.theme.scheme.on_surface)
-                        .view()
+                        .view(),
                 )
                 .on_press(message.clone())
                 .style(|_theme: &Theme, status| button::Style {
@@ -194,7 +182,7 @@ impl<Message: Clone> MaterialAppBar<Message> {
                     MaterialIcon::new(&action.icon)
                         .size(24.0)
                         .color(self.theme.scheme.on_surface.scale_alpha(0.38))
-                        .view()
+                        .view(),
                 )
                 .style(|_theme: &Theme, _status| button::Style {
                     background: Some(Background::Color(Color::TRANSPARENT)),
@@ -209,11 +197,7 @@ impl<Message: Clone> MaterialAppBar<Message> {
         }
 
         if !self.trailing_actions.is_empty() {
-            content = content.push(
-                container(actions_row)
-                    .padding([0, 16])
-                    .center_y()
-            );
+            content = content.push(container(actions_row).padding([0, 16]).center_y());
         }
 
         container(content)
@@ -223,10 +207,10 @@ impl<Message: Clone> MaterialAppBar<Message> {
                 background: Some(Background::Color(match self.variant {
                     AppBarVariant::Small | AppBarVariant::Top | AppBarVariant::CenterAligned => {
                         self.theme.scheme.surface
-                    },
+                    }
                     AppBarVariant::Medium | AppBarVariant::Large => {
                         self.theme.scheme.surface_container
-                    },
+                    }
                 })),
                 border: Border::default(),
                 shadow: iced::Shadow {

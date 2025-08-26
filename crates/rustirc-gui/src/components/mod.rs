@@ -1,21 +1,21 @@
 //! Material Design 3 Components for Iced v0.13.1
-//! 
+//!
 //! This module provides a comprehensive set of Material Design 3 components
 //! built specifically for the Iced GUI framework.
 
 pub mod atoms;
+pub mod canvas;
 pub mod molecules;
 pub mod organisms;
-pub mod canvas;
 
 // Re-export commonly used components
-pub use atoms::button::{MaterialButton, ButtonVariant};
-pub use atoms::typography::{MaterialText, TypographyVariant};
+pub use atoms::button::{ButtonVariant, MaterialButton};
 pub use atoms::card::MaterialCard;
-pub use atoms::chip::{MaterialChip, ChipVariant};
+pub use atoms::chip::{ChipVariant, MaterialChip};
 pub use atoms::icon::MaterialIcon;
 pub use atoms::input::MaterialInput;
 pub use atoms::surface::MaterialSurface;
+pub use atoms::typography::{MaterialText, TypographyVariant};
 
 pub use molecules::app_bar::MaterialAppBar;
 pub use molecules::bottom_navigation::MaterialBottomNavigation;

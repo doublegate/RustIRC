@@ -1,13 +1,13 @@
 //! Material Design 3 Card component
 
 use iced::{
-    widget::{container, Container},
-    Element, Length, Background, Border, Color, Theme, Renderer,
     alignment::{Horizontal, Vertical},
     mouse,
+    widget::{container, Container},
+    Background, Border, Color, Element, Length, Renderer, Theme,
 };
 
-use crate::themes::material_design_3::{MaterialTheme, ElevationLevel};
+use crate::themes::material_design_3::{ElevationLevel, MaterialTheme};
 
 /// Material Design 3 Card component
 #[derive()]

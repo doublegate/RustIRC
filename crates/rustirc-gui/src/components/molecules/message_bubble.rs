@@ -1,5 +1,5 @@
 //! Modern Message Bubble Component
-//! 
+//!
 //! This module implements a modern chat message bubble with:
 //! - Material Design 3 styling
 //! - Rich text content with IRC formatting
@@ -8,20 +8,17 @@
 //! - Proper accessibility
 
 use crate::{
-    themes::material_design_3::MaterialTheme,
     components::atoms::{
+        button::{ButtonSize, ButtonVariant, MaterialButton},
         typography::{MaterialText, RichText, TextSpan, TypographyVariant},
-        button::{MaterialButton, ButtonVariant, ButtonSize},
     },
+    themes::material_design_3::MaterialTheme,
 };
 use iced::{
-    widget::{
-        container, row, column, button, text,
-        mouse_area, stack, scrollable, tooltip,
-    },
-    Element, Length, Color, Background, Border, Point, Rectangle,
     alignment::{Horizontal, Vertical},
     time::Instant,
+    widget::{button, column, container, mouse_area, row, scrollable, stack, text, tooltip},
+    Background, Border, Color, Element, Length, Point, Rectangle,
 };
 use rustirc_protocol::Message as IrcMessage;
 use std::collections::HashMap;
@@ -83,7 +80,7 @@ pub struct UserBadge {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BadgeType {
     Owner,        // ~
-    Admin,        // &  
+    Admin,        // &
     Operator,     // @
     HalfOperator, // %
     Voice,        // +
@@ -182,16 +179,16 @@ pub enum MessageType {
 /// Message bubble actions
 #[derive(Debug, Clone)]
 pub enum MessageAction {
-    Reply(String),      // message_id
-    Edit(String),       // message_id  
-    Delete(String),     // message_id
-    React(String, String), // message_id, emoji
+    Reply(String),                  // message_id
+    Edit(String),                   // message_id
+    Delete(String),                 // message_id
+    React(String, String),          // message_id, emoji
     RemoveReaction(String, String), // message_id, emoji
-    CopyText(String),   // text
-    CopyLink(String),   // url
-    SelectMessage(String), // message_id
-    ShowThread(String), // message_id
-    ShowUserCard(String), // user_id
+    CopyText(String),               // text
+    CopyLink(String),               // url
+    SelectMessage(String),          // message_id
+    ShowThread(String),             // message_id
+    ShowUserCard(String),           // user_id
 }
 
 impl MessageBubble {
@@ -267,21 +264,19 @@ impl MessageBubble {
         let bubble = container(content)
             .padding([spacing, self.theme.spacing.md])
             .width(Length::Fill)
-            .style(move |_theme| {
-                container::Style {
-                    background: Some(Background::Color(background_color)),
-                    border: Border {
-                        width: if self.selected { 2.0 } else { 0.0 },
-                        color: border_color,
-                        radius: self.theme.shapes.corner_small.into(),
-                    },
-                    text_color: Some(self.theme.scheme.on_surface),
-                    shadow: if self.message.message_type == MessageType::Highlight {
-                        self.theme.elevation.level1.into()
-                    } else {
-                        Default::default()
-                    },
-                }
+            .style(move |_theme| container::Style {
+                background: Some(Background::Color(background_color)),
+                border: Border {
+                    width: if self.selected { 2.0 } else { 0.0 },
+                    color: border_color,
+                    radius: self.theme.shapes.corner_small.into(),
+                },
+                text_color: Some(self.theme.scheme.on_surface),
+                shadow: if self.message.message_type == MessageType::Highlight {
+                    self.theme.elevation.level1.into()
+                } else {
+                    Default::default()
+                },
             });
 
         // Add hover and click interactions
@@ -297,7 +292,7 @@ impl MessageBubble {
         MessageAction: Into<Message>,
     {
         let avatar_size = if self.compact_mode { 24.0 } else { 32.0 };
-        
+
         row![
             // Avatar column
             if self.show_avatar {
@@ -307,15 +302,12 @@ impl MessageBubble {
                     .width(Length::Fixed(avatar_size + self.theme.spacing.sm))
                     .into()
             },
-            
             // Content column
             column![
                 // Header (username, timestamp, badges)
                 self.build_message_header(),
-                
                 // Message content
                 self.build_message_content(),
-                
                 // Reactions
                 if !self.message.reactions.is_empty() {
                     self.build_reactions()
@@ -338,17 +330,14 @@ impl MessageBubble {
         MessageAction: Into<Message>,
     {
         let avatar_size = if self.compact_mode { 24.0 } else { 32.0 };
-        
+
         row![
             // Spacer for alignment with non-grouped messages
-            container(text(""))
-                .width(Length::Fixed(avatar_size + self.theme.spacing.sm)),
-                
+            container(text("")).width(Length::Fixed(avatar_size + self.theme.spacing.sm)),
             // Message content only
             column![
                 self.build_message_content(),
-                
-                // Reactions  
+                // Reactions
                 if !self.message.reactions.is_empty() {
                     self.build_reactions()
                 } else {
@@ -370,30 +359,40 @@ impl MessageBubble {
         MessageAction: Into<Message>,
     {
         // Avatar background (placeholder for now - would show actual image)
-        let avatar_color = self.message.sender.color
+        let avatar_color = self
+            .message
+            .sender
+            .color
             .unwrap_or_else(|| self.get_user_color(&self.message.sender.nickname));
-            
+
         let avatar_content = container(
-            MaterialText::new(&self.message.sender.nickname.chars().next().unwrap_or('?').to_string())
-                .variant(TypographyVariant::LabelLarge)
-                .color(Color::WHITE)
-                .theme(self.theme.clone())
-                .build()
+            MaterialText::new(
+                &self
+                    .message
+                    .sender
+                    .nickname
+                    .chars()
+                    .next()
+                    .unwrap_or('?')
+                    .to_string(),
+            )
+            .variant(TypographyVariant::LabelLarge)
+            .color(Color::WHITE)
+            .theme(self.theme.clone())
+            .build(),
         )
         .width(Length::Fixed(size))
         .height(Length::Fixed(size))
         .center_x()
         .center_y()
-        .style(move |_theme| {
-            container::Style {
-                background: Some(Background::Color(avatar_color)),
-                border: Border {
-                    width: 0.0,
-                    color: Color::TRANSPARENT,
-                    radius: (size / 2.0).into(),
-                },
-                ..Default::default()
-            }
+        .style(move |_theme| container::Style {
+            background: Some(Background::Color(avatar_color)),
+            border: Border {
+                width: 0.0,
+                color: Color::TRANSPARENT,
+                radius: (size / 2.0).into(),
+            },
+            ..Default::default()
         });
 
         // Add status indicator
@@ -406,16 +405,14 @@ impl MessageBubble {
         let status_indicator = container(text(""))
             .width(Length::Fixed(8.0))
             .height(Length::Fixed(8.0))
-            .style(move |_theme| {
-                container::Style {
-                    background: Some(Background::Color(status_color)),
-                    border: Border {
-                        width: 2.0,
-                        color: self.theme.scheme.surface,
-                        radius: 4.0.into(),
-                    },
-                    ..Default::default()
-                }
+            .style(move |_theme| container::Style {
+                background: Some(Background::Color(status_color)),
+                border: Border {
+                    width: 2.0,
+                    color: self.theme.scheme.surface,
+                    radius: 4.0.into(),
+                },
+                ..Default::default()
             });
 
         // Stack avatar with status indicator
@@ -440,15 +437,18 @@ impl MessageBubble {
         let mut header_elements = Vec::new();
 
         // Username
-        let username_color = self.message.sender.color
+        let username_color = self
+            .message
+            .sender
+            .color
             .unwrap_or_else(|| self.get_user_color(&self.message.sender.nickname));
-            
+
         header_elements.push(
             MaterialText::new(&self.message.sender.nickname)
                 .variant(TypographyVariant::LabelMedium)
                 .color(username_color)
                 .theme(self.theme.clone())
-                .build()
+                .build(),
         );
 
         // User badges (op, voice, etc.)
@@ -461,8 +461,9 @@ impl MessageBubble {
                         .theme(self.theme.clone())
                         .build(),
                     &badge.tooltip,
-                    tooltip::Position::Top
-                ).into()
+                    tooltip::Position::Top,
+                )
+                .into(),
             );
         }
 
@@ -474,7 +475,7 @@ impl MessageBubble {
                     .variant(TypographyVariant::BodySmall)
                     .color(self.theme.scheme.on_surface_variant)
                     .theme(self.theme.clone())
-                    .build()
+                    .build(),
             );
         }
 
@@ -485,7 +486,7 @@ impl MessageBubble {
                     .variant(TypographyVariant::BodySmall)
                     .color(self.theme.scheme.on_surface_variant)
                     .theme(self.theme.clone())
-                    .build()
+                    .build(),
             );
         }
 
@@ -502,9 +503,7 @@ impl MessageBubble {
         MessageAction: Into<Message>,
     {
         match &self.message.content {
-            MessageContent::Text(rich_content) => {
-                self.build_rich_text_content(rich_content)
-            }
+            MessageContent::Text(rich_content) => self.build_rich_text_content(rich_content),
             MessageContent::Action(action) => {
                 MaterialText::new(format!("* {} {}", self.message.sender.nickname, action))
                     .variant(TypographyVariant::BodyMedium)
@@ -512,32 +511,29 @@ impl MessageBubble {
                     .theme(self.theme.clone())
                     .build()
             }
-            MessageContent::System(system) => {
-                MaterialText::new(system)
-                    .variant(TypographyVariant::BodySmall)
-                    .color(self.theme.scheme.on_surface_variant)
-                    .theme(self.theme.clone())
-                    .build()
-            }
-            MessageContent::Notice(notice) => {
-                MaterialText::new(format!("Notice: {}", notice))
-                    .variant(TypographyVariant::BodyMedium)
-                    .color(self.theme.scheme.tertiary)
-                    .theme(self.theme.clone())
-                    .build()
-            }
-            MessageContent::Ctcp(ctcp) => {
-                MaterialText::new(format!("[CTCP] {}", ctcp))
-                    .variant(TypographyVariant::BodySmall)
-                    .color(self.theme.scheme.on_surface_variant)
-                    .theme(self.theme.clone())
-                    .build()
-            }
+            MessageContent::System(system) => MaterialText::new(system)
+                .variant(TypographyVariant::BodySmall)
+                .color(self.theme.scheme.on_surface_variant)
+                .theme(self.theme.clone())
+                .build(),
+            MessageContent::Notice(notice) => MaterialText::new(format!("Notice: {}", notice))
+                .variant(TypographyVariant::BodyMedium)
+                .color(self.theme.scheme.tertiary)
+                .theme(self.theme.clone())
+                .build(),
+            MessageContent::Ctcp(ctcp) => MaterialText::new(format!("[CTCP] {}", ctcp))
+                .variant(TypographyVariant::BodySmall)
+                .color(self.theme.scheme.on_surface_variant)
+                .theme(self.theme.clone())
+                .build(),
         }
     }
 
     /// Build rich text content with IRC formatting
-    fn build_rich_text_content<Message>(&self, content: &RichTextContent) -> Element<'static, Message>
+    fn build_rich_text_content<Message>(
+        &self,
+        content: &RichTextContent,
+    ) -> Element<'static, Message>
     where
         Message: Clone + 'static,
         MessageAction: Into<Message>,
@@ -570,9 +566,7 @@ impl MessageBubble {
         }
 
         // Build rich text with proper mentions and links highlighting
-        let mut rich_text = RichText::new()
-            .theme(self.theme.clone())
-            .selectable(true);
+        let mut rich_text = RichText::new().theme(self.theme.clone()).selectable(true);
 
         for span in rich_spans {
             rich_text = rich_text.span(span);
@@ -582,12 +576,9 @@ impl MessageBubble {
         let text_element = rich_text.build();
 
         if content.links.iter().any(|link| link.preview.is_some()) {
-            column![
-                text_element,
-                self.build_link_previews(&content.links)
-            ]
-            .spacing(self.theme.spacing.sm)
-            .into()
+            column![text_element, self.build_link_previews(&content.links)]
+                .spacing(self.theme.spacing.sm)
+                .into()
         } else {
             text_element
         }
@@ -619,29 +610,16 @@ impl MessageBubble {
                             .theme(self.theme.clone())
                             .build()
                     ]
-                    .spacing(self.theme.spacing.xs)
+                    .spacing(self.theme.spacing.xs),
                 )
                 .padding(self.theme.spacing.sm)
-                .width(Length::Fill)
-                .style(move |_theme| {
-                    container::Style {
-                        background: Some(Background::Color(self.theme.scheme.surface_container)),
-                        border: Border {
-                            width: 1.0,
-                            color: self.theme.scheme.outline_variant,
-                            radius: self.theme.shapes.corner_medium.into(),
-                        },
-                        ..Default::default()
-                    }
-                });
+                .width(Length::Fill);
 
                 previews.push(preview_content.into());
             }
         }
 
-        column(previews)
-            .spacing(self.theme.spacing.xs)
-            .into()
+        column(previews).spacing(self.theme.spacing.xs).into()
     }
 
     /// Build message reactions
@@ -650,7 +628,9 @@ impl MessageBubble {
         Message: Clone + 'static,
         MessageAction: Into<Message>,
     {
-        let reaction_buttons: Vec<Element<_>> = self.message.reactions
+        let reaction_buttons: Vec<Element<_>> = self
+            .message
+            .reactions
             .iter()
             .map(|(emoji, data)| {
                 let bg_color = if data.self_reacted {
@@ -686,9 +666,7 @@ impl MessageBubble {
             })
             .collect();
 
-        row(reaction_buttons)
-            .spacing(self.theme.spacing.xs)
-            .into()
+        row(reaction_buttons).spacing(self.theme.spacing.xs).into()
     }
 
     /// Get background color based on message type and state
@@ -706,7 +684,10 @@ impl MessageBubble {
     /// Get consistent color for user nickname
     fn get_user_color(&self, nickname: &str) -> Color {
         let colors = &self.theme.scheme.nick_colors;
-        let index = nickname.bytes().fold(0u32, |acc, b| acc.wrapping_add(b as u32)) as usize % colors.len();
+        let index = nickname
+            .bytes()
+            .fold(0u32, |acc, b| acc.wrapping_add(b as u32)) as usize
+            % colors.len();
         colors[index]
     }
 }
@@ -715,17 +696,15 @@ impl MessageBubble {
 fn format_timestamp(timestamp: Instant) -> String {
     // This is a simplified implementation
     // In a real implementation, you would format based on user preferences
-    format!("{:02}:{:02}", 
+    format!(
+        "{:02}:{:02}",
         timestamp.elapsed().as_secs() / 3600 % 24,
         timestamp.elapsed().as_secs() / 60 % 60
     )
 }
 
 /// Convert IRC message to chat message
-pub fn irc_to_chat_message(
-    irc_msg: &IrcMessage,
-    theme: &MaterialTheme,
-) -> Option<ChatMessage> {
+pub fn irc_to_chat_message(irc_msg: &IrcMessage, theme: &MaterialTheme) -> Option<ChatMessage> {
     // This would parse IRC message into structured chat message
     // Implementation depends on the IRC message format
     None // Placeholder

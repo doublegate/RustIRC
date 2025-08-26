@@ -1,13 +1,13 @@
 //! Material Design 3 Dialog components
 
 use iced::{
-    widget::{container, column, row, text, button},
-    Element, Length, Background, Border, Color, Theme, Renderer,
     alignment::{Horizontal, Vertical},
+    widget::{button, column, container, row, text},
+    Background, Border, Color, Element, Length, Renderer, Theme,
 };
 
+use crate::components::atoms::button::{ButtonVariant, MaterialButton};
 use crate::themes::material_design_3::MaterialTheme;
-use crate::components::atoms::button::{MaterialButton, ButtonVariant};
 
 /// Material Design 3 Dialog component
 #[derive()]
@@ -68,8 +68,8 @@ impl<'a, Message: Clone> MaterialDialog<'a, Message> {
     }
 
     pub fn variant(mut self, variant: DialogVariant) -> Self {
-        self.variant = variant;
-        
+        self.variant = variant.clone();
+
         // Adjust default width based on variant
         self.width = match variant {
             DialogVariant::FullScreen => None,
@@ -77,7 +77,7 @@ impl<'a, Message: Clone> MaterialDialog<'a, Message> {
             DialogVariant::Confirmation => Some(320.0),
             DialogVariant::Basic => Some(280.0),
         };
-        
+
         self
     }
 
@@ -102,16 +102,12 @@ impl<'a, Message: Clone> MaterialDialog<'a, Message> {
     }
 
     pub fn view(self) -> Element<'a, Message, Theme, Renderer> {
-        let mut dialog_content = column![]
-            .spacing(16);
+        let mut dialog_content = column![].spacing(16);
 
         // Title
         if let Some(title) = &self.title {
-            dialog_content = dialog_content.push(
-                text(title)
-                    .size(24)
-                    .color(self.theme.scheme.on_surface)
-            );
+            dialog_content =
+                dialog_content.push(text(title).size(24).color(self.theme.scheme.on_surface));
         }
 
         // Content
@@ -119,9 +115,7 @@ impl<'a, Message: Clone> MaterialDialog<'a, Message> {
 
         // Actions
         if !self.actions.is_empty() {
-            let mut actions_row = row![]
-                .spacing(8)
-                ;
+            let mut actions_row = row![].spacing(8);
 
             for action in &self.actions {
                 let action_button = if let Some(message) = &action.on_press {
@@ -141,35 +135,36 @@ impl<'a, Message: Clone> MaterialDialog<'a, Message> {
             dialog_content = dialog_content.push(
                 container(actions_row)
                     .width(Length::Fill)
-                    .align_x(iced::alignment::Horizontal::Right)
+                    .align_x(iced::alignment::Horizontal::Right),
             );
         }
 
-        let dialog_container = container(dialog_content)
-            .padding(24)
-            .style(move |_theme: &Theme| container::Style {
-                background: Some(Background::Color(match self.variant {
-                    DialogVariant::FullScreen => self.theme.scheme.surface,
-                    _ => self.theme.scheme.surface_container_high,
-                })),
-                border: Border {
-                    color: Color::TRANSPARENT,
-                    width: 0.0,
-                    radius: match self.variant {
-                        DialogVariant::FullScreen => 0.0.into(),
-                        _ => 28.0.into(),
+        let dialog_container =
+            container(dialog_content)
+                .padding(24)
+                .style(move |_theme: &Theme| container::Style {
+                    background: Some(Background::Color(match self.variant {
+                        DialogVariant::FullScreen => self.theme.scheme.surface,
+                        _ => self.theme.scheme.surface_container_high,
+                    })),
+                    border: Border {
+                        color: Color::TRANSPARENT,
+                        width: 0.0,
+                        radius: match self.variant {
+                            DialogVariant::FullScreen => 0.0.into(),
+                            _ => 28.0.into(),
+                        },
                     },
-                },
-                shadow: match self.variant {
-                    DialogVariant::FullScreen => iced::Shadow::default(),
-                    _ => iced::Shadow {
-                        color: Color::BLACK.scale_alpha(0.15),
-                        offset: iced::Vector::new(0.0, 8.0),
-                        blur_radius: 16.0,
+                    shadow: match self.variant {
+                        DialogVariant::FullScreen => iced::Shadow::default(),
+                        _ => iced::Shadow {
+                            color: Color::BLACK.scale_alpha(0.15),
+                            offset: iced::Vector::new(0.0, 8.0),
+                            blur_radius: 16.0,
+                        },
                     },
-                },
-                ..Default::default()
-            });
+                    ..Default::default()
+                });
 
         // Apply width and height constraints
         let sized_dialog = if let Some(width) = self.width {
@@ -178,12 +173,10 @@ impl<'a, Message: Clone> MaterialDialog<'a, Message> {
                     .width(Length::Fixed(width))
                     .height(Length::Fixed(height))
             } else {
-                container(dialog_container)
-                    .width(Length::Fixed(width))
+                container(dialog_container).width(Length::Fixed(width))
             }
         } else if let Some(height) = self.height {
-            container(dialog_container)
-                .height(Length::Fixed(height))
+            container(dialog_container).height(Length::Fixed(height))
         } else {
             dialog_container
         };

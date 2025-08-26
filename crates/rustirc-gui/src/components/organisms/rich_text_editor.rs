@@ -1,15 +1,15 @@
 use iced::{
-    widget::{column, container, row, text_input, button, text, scrollable},
-    Element, Length, Background, Border, Color, Theme, Renderer,
     alignment::{Horizontal, Vertical},
-    keyboard::{self, Key, Modifiers},
     event::{self, Event},
+    keyboard::{self, Key, Modifiers},
+    widget::{button, column, container, row, scrollable, text, text_input},
+    Background, Border, Color, Element, Length, Renderer, Theme,
 };
 use std::collections::HashMap;
 
-use crate::themes::material_design_3::{MaterialTheme, ElevationLevel};
+use crate::components::atoms::button::{ButtonVariant, MaterialButton};
 use crate::components::atoms::typography::{MaterialText, TypographyVariant};
-use crate::components::atoms::button::{MaterialButton, ButtonVariant};
+use crate::themes::material_design_3::{ElevationLevel, MaterialTheme};
 
 // Rich text editor with IRC formatting support
 #[derive(Debug, Clone)]
@@ -34,7 +34,7 @@ pub enum FormatType {
     Italic,
     Underline,
     Strikethrough,
-    Color(u8), // IRC color code 0-15
+    Color(u8),      // IRC color code 0-15
     Background(u8), // IRC background color
     Monospace,
     Reset,
@@ -61,39 +61,35 @@ pub enum RichTextMessage {
 
 // IRC color palette
 const IRC_COLORS: [(u8, Color); 16] = [
-    (0, Color::WHITE),                    // White
-    (1, Color::BLACK),                    // Black
-    (2, Color::from_rgb(0.0, 0.0, 0.5)), // Navy
-    (3, Color::from_rgb(0.0, 0.5, 0.0)), // Green
-    (4, Color::from_rgb(1.0, 0.0, 0.0)), // Red
-    (5, Color::from_rgb(0.5, 0.0, 0.0)), // Maroon
-    (6, Color::from_rgb(0.5, 0.0, 0.5)), // Purple
-    (7, Color::from_rgb(1.0, 0.5, 0.0)), // Orange
-    (8, Color::from_rgb(1.0, 1.0, 0.0)), // Yellow
-    (9, Color::from_rgb(0.0, 1.0, 0.0)), // Lime
-    (10, Color::from_rgb(0.0, 0.5, 0.5)), // Teal
-    (11, Color::from_rgb(0.0, 1.0, 1.0)), // Cyan
-    (12, Color::from_rgb(0.0, 0.0, 1.0)), // Blue
-    (13, Color::from_rgb(1.0, 0.0, 1.0)), // Magenta
-    (14, Color::from_rgb(0.5, 0.5, 0.5)), // Gray
+    (0, Color::WHITE),                       // White
+    (1, Color::BLACK),                       // Black
+    (2, Color::from_rgb(0.0, 0.0, 0.5)),     // Navy
+    (3, Color::from_rgb(0.0, 0.5, 0.0)),     // Green
+    (4, Color::from_rgb(1.0, 0.0, 0.0)),     // Red
+    (5, Color::from_rgb(0.5, 0.0, 0.0)),     // Maroon
+    (6, Color::from_rgb(0.5, 0.0, 0.5)),     // Purple
+    (7, Color::from_rgb(1.0, 0.5, 0.0)),     // Orange
+    (8, Color::from_rgb(1.0, 1.0, 0.0)),     // Yellow
+    (9, Color::from_rgb(0.0, 1.0, 0.0)),     // Lime
+    (10, Color::from_rgb(0.0, 0.5, 0.5)),    // Teal
+    (11, Color::from_rgb(0.0, 1.0, 1.0)),    // Cyan
+    (12, Color::from_rgb(0.0, 0.0, 1.0)),    // Blue
+    (13, Color::from_rgb(1.0, 0.0, 1.0)),    // Magenta
+    (14, Color::from_rgb(0.5, 0.5, 0.5)),    // Gray
     (15, Color::from_rgb(0.75, 0.75, 0.75)), // Light Gray
 ];
 
 // Common emojis for IRC
 const COMMON_EMOJIS: &[&str] = &[
-    "😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂", "🙂", "🙃",
-    "😉", "😊", "😇", "🥰", "😍", "🤩", "😘", "😗", "😚", "😙",
-    "😋", "😛", "😜", "🤪", "😝", "🤑", "🤗", "🤭", "🤫", "🤔",
-    "🤐", "🤨", "😐", "😑", "😶", "😏", "😒", "🙄", "😬", "🤥",
-    "😔", "😕", "🙁", "☹️", "😣", "😖", "😫", "😩", "🥺", "😢",
-    "😭", "😤", "😠", "😡", "🤬", "🤯", "😳", "🥵", "🥶", "😱",
-    "😨", "😰", "😥", "😓", "🤗", "🤔", "😴", "😪", "😵", "🤐",
-    "🥴", "🤢", "🤮", "🤧", "😷", "🤒", "🤕", "🤑", "🤠", "😎",
-    "🤓", "🧐", "😕", "😟", "🙁", "☹️", "😮", "😯", "😲", "😳",
-    "🥱", "😴", "🤤", "😪", "😵", "🤐", "🥴", "🤢", "🤮", "🤧",
-    "👍", "👎", "👌", "🤌", "🤏", "✌️", "🤞", "🤟", "🤘", "🤙",
-    "👈", "👉", "👆", "🖕", "👇", "☝️", "👋", "🤚", "🖐", "✋",
-    "🖖", "👏", "🙌", "🤝", "🙏", "✍️", "💪", "🦾", "🦿", "🦵",
+    "😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂", "🙂", "🙃", "😉", "😊", "😇", "🥰", "😍", "🤩",
+    "😘", "😗", "😚", "😙", "😋", "😛", "😜", "🤪", "😝", "🤑", "🤗", "🤭", "🤫", "🤔", "🤐", "🤨",
+    "😐", "😑", "😶", "😏", "😒", "🙄", "😬", "🤥", "😔", "😕", "🙁", "☹️", "😣", "😖", "😫", "😩",
+    "🥺", "😢", "😭", "😤", "😠", "😡", "🤬", "🤯", "😳", "🥵", "🥶", "😱", "😨", "😰", "😥", "😓",
+    "🤗", "🤔", "😴", "😪", "😵", "🤐", "🥴", "🤢", "🤮", "🤧", "😷", "🤒", "🤕", "🤑", "🤠", "😎",
+    "🤓", "🧐", "😕", "😟", "🙁", "☹️", "😮", "😯", "😲", "😳", "🥱", "😴", "🤤", "😪", "😵", "🤐",
+    "🥴", "🤢", "🤮", "🤧", "👍", "👎", "👌", "🤌", "🤏", "✌️", "🤞", "🤟", "🤘", "🤙", "👈", "👉",
+    "👆", "🖕", "👇", "☝️", "👋", "🤚", "🖐", "✋", "🖖", "👏", "🙌", "🤝", "🙏", "✍️", "💪", "🦾",
+    "🦿", "🦵",
 ];
 
 impl RichTextEditor {
@@ -219,11 +215,11 @@ impl RichTextEditor {
             } else {
                 self.theme.scheme.outline
             };
-            
+
             let counter = MaterialText::new(&format!("{}/{}", self.content.len(), max_len))
                 .variant(TypographyVariant::LabelSmall)
                 .color(counter_color);
-            
+
             content = content.push(
                 container(counter)
                     .padding([4, 8])
@@ -232,7 +228,7 @@ impl RichTextEditor {
                         background: Some(Background::Color(Color::TRANSPARENT)),
                         border: Border::default(),
                         ..Default::default()
-                    })
+                    }),
             );
         }
 
@@ -260,7 +256,6 @@ impl RichTextEditor {
                     ButtonVariant::Text
                 })
                 .on_press(RichTextMessage::FormatToggled(FormatType::Bold)),
-                
             MaterialButton::new("I")
                 .variant(if self.formatting_stack.contains(&FormatType::Italic) {
                     ButtonVariant::Filled
@@ -268,7 +263,6 @@ impl RichTextEditor {
                     ButtonVariant::Text
                 })
                 .on_press(RichTextMessage::FormatToggled(FormatType::Italic)),
-                
             MaterialButton::new("U")
                 .variant(if self.formatting_stack.contains(&FormatType::Underline) {
                     ButtonVariant::Filled
@@ -276,20 +270,19 @@ impl RichTextEditor {
                     ButtonVariant::Text
                 })
                 .on_press(RichTextMessage::FormatToggled(FormatType::Underline)),
-                
             MaterialButton::new("S")
-                .variant(if self.formatting_stack.contains(&FormatType::Strikethrough) {
-                    ButtonVariant::Filled
-                } else {
-                    ButtonVariant::Text
-                })
+                .variant(
+                    if self.formatting_stack.contains(&FormatType::Strikethrough) {
+                        ButtonVariant::Filled
+                    } else {
+                        ButtonVariant::Text
+                    }
+                )
                 .on_press(RichTextMessage::FormatToggled(FormatType::Strikethrough)),
-                
             // Color palette button
             MaterialButton::new("🎨")
                 .variant(ButtonVariant::Text)
                 .on_press(RichTextMessage::ToggleToolbar), // TODO: Show color picker
-                
             // Monospace toggle
             MaterialButton::new("</>")
                 .variant(if self.formatting_stack.contains(&FormatType::Monospace) {
@@ -298,7 +291,6 @@ impl RichTextEditor {
                     ButtonVariant::Text
                 })
                 .on_press(RichTextMessage::FormatToggled(FormatType::Monospace)),
-                
             // Emoji button
             MaterialButton::new("😀")
                 .variant(if self.show_emoji_picker {
@@ -307,14 +299,12 @@ impl RichTextEditor {
                     ButtonVariant::Text
                 })
                 .on_press(RichTextMessage::ToggleEmojiPicker),
-                
             // Clear formatting
             MaterialButton::new("X")
                 .variant(ButtonVariant::Text)
                 .on_press(RichTextMessage::FormatToggled(FormatType::Reset)),
         ]
-        .spacing(4)
-        ;
+        .spacing(4);
 
         container(toolbar_content)
             .padding([4, 8])
@@ -331,10 +321,10 @@ impl RichTextEditor {
     }
 
     fn create_input(&self) -> Element<'_, RichTextMessage, Theme, Renderer> {
-        let input_height = if self.is_multiline { 
-            Length::Fixed(120.0) 
-        } else { 
-            Length::Fixed(40.0) 
+        let input_height = if self.is_multiline {
+            Length::Fixed(120.0)
+        } else {
+            Length::Fixed(40.0)
         };
 
         // TODO: Replace with actual rich text input when available
@@ -347,7 +337,7 @@ impl RichTextEditor {
             .width(Length::Fill)
             .style(move |theme: &Theme, status| {
                 let palette = theme.extended_palette();
-                
+
                 let background_color = match status {
                     text_input::Status::Active => self.theme.scheme.surface_container_high,
                     text_input::Status::Hovered => self.theme.scheme.surface_container_highest,
@@ -362,7 +352,11 @@ impl RichTextEditor {
                             text_input::Status::Focused => self.theme.scheme.primary,
                             _ => self.theme.scheme.outline,
                         },
-                        width: if matches!(status, text_input::Status::Focused) { 2.0 } else { 1.0 },
+                        width: if matches!(status, text_input::Status::Focused) {
+                            2.0
+                        } else {
+                            1.0
+                        },
                         radius: 8.0.into(),
                     },
                     icon: self.theme.scheme.on_surface_variant,
@@ -382,106 +376,84 @@ impl RichTextEditor {
             let recent_label = MaterialText::new("Recently Used")
                 .variant(TypographyVariant::LabelSmall)
                 .color(self.theme.scheme.on_surface_variant);
-            
-            emoji_grid = emoji_grid.push(
-                container(recent_label)
-                    .padding([8, 12])
-            );
+
+            emoji_grid = emoji_grid.push(container(recent_label).padding([8, 12]));
 
             let mut recent_row = row![].spacing(4);
             for emoji in &self.recent_emojis {
                 let emoji_button = button(text(emoji).size(20))
                     .on_press(RichTextMessage::EmojiSelected(emoji.clone()))
-                    .style(|theme: &Theme, status| {
-                        button::Style {
-                            background: Some(Background::Color(match status {
-                                button::Status::Hovered => self.theme.scheme.surface_container_high,
-                                button::Status::Pressed => self.theme.scheme.surface_container_highest,
-                                _ => Color::TRANSPARENT,
-                            })),
-                            border: Border {
-                                radius: 6.0.into(),
-                                ..Default::default()
-                            },
-                            ..Default::default()
-                        }
-                    })
-                    .padding(4);
-                
-                recent_row = recent_row.push(emoji_button);
-            }
-            emoji_grid = emoji_grid.push(
-                container(recent_row)
-                    .padding([0, 8])
-            );
-        }
-
-        // All emojis grid
-        let all_label = MaterialText::new("All Emojis")
-            .variant(TypographyVariant::LabelSmall)
-            .color(self.theme.scheme.on_surface_variant);
-        
-        emoji_grid = emoji_grid.push(
-            container(all_label)
-                .padding(12)
-        );
-
-        let mut current_row = row![].spacing(2);
-        let emojis_per_row = 8;
-        
-        for (i, emoji) in COMMON_EMOJIS.iter().enumerate() {
-            let emoji_button = button(text(*emoji).size(18))
-                .on_press(RichTextMessage::EmojiSelected(emoji.to_string()))
-                .style(|theme: &Theme, status| {
-                    button::Style {
+                    .style(|theme: &Theme, status| button::Style {
                         background: Some(Background::Color(match status {
                             button::Status::Hovered => self.theme.scheme.surface_container_high,
                             button::Status::Pressed => self.theme.scheme.surface_container_highest,
                             _ => Color::TRANSPARENT,
                         })),
                         border: Border {
-                            radius: 4.0.into(),
+                            radius: 6.0.into(),
                             ..Default::default()
                         },
                         ..Default::default()
-                    }
+                    })
+                    .padding(4);
+
+                recent_row = recent_row.push(emoji_button);
+            }
+            emoji_grid = emoji_grid.push(container(recent_row).padding([0, 8]));
+        }
+
+        // All emojis grid
+        let all_label = MaterialText::new("All Emojis")
+            .variant(TypographyVariant::LabelSmall)
+            .color(self.theme.scheme.on_surface_variant);
+
+        emoji_grid = emoji_grid.push(container(all_label).padding(12));
+
+        let mut current_row = row![].spacing(2);
+        let emojis_per_row = 8;
+
+        for (i, emoji) in COMMON_EMOJIS.iter().enumerate() {
+            let emoji_button = button(text(*emoji).size(18))
+                .on_press(RichTextMessage::EmojiSelected(emoji.to_string()))
+                .style(|theme: &Theme, status| button::Style {
+                    background: Some(Background::Color(match status {
+                        button::Status::Hovered => self.theme.scheme.surface_container_high,
+                        button::Status::Pressed => self.theme.scheme.surface_container_highest,
+                        _ => Color::TRANSPARENT,
+                    })),
+                    border: Border {
+                        radius: 4.0.into(),
+                        ..Default::default()
+                    },
+                    ..Default::default()
                 })
                 .padding(6);
-            
+
             current_row = current_row.push(emoji_button);
 
             if (i + 1) % emojis_per_row == 0 {
-                emoji_grid = emoji_grid.push(
-                    container(current_row)
-                        .padding([0, 8])
-                );
+                emoji_grid = emoji_grid.push(container(current_row).padding([0, 8]));
                 current_row = row![].spacing(2);
             }
         }
 
         // Add remaining emojis if any
         if !current_row.into_iter().collect::<Vec<_>>().is_empty() {
-            emoji_grid = emoji_grid.push(
-                container(current_row)
-                    .padding([0, 8])
-            );
+            emoji_grid = emoji_grid.push(container(current_row).padding([0, 8]));
         }
 
-        container(
-            scrollable(emoji_grid)
-                .height(Length::Fixed(200.0))
-        )
-        .padding(4)
-        .style(move |_theme: &Theme| container::Style {
-            background: Some(Background::Color(self.theme.scheme.surface_container)),
-            border: Border {
-                color: self.theme.scheme.outline_variant,
-                width: 1.0,
-                radius: 12.0.into(),
-            },
-            ..Default::default()
-        })
-        .into()
+        container(scrollable(emoji_grid).height(Length::Fixed(200.0)))
+            .padding(4)
+            .style(move |_theme: &Theme| container::Style {
+                background: Some(Background::Color(self.theme.scheme.surface_container)),
+                border: Border {
+                    color: self.theme.scheme.outline_variant,
+                    width: 1.0,
+                    radius: 12.0.into(),
+                },
+                ..Default::default()
+            })
+            .into()
     }
 
     // Helper methods
@@ -492,12 +464,16 @@ impl RichTextEditor {
                 self.insert_text_at_cursor("\u{000F}"); // IRC reset character
             }
             _ => {
-                if let Some(pos) = self.formatting_stack.iter().position(|f| std::mem::discriminant(f) == std::mem::discriminant(&format_type)) {
+                if let Some(pos) = self
+                    .formatting_stack
+                    .iter()
+                    .position(|f| std::mem::discriminant(f) == std::mem::discriminant(&format_type))
+                {
                     self.formatting_stack.remove(pos);
                 } else {
                     self.formatting_stack.push(format_type.clone());
                 }
-                
+
                 match format_type {
                     FormatType::Bold => self.insert_text_at_cursor("\u{0002}"),
                     FormatType::Italic => self.insert_text_at_cursor("\u{001D}"),
@@ -534,10 +510,10 @@ impl RichTextEditor {
     fn add_to_recent_emojis(&mut self, emoji: String) {
         // Remove if already in recent
         self.recent_emojis.retain(|e| e != &emoji);
-        
+
         // Add to front
         self.recent_emojis.insert(0, emoji);
-        
+
         // Keep only last 8 recent emojis
         if self.recent_emojis.len() > 8 {
             self.recent_emojis.truncate(8);
@@ -550,7 +526,7 @@ impl RichTextEditor {
             .chars()
             .filter(|c| !c.is_control() || *c == '\n' || *c == '\t')
             .collect::<String>();
-        
+
         if let Some(max_len) = self.max_length {
             if self.content.len() + cleaned.len() > max_len {
                 let available = max_len.saturating_sub(self.content.len());
