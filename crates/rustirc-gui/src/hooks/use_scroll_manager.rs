@@ -7,7 +7,7 @@ use dioxus::prelude::*;
 pub fn use_scroll_manager(container_id: String) -> ScrollManagerHook {
     let mut auto_scroll = use_signal(|| true);
     let mut scroll_position = use_signal(|| 0.0);
-    
+
     ScrollManagerHook {
         container_id,
         auto_scroll,
@@ -84,7 +84,7 @@ impl ScrollManagerHook {
         let _container_id = self.container_id.clone();
         let _auto_scroll = self.auto_scroll.clone();
         let _scroll_position = self.scroll_position.clone();
-        
+
         // Desktop scroll listeners would be set up by the parent component
         // using onscroll event handlers in the RSX
     }
@@ -126,18 +126,18 @@ impl Clone for ScrollManagerHook {
 /// Hook for infinite scroll loading (desktop version)
 #[allow(non_snake_case)]
 pub fn use_infinite_scroll<F>(container_id: String, load_more: F) -> InfiniteScrollHook
-where 
-    F: Fn() + Clone + 'static
+where
+    F: Fn() + Clone + 'static,
 {
     let mut loading = use_signal(|| false);
     let threshold = 100.0; // Load more when within 100px of top
-    
+
     // Set up scroll event listener for infinite scroll (desktop version)
     use_effect({
         let _container_id = container_id.clone();
         let _load_more = load_more.clone();
         let _loading = loading.clone();
-        
+
         move || {
             // In desktop Dioxus apps, infinite scroll is handled through component callbacks
             // The parent component would call the load_more function when needed
@@ -146,7 +146,7 @@ where
             }
         }
     });
-    
+
     InfiniteScrollHook {
         container_id,
         loading,

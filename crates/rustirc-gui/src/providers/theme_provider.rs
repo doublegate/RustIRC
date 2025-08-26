@@ -7,7 +7,7 @@ use dioxus::prelude::*;
 #[component]
 pub fn ThemeProvider(children: Element) -> Element {
     use_context_provider(|| ThemeState::default());
-    
+
     let theme_state = use_context::<ThemeState>();
     let current_theme = theme_state.current_theme.read();
     let custom_css = theme_state.custom_css.read();
@@ -25,13 +25,13 @@ pub fn ThemeProvider(children: Element) -> Element {
                 rel: "stylesheet",
                 href: "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
             }
-            
+
             // Custom theme CSS
             style {
                 dangerous_inner_html: "{get_theme_css(*current_theme)}{custom_css}"
             }
         }
-        
+
         {children}
     }
 }
@@ -113,7 +113,8 @@ fn get_dark_theme_css() -> String {
         --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
         --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
     }
-    "#.to_string()
+    "#
+    .to_string()
 }
 
 /// Light theme CSS with Material Design principles
@@ -155,7 +156,8 @@ fn get_light_theme_css() -> String {
         --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.15);
         --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.2);
     }
-    "#.to_string()
+    "#
+    .to_string()
 }
 
 /// Discord theme CSS
@@ -194,7 +196,8 @@ fn get_discord_theme_css() -> String {
         --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
         --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
     }
-    "#.to_string()
+    "#
+    .to_string()
 }
 
 /// Nord theme CSS  
@@ -233,7 +236,8 @@ fn get_nord_theme_css() -> String {
         --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
         --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
     }
-    "#.to_string()
+    "#
+    .to_string()
 }
 
 /// Material Design theme CSS (enhanced)
@@ -278,11 +282,20 @@ fn get_material_design_theme_css() -> String {
         --motion-standard: cubic-bezier(0.2, 0, 0, 1);
         --motion-emphasized: cubic-bezier(0.05, 0.7, 0.1, 1);
     }
-    "#.to_string()
+    "#
+    .to_string()
 }
 
 // Placeholder implementations for other themes
-fn get_slack_theme_css() -> String { get_dark_theme_css() }
-fn get_terminal_theme_css() -> String { get_dark_theme_css() }
-fn get_dracula_theme_css() -> String { get_dark_theme_css() }
-fn get_catppuccin_theme_css() -> String { get_dark_theme_css() }
+fn get_slack_theme_css() -> String {
+    get_dark_theme_css()
+}
+fn get_terminal_theme_css() -> String {
+    get_dark_theme_css()
+}
+fn get_dracula_theme_css() -> String {
+    get_dark_theme_css()
+}
+fn get_catppuccin_theme_css() -> String {
+    get_dark_theme_css()
+}

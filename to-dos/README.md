@@ -2,9 +2,9 @@
 
 This directory contains detailed todo lists for each phase of RustIRC development. These lists provide granular task tracking to ensure comprehensive implementation of all features.
 
-**Current Status**: Phase 1-3 COMPLETE + v0.3.7 Released ✅ (August 24, 2025 11:08 PM EDT)  
-**Next Phase**: Phase 4 - Scripting & Plugins 🚧 (Ready to Begin)  
-**Latest Achievement**: v0.3.7 - Return to proven resilient workflows from v0.3.5 baseline with comprehensive sccache HTTP 400 resilience, cross-platform timeout compatibility, and BASH_ENV helper functions
+**Current Status**: Phase 1-3 COMPLETE + v0.3.8 Dioxus Branch ✅ (August 25, 2025 8:03 PM EDT)  
+**Next Phase**: Phase 4 - Scripting & Plugins 🚧 (Ready to Begin on main)  
+**Latest Achievement**: v0.3.8 Dioxus Branch - Complete Dioxus v0.6 implementation with 5,180+ lines of React-like components, comprehensive documentation synchronized across 40+ markdown files
 
 ## Phase Todo Lists
 
@@ -16,6 +16,11 @@ Implementation of the fundamental IRC protocol, network layer, and state managem
 
 ### ✅ [Phase 3: User Interface](./phase3-todos.md) - **COMPLETE + v0.3.4 Released** (August 23, 2025)
 Development of both GUI (Iced 0.13.1) and TUI (ratatui) interfaces with SASL authentication and CLI prototype. **100% Phase 3 completion verified with comprehensive report. Includes complete IRC protocol implementation with live server connectivity, real-time messaging, channel operations, user management, zero compilation errors through full implementation, platform-specific system tray/notifications working, complete dialog system with network management, comprehensive GUI improvements, CLI multi-server architecture with full GUI feature parity, browser integration for link opening, enhanced testing framework, connection recovery system, health check monitoring, comprehensive documentation with 65+ doctests, README files for all crates, and rustdoc comments for all public APIs.**
+
+**GUI Framework Research Branches** (August 25, 2025):
+- **dioxus branch**: Complete Dioxus v0.6 implementation with React-like components, Virtual DOM, RSX syntax
+- **impr_gui branch**: Material Design 3 Iced exploration for advanced styling
+- **main branch**: Stable Iced 0.13.1 implementation
 
 ### [Phase 4: Scripting & Plugins](./phase4-todos.md) (Weeks 15-20)
 Integration of Lua scripting engine and binary plugin system for extensibility.

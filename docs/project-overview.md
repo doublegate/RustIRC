@@ -1,8 +1,19 @@
-# RustIRC Project Overview
+# RustIRC Project Overview - Dioxus v0.6 Branch
 
 ## Vision Statement
 
 RustIRC is a modern, cross-platform IRC client that synthesizes the best features from legendary IRC clients while leveraging Rust's safety, performance, and concurrency features. Our goal is to create the definitive IRC client for the modern era - one that is powerful enough for veterans yet accessible to newcomers.
+
+### Dioxus v0.6 Implementation
+
+This branch explores re-implementing RustIRC's user interface using Dioxus v0.6, bringing React-like component development to desktop IRC. This maintains all IRC functionality while modernizing the development experience with:
+
+- **React-like Architecture**: Familiar component patterns for web developers
+- **Virtual DOM**: Efficient rendering with smooth UI updates
+- **Hot Reload Development**: Instant UI updates during development
+- **Modern State Management**: Hooks-based patterns (useState, useEffect, useContext)
+- **Rich Content Support**: WebView enables modern web content rendering
+- **Future Mobile Ready**: Dioxus supports iOS/Android targets
 
 ## The IRC Client Landscape
 

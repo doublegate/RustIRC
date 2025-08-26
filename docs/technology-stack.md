@@ -38,18 +38,20 @@
 ## User Interface
 
 ### GUI Framework
-- **Primary**: Iced (v0.12+)
-  - Pure Rust implementation
-  - Cross-platform (Windows, macOS, Linux)
-  - GPU-accelerated rendering
-  - Reactive architecture
-  - Custom widget support
+- **Primary**: Dioxus (v0.6)
+  - React-like component architecture
+  - Cross-platform desktop with WebView
+  - Virtual DOM with efficient diffing
+  - Hot reload development experience
+  - RSX macro for JSX-like syntax
+  - Modern hooks-based state management
+  - CSS-in-Rust styling with runtime themes
+  - Native rendering or WebView options
 
-- **Fallback**: gtk-rs (v0.18+)
-  - Mature bindings to GTK4
-  - Native look on Linux
-  - Good accessibility support
-  - Complex dependency chain
+- **Alternative**: Iced (v0.13.1) [Previous Implementation]
+  - Pure Rust widget system
+  - Elm-style architecture
+  - Available on main branch for comparison
 
 ### TUI Framework
 - **ratatui** (v0.26+)
@@ -58,6 +60,7 @@
   - Rich widget library
   - Mouse support
   - Excellent documentation
+  - *Note: Unchanged for Dioxus branch*
 
 ## Data & Configuration
 
@@ -74,11 +77,19 @@
   - Well-suited for settings files
   - Comments support
   - Nested structures
+  - *Note: Configuration unchanged for Dioxus*
 
 ### State Management
-- **Standard Library**
-  - Arc<RwLock<T>> for shared state
-  - HashMap for collections
+- **Dioxus Hooks & Signals**
+  - use_signal for reactive state
+  - use_context for global state sharing
+  - use_effect for side effects
+  - use_coroutine for async operations
+  - use_future for async data fetching
+
+- **Backend State (Unchanged)**
+  - Arc<RwLock<T>> for IRC engine state
+  - HashMap for connection management
   - VecDeque for message buffers
 
 ## Scripting & Plugins
@@ -175,9 +186,15 @@
 ## Build & Distribution
 
 ### Build System
+- **Dioxus CLI (dx)**
+  - `dx serve` for development with hot reload
+  - `dx build --platform desktop` for releases
+  - `dx fmt` for RSX component formatting
+  - WebView bundle management
+
 - **Cargo**
   - Native Rust build system
-  - Workspace support
+  - Workspace support  
   - Feature flags
   - Cross-compilation
 
@@ -233,29 +250,61 @@
 ### Windows
 - Windows 10 version 1809+
 - Visual C++ Runtime
+- WebView2 Runtime (usually pre-installed)
 - UTF-8 code page support
 
 ### macOS
 - macOS 10.15 Catalina+
 - Xcode Command Line Tools
+- WebKit framework (built-in)
 - Homebrew (recommended)
 
 ### Linux
 - glibc 2.31+ (Ubuntu 20.04+)
+- **WebView Dependencies**:
+  - webkit2gtk-4.1-devel
+  - libsoup3-devel
+  - atk-devel
+  - gtk3-devel
 - X11 or Wayland
 - D-Bus for notifications
 - PulseAudio/PipeWire for sounds
 
+## Dioxus-Specific Technologies
+
+### Core Dioxus Stack
+- **dioxus** (v0.6) - Core framework
+- **dioxus-desktop** - Desktop platform target
+- **dioxus-router** - Client-side routing
+- **dioxus-hooks** - State management hooks
+- **dioxus-signals** - Reactive state primitives
+
+### WebView Integration
+- **WebKit2GTK** (Linux) - Native WebView
+- **WebKit** (macOS) - System framework
+- **WebView2** (Windows) - Microsoft Edge WebView
+
+### Development Tools
+- **dioxus-cli** - Development server and build tools
+- **dioxus-hot-reload** - Live code updates
+- **dioxus-devtools** - Component inspection
+
 ## Future Considerations
 
+### Dioxus Roadmap
+- **Mobile Support** - iOS/Android targets
+- **Web Deployment** - WebAssembly builds
+- **Server Components** - Full-stack capabilities
+- **Native Widgets** - Alternative to WebView
+
 ### Potential Additions
-- **WebRTC** for voice/video
+- **WebRTC** for voice/video (easier with WebView)
 - **SQLite** for message history
 - **tantivy** for full-text search
-- **rfd** for native file dialogs
+- **Web Components** for rich media embedding
 
 ### Experimental Features
 - **WASM** plugin support
-- **egui** as alternative GUI
-- **crossterm** for TUI
-- **quinn** for QUIC transport
+- **Progressive Web App** features
+- **Native mobile** deployment
+- **Electron-style** packaging

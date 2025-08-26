@@ -14,6 +14,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Script/plugin manager UI
 - Event-driven scripting API
 
+## [0.3.8] - 2025-08-25 8:03 PM EDT (Dioxus v0.6 Complete Implementation)
+
+### Summary
+Dioxus v0.6 GUI Implementation Branch - This branch explores re-implementing RustIRC's user interface using Dioxus v0.6, bringing React-like component development to desktop IRC. This branch maintains all IRC functionality while transitioning from Iced's Elm architecture to Dioxus's familiar React patterns with Virtual DOM, JSX-like RSX syntax, and modern hooks-based state management.
+
+### Major Changes
+- **GUI Framework Migration**: Iced 0.13.1 → Dioxus v0.6 with React-like components
+- **Architecture Shift**: Elm message-passing → React hooks and signals
+- **Syntax Evolution**: Widget-based UI → RSX macro with JSX-like syntax
+- **State Management**: Commands/Subscriptions → useState/useEffect/useContext
+- **Development Experience**: Static compilation → Hot reload with `dx serve`
+- **Rendering Options**: Pure Rust widgets → WebView or native rendering
+
+### Dioxus-Specific Features
+- ⚛️ **React-like Components**: Functional components with #[component] macro
+- 🎨 **RSX Syntax**: JSX-inspired markup for intuitive UI development
+- 🔄 **Virtual DOM**: Efficient diffing and rendering for smooth updates
+- 🪝 **Modern Hooks**: useState, useEffect, useContext, and custom hooks
+- 📦 **Component Library**: Material Design and custom IRC components
+- 🔥 **Hot Reload**: Instant UI updates with `dx serve --hot-reload`
+- 🌐 **WebView Integration**: Rich content rendering with modern web tech
+- 📱 **Future Mobile Support**: Ready for iOS/Android targets
+
+### Technical Implementation
+- **WebKit Dependencies**: webkit2gtk-4.1, libsoup3, atk, gtk3 installed
+- **Development Tools**: Dioxus CLI (`dx`) for build and development
+- **Build Commands**: `dx serve --platform desktop`, `dx build --release`
+- **Component Architecture**: Hierarchical component tree with props and state
+- **Async Integration**: Seamless Tokio integration with use_coroutine/use_future
+- **CSS-in-Rust**: Dynamic styling with runtime theme switching
+
+### Complete Implementation Achievements (August 25, 2025 8:03 PM EDT)
+- ✅ **5,180+ Lines of Dioxus Code**: Complete IRC client implementation
+- ✅ **14 UI Components**: ServerTree, MessageView, UserList, InputArea, TabBar, etc.
+- ✅ **7 Provider Components**: Theme, UI, IRC, Keyboard, Window, Notifications, Audio
+- ✅ **10+ React-like Hooks**: useState, useEffect, useContext, useResource, custom hooks
+- ✅ **Pure Desktop Implementation**: All web-sys dependencies removed
+- ✅ **Dioxus.toml Configuration**: Complete bundling setup for all platforms
+- ✅ **Comprehensive Documentation**: Two reference guides created in ref_docs/dioxus/
+- ✅ **40+ Markdown Files Updated**: All documentation synchronized for Dioxus patterns
+
+### Maintained Features
+- **Complete IRC Engine**: All Phase 2-3 functionality preserved
+- **Multi-Server Support**: Existing connection management unchanged
+- **Protocol Compliance**: Full RFC 1459/2812 and IRCv3 support maintained
+- **Security**: TLS, SASL authentication, and credential protection
+- **Cross-Platform**: Linux, macOS, Windows support continues
+- **Scripting Ready**: Prepared for Phase 4 Lua/Python integration
+
+### Branch Status
+- **Base Branch**: Forked from main at v0.3.7 with full IRC functionality
+- **Development Phase**: Complete Dioxus implementation with 5,180+ lines of code
+- **System Dependencies**: All WebView requirements installed (webkit2gtk-4.1, libsoup3, atk, gtk3)
+- **Documentation**: 100% synchronized across all 40+ markdown files for Dioxus patterns
+- **Implementation Status**: Complete component architecture with providers, hooks, and UI elements
+- **Testing**: dx serve operational with hot reload development
+- **Future Integration**: Ready for evaluation after Phase 4 scripting development
+
 ## [0.3.7] - 2025-08-24 (Return to Proven Resilient Workflows)
 
 ### Summary

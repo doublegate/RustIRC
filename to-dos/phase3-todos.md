@@ -4,6 +4,7 @@
 **Last Updated**: August 23, 2025 - 2:30 PM EDT  
 **Implementation**: Full GUI/TUI/CLI implementation with LIVE IRC connectivity, comprehensive GUI improvements, core functionality enhancements, 100% complete implementation with no stubs, modern Rust code quality, and comprehensive documentation  
 **Achievement**: Production-ready IRC client with professional-grade user experience, zero compilation errors, comprehensive test coverage, 95.3% clippy warning reduction, v0.3.3 released with optimized CI/CD pipeline, 65+ working doctests, README files for all crates, and rustdoc comments for all public APIs
+**Dioxus Branch Note**: This branch explores migrating the GUI from Iced 0.13.1 to Dioxus v0.6 with React-like components, preserving all IRC functionality
 
 ## ✅ LATEST ACHIEVEMENTS: RUST TOOLCHAIN OPTIMIZATION + FINAL QUALITY FIXES (August 22, 2025 - 12:12 AM EDT)
 

@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 #[allow(non_snake_case)]
 pub fn use_theme() -> ThemeHook {
     let theme_state = use_context::<ThemeState>();
-    
+
     ThemeHook { theme_state }
 }
 
@@ -165,11 +165,11 @@ pub struct ThemeInfo {
 #[allow(non_snake_case)]
 pub fn use_theme_persistence() {
     let theme_hook = use_theme();
-    
+
     // Load theme from localStorage on mount
     use_effect(move || {
         load_saved_theme(&theme_hook);
-        
+
         move || {
             // Cleanup if needed
         }
@@ -188,19 +188,21 @@ fn load_saved_theme(theme_hook: &ThemeHook) {
 #[allow(non_snake_case)]
 pub fn use_system_theme_detection() -> SystemThemeHook {
     let mut system_prefers_dark = use_signal(|| detect_system_dark_mode());
-    
+
     // Set up system theme detection for desktop
     use_effect(move || {
         // For desktop apps, system theme detection would use OS-specific APIs
         // This is a simplified implementation
         system_prefers_dark.set(detect_system_dark_mode());
-        
+
         move || {
             // Desktop cleanup if needed
         }
     });
-    
-    SystemThemeHook { system_prefers_dark }
+
+    SystemThemeHook {
+        system_prefers_dark,
+    }
 }
 
 /// System theme detection hook interface
@@ -237,7 +239,7 @@ fn detect_system_dark_mode() -> bool {
     // On Linux: check GTK theme, GNOME/KDE settings
     // On macOS: check NSApp.effectiveAppearance
     // On Windows: check Registry HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize
-    
+
     // This is a simplified implementation that defaults to dark mode
     true // Most developers prefer dark themes
 }
@@ -246,22 +248,22 @@ fn detect_system_dark_mode() -> bool {
 #[allow(non_snake_case)]
 pub fn use_auto_theme_switching(enabled: bool, dark_start_hour: u8, light_start_hour: u8) {
     let theme_hook = use_theme();
-    
+
     use_effect(move || {
         if !enabled {
             return move || {};
         }
-        
+
         let theme_hook = theme_hook.clone();
-        
+
         spawn(async move {
             loop {
                 // Check every hour
                 tokio::time::sleep(tokio::time::Duration::from_secs(3600)).await;
-                
+
                 let now = chrono::Local::now();
                 let current_hour = now.hour() as u8;
-                
+
                 let should_be_dark = if dark_start_hour < light_start_hour {
                     // Normal case: dark_start_hour=20, light_start_hour=6
                     current_hour >= dark_start_hour || current_hour < light_start_hour
@@ -269,19 +271,19 @@ pub fn use_auto_theme_switching(enabled: bool, dark_start_hour: u8, light_start_
                     // Edge case across midnight: dark_start_hour=6, light_start_hour=20
                     current_hour >= dark_start_hour && current_hour < light_start_hour
                 };
-                
+
                 let target_theme = if should_be_dark {
                     ThemeType::Dark
                 } else {
                     ThemeType::Light
                 };
-                
+
                 if theme_hook.current_theme() != target_theme {
                     theme_hook.set_theme(target_theme);
                 }
             }
         });
-        
+
         move || {
             // Cleanup if needed
         }

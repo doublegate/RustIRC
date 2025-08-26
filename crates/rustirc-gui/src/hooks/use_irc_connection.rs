@@ -10,7 +10,7 @@ use std::sync::Arc;
 pub fn use_irc_connection() -> IrcConnectionHook {
     let irc_state = use_context::<IrcState>();
     let client_manager = use_signal(|| Arc::new(ClientManager::new()));
-    
+
     IrcConnectionHook {
         irc_state,
         client_manager: client_manager(),
@@ -41,7 +41,8 @@ impl IrcConnectionHook {
             use_tls,
             &self.irc_state,
             self.client_manager.clone(),
-        ).await
+        )
+        .await
     }
 
     /// Disconnect from an IRC server
@@ -50,7 +51,8 @@ impl IrcConnectionHook {
             server_id,
             &self.irc_state,
             self.client_manager.clone(),
-        ).await
+        )
+        .await
     }
 
     /// Join a channel
@@ -60,7 +62,8 @@ impl IrcConnectionHook {
             channel,
             &self.irc_state,
             self.client_manager.clone(),
-        ).await
+        )
+        .await
     }
 
     /// Send a message
@@ -76,7 +79,8 @@ impl IrcConnectionHook {
             message,
             &self.irc_state,
             self.client_manager.clone(),
-        ).await
+        )
+        .await
     }
 
     /// Get connection status
@@ -104,7 +108,7 @@ impl IrcConnectionHook {
     pub fn switch_to(&self, server_id: Option<String>, channel: Option<String>) {
         if let Some(server) = server_id {
             self.irc_state.current_server.set(Some(server.clone()));
-            
+
             if let Some(ch) = channel {
                 self.irc_state.current_channel.set(Some(ch.clone()));
                 self.irc_state.active_tab.set(format!("{}:{}", server, ch));
@@ -121,7 +125,7 @@ impl IrcConnectionHook {
 pub fn use_connection_status(server_id: String) -> ConnectionState {
     let irc_state = use_context::<IrcState>();
     let connections = irc_state.connections.read();
-    
+
     connections
         .get(&server_id)
         .map(|conn| conn.state.clone())
@@ -133,7 +137,7 @@ pub fn use_connection_status(server_id: String) -> ConnectionState {
 pub fn use_connection_info(server_id: String) -> Option<ConnectionInfo> {
     let irc_state = use_context::<IrcState>();
     let connections = irc_state.connections.read();
-    
+
     connections.get(&server_id).cloned()
 }
 
@@ -142,27 +146,30 @@ pub fn use_connection_info(server_id: String) -> Option<ConnectionInfo> {
 pub fn use_server_list() -> Vec<(String, ConnectionInfo)> {
     let irc_state = use_context::<IrcState>();
     let connections = irc_state.connections.read();
-    
-    connections.iter().map(|(id, info)| (id.clone(), info.clone())).collect()
+
+    connections
+        .iter()
+        .map(|(id, info)| (id.clone(), info.clone()))
+        .collect()
 }
 
 /// Hook for auto-reconnection logic
 #[allow(non_snake_case)]
 pub fn use_auto_reconnect(server_id: String, enabled: bool) {
     let connection_hook = use_irc_connection();
-    
+
     use_effect(move || {
         if !enabled {
             return move || {};
         }
-        
+
         let connection_hook = connection_hook.clone();
         let server_id = server_id.clone();
-        
+
         spawn(async move {
             loop {
                 tokio::time::sleep(tokio::time::Duration::from_secs(30)).await;
-                
+
                 let status = connection_hook.get_connection_status(&server_id);
                 if matches!(status, Some(ConnectionState::Disconnected)) {
                     // TODO: Attempt reconnection with stored credentials
@@ -171,7 +178,7 @@ pub fn use_auto_reconnect(server_id: String, enabled: bool) {
                 }
             }
         });
-        
+
         move || {
             // Cleanup if needed
         }

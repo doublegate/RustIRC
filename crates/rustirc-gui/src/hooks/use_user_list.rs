@@ -8,7 +8,7 @@ use std::collections::HashMap;
 #[allow(non_snake_case)]
 pub fn use_user_list(server_id: String, channel: String) -> UserListHook {
     let irc_state = use_context::<IrcState>();
-    
+
     UserListHook {
         irc_state,
         server_id,
@@ -27,13 +27,13 @@ impl UserListHook {
     /// Get all users in the channel
     pub fn get_users(&self) -> HashMap<String, UserInfo> {
         let connections = self.irc_state.connections.read();
-        
+
         if let Some(connection) = connections.get(&self.server_id) {
             if let Some(channel_info) = connection.channels.get(&self.channel) {
                 return channel_info.users.clone();
             }
         }
-        
+
         HashMap::new()
     }
 
@@ -41,12 +41,12 @@ impl UserListHook {
     pub fn get_sorted_users(&self) -> Vec<(String, UserInfo)> {
         let users = self.get_users();
         let mut user_list: Vec<(String, UserInfo)> = users.into_iter().collect();
-        
+
         // Sort by status (ops first) then alphabetically
         user_list.sort_by(|(nick_a, user_a), (nick_b, user_b)| {
             let status_a = self.get_user_status_priority(user_a);
             let status_b = self.get_user_status_priority(user_b);
-            
+
             // First sort by status priority (lower number = higher priority)
             match status_a.cmp(&status_b) {
                 std::cmp::Ordering::Equal => {
@@ -56,7 +56,7 @@ impl UserListHook {
                 other => other,
             }
         });
-        
+
         user_list
     }
 
@@ -64,7 +64,7 @@ impl UserListHook {
     pub fn get_users_by_status(&self) -> UsersByStatus {
         let users = self.get_sorted_users();
         let mut result = UsersByStatus::default();
-        
+
         for (nickname, user_info) in users {
             if user_info.modes.contains(&'o') {
                 result.operators.push((nickname, user_info));
@@ -76,7 +76,7 @@ impl UserListHook {
                 result.regular.push((nickname, user_info));
             }
         }
-        
+
         result
     }
 
@@ -123,7 +123,7 @@ impl UserListHook {
     pub fn search_users(&self, query: &str) -> Vec<(String, UserInfo)> {
         let users = self.get_users();
         let query_lower = query.to_lowercase();
-        
+
         users
             .into_iter()
             .filter(|(nickname, _)| nickname.to_lowercase().contains(&query_lower))
@@ -134,13 +134,13 @@ impl UserListHook {
     pub fn get_matching_users(&self, prefix: &str) -> Vec<String> {
         let users = self.get_users();
         let prefix_lower = prefix.to_lowercase();
-        
+
         let mut matches: Vec<String> = users
             .keys()
             .filter(|nickname| nickname.to_lowercase().starts_with(&prefix_lower))
             .cloned()
             .collect();
-        
+
         matches.sort_by(|a, b| a.to_lowercase().cmp(&b.to_lowercase()));
         matches
     }
@@ -263,16 +263,13 @@ impl UsersByStatus {
 
 /// Hook for user list filtering and search
 #[allow(non_snake_case)]
-pub fn use_user_list_filter(
-    server_id: String,
-    channel: String,
-) -> UserListFilterHook {
+pub fn use_user_list_filter(server_id: String, channel: String) -> UserListFilterHook {
     let mut search_query = use_signal(|| String::new());
     let mut show_away_users = use_signal(|| true);
     let mut group_by_status = use_signal(|| true);
-    
+
     let user_list = use_user_list(server_id, channel);
-    
+
     UserListFilterHook {
         user_list,
         search_query,
@@ -318,7 +315,7 @@ impl UserListFilterHook {
 
         let users = self.get_filtered_users();
         let mut result = UsersByStatus::default();
-        
+
         for (nickname, user_info) in users {
             if user_info.modes.contains(&'o') {
                 result.operators.push((nickname, user_info));
@@ -330,7 +327,7 @@ impl UserListFilterHook {
                 result.regular.push((nickname, user_info));
             }
         }
-        
+
         result
     }
 

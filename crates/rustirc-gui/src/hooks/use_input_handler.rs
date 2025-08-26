@@ -12,9 +12,9 @@ pub fn use_input_handler() -> InputHandlerHook {
     let mut history_index = use_signal(|| 0usize);
     let mut suggestions = use_signal(|| Vec::<String>::new());
     let mut show_suggestions = use_signal(|| false);
-    
+
     let irc_connection = use_irc_connection();
-    
+
     InputHandlerHook {
         input_text,
         command_history,
@@ -156,7 +156,11 @@ impl InputHandlerHook {
                 if parts.len() >= 2 {
                     let channel = parts[1].to_string();
                     if let Some(server_id) = self.irc_connection.get_current_server() {
-                        if let Err(e) = self.irc_connection.join_channel(server_id, channel.clone()).await {
+                        if let Err(e) = self
+                            .irc_connection
+                            .join_channel(server_id, channel.clone())
+                            .await
+                        {
                             self.add_error_message(format!("Failed to join {}: {}", channel, e));
                         }
                     } else {
@@ -180,7 +184,7 @@ impl InputHandlerHook {
                 } else {
                     "RustIRC".to_string()
                 };
-                
+
                 if let Some(server_id) = self.irc_connection.get_current_server() {
                     if let Err(e) = self.irc_connection.disconnect(server_id).await {
                         self.add_error_message(format!("Error disconnecting: {}", e));
@@ -200,10 +204,17 @@ impl InputHandlerHook {
                 if parts.len() >= 3 {
                     let target = parts[1].to_string();
                     let message = parts[2..].join(" ");
-                    
+
                     if let Some(server_id) = self.irc_connection.get_current_server() {
-                        if let Err(e) = self.irc_connection.send_message(server_id, target.clone(), message.clone()).await {
-                            self.add_error_message(format!("Failed to send message to {}: {}", target, e));
+                        if let Err(e) = self
+                            .irc_connection
+                            .send_message(server_id, target.clone(), message.clone())
+                            .await
+                        {
+                            self.add_error_message(format!(
+                                "Failed to send message to {}: {}",
+                                target, e
+                            ));
                         }
                     }
                 } else {
@@ -237,11 +248,17 @@ impl InputHandlerHook {
             self.irc_connection.get_current_server(),
             self.irc_connection.get_current_channel(),
         ) {
-            if let Err(e) = self.irc_connection.send_message(server_id, channel, text).await {
+            if let Err(e) = self
+                .irc_connection
+                .send_message(server_id, channel, text)
+                .await
+            {
                 self.add_error_message(format!("Failed to send message: {}", e));
             }
         } else {
-            self.add_error_message("Not connected to a channel. Use /join <channel> to join a channel.");
+            self.add_error_message(
+                "Not connected to a channel. Use /join <channel> to join a channel.",
+            );
         }
     }
 
@@ -266,7 +283,7 @@ impl InputHandlerHook {
     fn handle_tab_completion(&self) {
         let text = self.get_text();
         let words: Vec<&str> = text.split_whitespace().collect();
-        
+
         if let Some(last_word) = words.last() {
             if last_word.starts_with('/') {
                 // Command completion
@@ -284,16 +301,16 @@ impl InputHandlerHook {
     /// Complete IRC commands
     fn complete_command(&self, partial: &str) {
         let commands = vec![
-            "/join", "/part", "/quit", "/nick", "/msg", "/query", "/me", 
-            "/clear", "/help", "/list", "/whois", "/kick", "/ban", "/topic"
+            "/join", "/part", "/quit", "/nick", "/msg", "/query", "/me", "/clear", "/help",
+            "/list", "/whois", "/kick", "/ban", "/topic",
         ];
-        
+
         let matches: Vec<String> = commands
             .iter()
             .filter(|cmd| cmd.starts_with(partial))
             .map(|s| s.to_string())
             .collect();
-        
+
         self.show_completions(matches);
     }
 
@@ -301,7 +318,7 @@ impl InputHandlerHook {
     fn complete_channel(&self, partial: &str) {
         let connections = self.irc_connection.get_connections();
         let mut channels = Vec::new();
-        
+
         for connection in connections.values() {
             for channel_name in connection.channels.keys() {
                 if channel_name.starts_with(partial) {
@@ -309,7 +326,7 @@ impl InputHandlerHook {
                 }
             }
         }
-        
+
         self.show_completions(channels);
     }
 
@@ -317,7 +334,7 @@ impl InputHandlerHook {
     fn complete_nickname(&self, partial: &str) {
         let connections = self.irc_connection.get_connections();
         let mut nicknames = Vec::new();
-        
+
         if let Some(current_server) = self.irc_connection.get_current_server() {
             if let Some(connection) = connections.get(&current_server) {
                 if let Some(current_channel) = self.irc_connection.get_current_channel() {
@@ -331,7 +348,7 @@ impl InputHandlerHook {
                 }
             }
         }
-        
+
         self.show_completions(nicknames);
     }
 
@@ -381,13 +398,13 @@ impl InputHandlerHook {
     /// Add text to command history
     fn add_to_history(&self, text: String) {
         self.command_history.write().push(text);
-        
+
         // Limit history size
         let mut history = self.command_history.write();
         if history.len() > 100 {
             history.remove(0);
         }
-        
+
         self.history_index.set(history.len());
     }
 
@@ -395,9 +412,9 @@ impl InputHandlerHook {
     fn handle_formatting_shortcut(&self, key: &str) {
         match key {
             "b" => self.insert_formatting("\u{0002}", "\u{0002}"), // Bold
-            "i" => self.insert_formatting("\u{001d}", "\u{001d}"), // Italic  
+            "i" => self.insert_formatting("\u{001d}", "\u{001d}"), // Italic
             "u" => self.insert_formatting("\u{001f}", "\u{001f}"), // Underline
-            "k" => self.insert_formatting("\u{0003}", ""), // Color
+            "k" => self.insert_formatting("\u{0003}", ""),         // Color
             _ => {}
         }
     }
@@ -413,9 +430,11 @@ impl InputHandlerHook {
     /// Add system message
     fn add_system_message(&self, message: String) {
         if let Some(server_id) = self.irc_connection.get_current_server() {
-            let target = self.irc_connection.get_current_channel()
+            let target = self
+                .irc_connection
+                .get_current_channel()
                 .unwrap_or_else(|| server_id.clone());
-            
+
             self.irc_connection.irc_state.add_message(
                 server_id,
                 target,
@@ -429,9 +448,11 @@ impl InputHandlerHook {
     /// Add error message
     fn add_error_message(&self, message: String) {
         if let Some(server_id) = self.irc_connection.get_current_server() {
-            let target = self.irc_connection.get_current_channel()
+            let target = self
+                .irc_connection
+                .get_current_channel()
                 .unwrap_or_else(|| server_id.clone());
-            
+
             self.irc_connection.irc_state.add_message(
                 server_id,
                 target,

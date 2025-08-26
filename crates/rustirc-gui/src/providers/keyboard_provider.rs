@@ -8,26 +8,24 @@ use dioxus::prelude::*;
 pub fn KeyboardProvider(children: Element) -> Element {
     let ui_state = use_context::<UiState>();
     let theme_state = use_context::<crate::context::ThemeState>();
-    
+
     // Set up global keyboard shortcuts for desktop
-    use_effect(move || {
-        setup_desktop_keyboard_shortcuts(ui_state, theme_state)
-    });
+    use_effect(move || setup_desktop_keyboard_shortcuts(ui_state, theme_state));
 
     rsx! { {children} }
 }
 
 /// Set up desktop keyboard shortcuts using Dioxus event handling
 fn setup_desktop_keyboard_shortcuts(
-    ui_state: UiState, 
-    theme_state: crate::context::ThemeState
+    ui_state: UiState,
+    theme_state: crate::context::ThemeState,
 ) -> impl FnOnce() {
     // In desktop Dioxus apps, keyboard events are handled by component event handlers
     // This function sets up global key bindings and creates a cleanup function
-    
+
     // Store global keyboard state for shortcuts
     let _keyboard_state = GlobalKeyboardState::new(ui_state, theme_state);
-    
+
     // Return cleanup function (currently no-op for desktop)
     move || {
         // Desktop keyboard cleanup if needed
@@ -42,9 +40,12 @@ struct GlobalKeyboardState {
 
 impl GlobalKeyboardState {
     fn new(ui_state: UiState, theme_state: crate::context::ThemeState) -> Self {
-        Self { ui_state, theme_state }
+        Self {
+            ui_state,
+            theme_state,
+        }
     }
-    
+
     /// Handle global keyboard shortcuts
     pub fn handle_keydown(&self, ctrl_or_cmd: bool, shift: bool, alt: bool, key: &str) -> bool {
         match (ctrl_or_cmd, shift, alt, key) {
@@ -53,13 +54,13 @@ impl GlobalKeyboardState {
                 self.ui_state.show_dialog(DialogType::Connect);
                 true
             }
-            
-            // Settings shortcuts  
+
+            // Settings shortcuts
             (true, false, false, ",") => {
                 self.ui_state.show_dialog(DialogType::Settings);
                 true
             }
-            
+
             // Tab management shortcuts
             (true, false, false, "t") => {
                 // TODO: New tab functionality
@@ -69,23 +70,25 @@ impl GlobalKeyboardState {
                 // TODO: Close current tab
                 true
             }
-            
+
             // Theme shortcuts
             (true, true, false, "t") => {
                 cycle_theme(&self.theme_state);
                 true
             }
-            
+
             // View shortcuts
             (true, false, false, "1") => {
-                self.ui_state.user_list_visible.set(!self.ui_state.user_list_visible());
+                self.ui_state
+                    .user_list_visible
+                    .set(!self.ui_state.user_list_visible());
                 true
             }
             (true, false, false, "2") => {
                 // TODO: Toggle sidebar
                 true
             }
-            
+
             // Search shortcuts
             (true, false, false, "f") => {
                 // TODO: Search in current channel
@@ -95,34 +98,34 @@ impl GlobalKeyboardState {
                 // TODO: Global search
                 true
             }
-            
+
             // Help shortcuts
             (false, false, false, "F1") => {
                 self.ui_state.show_dialog(DialogType::About);
                 true
             }
-            
+
             // Developer shortcuts (for debug builds)
             #[cfg(debug_assertions)]
             (true, true, false, "d") => {
                 toggle_developer_tools();
                 true
             }
-            
+
             // Escape key - close everything
             (false, false, false, "Escape") => {
                 self.ui_state.active_dialogs.write().clear();
                 self.ui_state.hide_context_menu();
                 true
             }
-            
+
             // Number shortcuts for tab switching (Alt+1-9)
             (false, false, true, n) if n.chars().next().map_or(false, |c| c.is_ascii_digit()) => {
                 // TODO: Switch to tab N
                 true
             }
-            
-            _ => false // Not handled
+
+            _ => false, // Not handled
         }
     }
 }
@@ -130,7 +133,7 @@ impl GlobalKeyboardState {
 /// Cycle through available themes
 fn cycle_theme(theme_state: &crate::context::ThemeState) {
     let current_theme = theme_state.current_theme.read();
-    
+
     let next_theme = match *current_theme {
         ThemeType::Dark => ThemeType::Light,
         ThemeType::Light => ThemeType::Discord,
@@ -142,7 +145,7 @@ fn cycle_theme(theme_state: &crate::context::ThemeState) {
         ThemeType::Terminal => ThemeType::Slack,
         ThemeType::Slack => ThemeType::Dark,
     };
-    
+
     theme_state.set_theme(next_theme);
 }
 
@@ -151,7 +154,7 @@ fn cycle_theme(theme_state: &crate::context::ThemeState) {
 fn toggle_developer_tools() {
     // For desktop Dioxus apps, we can log debug information
     println!("Developer tools toggle requested");
-    
+
     // Could also inject debug information or toggle debug overlays
     // This is mainly for development convenience
 }
@@ -196,7 +199,7 @@ pub fn use_input_shortcuts(input_ref: Signal<String>) -> impl Fn(bool, bool, boo
 /// Insert IRC formatting codes around selection or at cursor
 fn insert_irc_formatting(input_ref: &Signal<String>, start_code: &str, end_code: &str) {
     let current_text = input_ref.read();
-    
+
     // For now, just append the formatting codes
     // TODO: Handle text selection and cursor position properly
     let new_text = format!("{}{}{}", current_text, start_code, end_code);

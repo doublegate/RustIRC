@@ -5,14 +5,71 @@
 **CI/CD**: ✅ Master Pipeline Fixed with cross-platform compatibility + 99.9% reliability  
 **Documentation**: ✅ Comprehensive rustdoc comments, 65+ working doctests, README files for all crates + CI/CD troubleshooting guide + five nines roadmap  
 **Estimated Duration**: 4 weeks
+**Dioxus Branch Note**: This branch explores Dioxus v0.6 GUI while maintaining scripting system compatibility
 
 ## Overview
 
 Phase 4 focuses on implementing comprehensive scripting and plugin capabilities. With the solid foundation of Phases 1-3 complete (full IRC client with professional interface), we now add extensibility through Lua scripting, Python integration, and binary plugins.
 
+### GUI Framework Research Section (Dioxus Branch)
+
+#### ✅ COMPLETE: System Dependencies & Environment (August 25, 2025)
+- [x] **WebKit Dependencies Installed** ✅
+  - [x] webkit2gtk-4.1-devel for Linux WebView support
+  - [x] libsoup3-devel for network operations
+  - [x] atk-devel for accessibility features
+  - [x] gtk3-devel for native widget integration
+  - [x] Complete Dioxus desktop development environment ready
+
+- [x] **Dioxus v0.6 Setup Complete** ✅
+  - [x] Dioxus CLI (dx) installed for hot reload development
+  - [x] Dioxus.toml configuration file created
+  - [x] Branch properly separated from main development
+  - [x] All documentation updated for React-like patterns
+
+#### 🔄 IN PROGRESS: Component Architecture Migration
+- [ ] **Core Component Structure**
+  - [ ] Convert Iced App struct to Dioxus functional components
+  - [ ] Migrate message-based updates to hooks (useState, useEffect)
+  - [ ] Transform widget tree to RSX component hierarchy
+  - [ ] Implement Context API for global state management
+
+- [ ] **IRC-Specific Components**
+  - [ ] ServerTree component with reactive server list
+  - [ ] MessageView component with virtual scrolling
+  - [ ] UserList component with real-time updates
+  - [ ] InputArea component with tab completion integration
+  - [ ] TabBar component with drag-and-drop support
+  - [ ] StatusBar component with connection indicators
+
+- [ ] **State Management Migration**
+  - [ ] Convert Arc<RwLock<AppState>> to Dioxus signals
+  - [ ] Implement IRC event handling with use_coroutine
+  - [ ] Set up async data fetching with use_future
+  - [ ] Create custom hooks for IRC operations
+
+- [ ] **Styling & Theming**
+  - [ ] Convert Iced themes to CSS-in-Rust styling
+  - [ ] Implement dynamic theme switching with Context API
+  - [ ] Create Material Design component library
+  - [ ] Set up responsive layouts with CSS Grid/Flexbox
+
+#### 📋 FUTURE: Integration & Testing
+- [ ] **Backend Integration**
+  - [ ] Connect Dioxus frontend to existing IRC engine
+  - [ ] Implement async communication bridge
+  - [ ] Preserve all existing IRC functionality
+  - [ ] Ensure feature parity with Iced implementation
+
+- [ ] **Testing & Validation**
+  - [ ] Component testing framework setup
+  - [ ] Visual regression testing
+  - [ ] Performance comparison with Iced version
+  - [ ] Cross-platform compatibility verification
+
 ## Prerequisites Complete ✅
 
-- ✅ Phase 1-3 fully implemented with live IRC functionality
+- ✅ Phase 1-3 fully implemented with live IRC functionality (inherited from main branch)
 - ✅ Phase 2 100% verification audit complete - all 50 tasks confirmed implemented
 - ✅ Phase 3 documentation excellence with 65+ working doctests
 - ✅ Enterprise-grade security with Zeroize trait and comprehensive validation
@@ -25,6 +82,7 @@ Phase 4 focuses on implementing comprehensive scripting and plugin capabilities.
 - ✅ Comprehensive documentation with rustdoc comments for all public APIs
 - ✅ README files for all 6 crates with usage examples
 - ✅ CI/CD pipeline with graceful doctest handling
+- ✅ Dioxus v0.6 development environment fully configured
 
 ## Lua Integration
 

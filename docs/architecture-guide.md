@@ -1,22 +1,38 @@
-# RustIRC Architecture Guide
+# RustIRC Architecture Guide - Dioxus v0.6 Branch
 
 ## Overview
 
-RustIRC employs a modular, event-driven, message-passing architecture designed for maintainability, testability, and extensibility. The system is built on reactive patterns similar to Elm and Iced, providing the modularity of WeeChat with superior concurrency through Rust's async ecosystem.
+RustIRC employs a modular, event-driven, message-passing architecture designed for maintainability, testability, and extensibility. This branch explores migrating from Iced's Elm-style architecture to Dioxus's React-like component patterns while preserving the robust IRC engine and providing superior concurrency through Rust's async ecosystem.
 
-## High-Level Architecture
+## High-Level Architecture - Dioxus Implementation
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                         Presentation Layer                       │
 │  ┌─────────────────────┐         ┌───────────────────────────┐ │
-│  │     GUI (Iced)      │ ← → │       TUI (ratatui)       │ │
+│  │  GUI (Dioxus v0.6)  │ ← → │       TUI (ratatui)       │ │
+│  │  React Components   │         │       (unchanged)        │ │
+│  │  Virtual DOM        │         │                           │ │
+│  │  WebView/Native     │         │                           │ │
 │  └─────────────────────┘         └───────────────────────────┘ │
 └─────────────┬─────────────────────────────────┬─────────────────┘
-              │ UI Events                       │ State Updates
+              │ Hook Events (useState/Effect)   │ Signal Updates
               ↓                                 ↑
 ┌─────────────┴─────────────────────────────────┴─────────────────┐
-│                          Core Logic Layer                        │
+│                  Dioxus State Management Layer                   │
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │              Hooks & Signals (use_context/signal)          ││
+│  └─────────────────────────────────────────────────────────────┘│
+│      ↑          ↓           ↑          ↓           ↑          ↓  │
+│  ┌───────────────┐  ┌────────────────┐  ┌────────────────────┐ │
+│  │Signal Manager │  │useCoroutine    │  │  Custom Hooks      │ │
+│  │(Global State) │  │(Async Tasks)   │  │  (IRC Operations)  │ │
+│  └───────────────┘  └────────────────┘  └────────────────────┘ │
+└─────────────┬─────────────────────────────────┬─────────────────┘
+              │ IRC Engine Commands             │ State Updates
+              ↓                                 ↑
+┌─────────────┴─────────────────────────────────┴─────────────────┐
+│                      Core IRC Engine (Unchanged)                 │
 │  ┌─────────────────────────────────────────────────────────────┐│
 │  │              Event Bus / Message Dispatcher                 ││
 │  └─────────────────────────────────────────────────────────────┘│

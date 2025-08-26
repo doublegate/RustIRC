@@ -17,8 +17,8 @@ pub mod widgets;
 pub mod components;
 pub mod context;
 pub mod dioxus_app;
-pub mod providers;
 pub mod hooks;
+pub mod providers;
 
 // Deprecated simple app - being phased out
 // pub mod simple_app;
@@ -31,7 +31,7 @@ pub use platform::NotificationManager;
 // Dioxus exports
 pub use context::{ContextProvider, IrcState, ThemeState, UiState};
 pub use dioxus_app::launch_app;
-pub use providers::*;
 pub use hooks::*;
+pub use providers::*;
 
 // pub use simple_app::{SimpleApp, run_simple_test};

@@ -34,16 +34,25 @@ This project and everyone participating in it is governed by our Code of Conduct
    git checkout -b feature/your-feature-name
    ```
 
-### Development Environment Setup
+### Development Environment Setup - Dioxus Branch
 
 ```bash
 # Install Rust (if needed)
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
+# Install Dioxus CLI for hot reload development
+cargo install dioxus-cli
+
 # Install development tools
 rustup component add rustfmt clippy
 
-# Install cargo-watch for development
+# Install system dependencies (Linux - Fedora/Bazzite)
+rpm-ostree install webkit2gtk4.1-devel libsoup3-devel atk-devel gtk3-devel
+
+# Install system dependencies (Linux - Ubuntu/Debian)
+sudo apt install libwebkit2gtk-4.1-dev libsoup-3.0-dev libatk1.0-dev libgtk-3-dev
+
+# Install cargo-watch for development (optional)
 cargo install cargo-watch
 
 # Run tests to ensure everything works
@@ -95,32 +104,47 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 
 ## Development Process
 
-### Project Structure
+### Project Structure - Dioxus Branch
 
 ```
 RustIRC/
-├── rustirc-core/        # Core IRC engine
-├── rustirc-protocol/    # Protocol implementation
-├── rustirc-gui/         # GUI implementation
-├── rustirc-tui/         # TUI implementation
-├── rustirc-scripting/   # Lua/Python scripting
-├── rustirc-plugins/     # Plugin system
-└── rustirc-plugin-api/  # Plugin API definitions
+├── crates/
+│   ├── rustirc-core/        # Core IRC engine (unchanged)
+│   ├── rustirc-protocol/    # Protocol implementation (unchanged)
+│   ├── rustirc-dioxus-gui/  # Dioxus GUI implementation
+│   ├── rustirc-tui/         # TUI implementation (unchanged)
+│   ├── rustirc-scripting/   # Lua/Python scripting (unchanged)
+│   └── rustirc-plugins/     # Plugin system (unchanged)
+├── src/                     # Main binary entry points
+├── Dioxus.toml             # Dioxus configuration
+└── assets/                 # Static assets for WebView
 ```
 
-### Building
+### Building - Dioxus Branch
 
 ```bash
-# Debug build
-cargo build
+# Development with hot reload (recommended)
+dx serve --hot-reload
 
-# Release build
+# Build for desktop
+dx build --platform desktop
+
+# Build release version
+dx build --release
+
+# Traditional Cargo builds (also work)
+cargo build
 cargo build --release
 
-# Run
-cargo run
+# Run specific binary
+cargo run --bin dioxus  # Dioxus GUI
+cargo run -- --cli      # CLI mode
+cargo run -- --tui      # TUI mode
 
-# Watch for changes
+# Format RSX components
+dx fmt
+
+# Watch for changes (traditional)
 cargo watch -x run
 ```
 
@@ -153,7 +177,7 @@ cargo bench
 - **Documentation**: Document all public APIs
 - **Tests**: Write tests for new functionality
 
-Example:
+Example (Rust code):
 ```rust
 /// Connects to an IRC server with the given configuration.
 /// 
@@ -173,6 +197,25 @@ Example:
 /// ```
 pub async fn connect(&mut self, config: ServerConfig) -> Result<ConnectionId> {
     // Implementation
+}
+```
+
+Example (Dioxus component):
+```rust
+/// IRC Channel component for displaying messages and user interactions.
+#[component]
+fn ChannelView(cx: Scope, channel_name: String, messages: Vec<IrcMessage>) -> Element {
+    let show_users = use_state(cx, || true);
+    
+    cx.render(rsx! {
+        div {
+            class: "channel-container",
+            MessageList { messages: messages.clone() }
+            if *show_users.get() {
+                UserList { channel: channel_name.clone() }
+            }
+        }
+    })
 }
 ```
 

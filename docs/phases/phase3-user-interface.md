@@ -1,11 +1,20 @@
-# Phase 3: User Interface Implementation
+# Phase 3: User Interface Implementation - Dioxus Branch
 
 **Duration**: 4-10 weeks  
 **Goal**: Create intuitive graphical and terminal user interfaces
+**Branch Status**: Exploring Dioxus v0.6 GUI implementation
 
 ## Overview
 
-Phase 3 transforms the CLI prototype into a full-featured client with both GUI and TUI options. The GUI will use Iced for a modern, cross-platform experience, while the TUI will use ratatui for terminal users. Both interfaces will share the same core logic through a common abstraction layer.
+Phase 3 transforms the CLI prototype into a full-featured client with both GUI and TUI options. This branch explores using **Dioxus v0.6** for a React-like GUI experience with WebView rendering, while the TUI continues to use ratatui for terminal users. Both interfaces share the same core IRC logic.
+
+### Dioxus Implementation Strategy
+
+- **Component-Based Architecture**: Replace Iced widgets with Dioxus functional components
+- **React-Like State Management**: Use hooks (useState, useEffect) instead of message passing
+- **Hot Reload Development**: Leverage `dx serve` for instant UI updates
+- **WebView Rich Content**: Enable modern web content rendering capabilities
+- **CSS-in-Rust Styling**: Dynamic theming with runtime style changes
 
 ## Objectives
 
@@ -16,28 +25,50 @@ Phase 3 transforms the CLI prototype into a full-featured client with both GUI a
 5. Integrate platform-specific features
 6. Ensure responsive performance
 
-## GUI Implementation (Iced)
+## GUI Implementation (Dioxus v0.6)
 
-### Application Structure
+### Component Architecture
 ```rust
-// rustirc-gui/src/app.rs
-#[derive(Debug)]
-pub struct RustIrcApp {
-    state: Arc<RwLock<IrcState>>,
-    theme: Theme,
-    layout: Layout,
-    active_view: ViewId,
-    command_tx: mpsc::Sender<Command>,
+// Main Application Component
+#[component]
+fn App(cx: Scope) -> Element {
+    let irc_state = use_shared_state::<IrcState>(cx)?;
+    let current_theme = use_state(cx, || Theme::Dark);
+    let active_view = use_state(cx, || ViewId::default());
+    
+    cx.render(rsx! {
+        div { class: "app-container theme-{current_theme.get()}",
+            ServerTree { 
+                servers: irc_state.read().servers.clone() 
+            }
+            MessageView { 
+                view_id: *active_view.get(),
+                on_message: move |msg| {
+                    // Handle IRC message events
+                }
+            }
+            InputArea {
+                on_command: move |cmd| {
+                    // Handle IRC commands
+                }
+            }
+        }
+    })
 }
 
-#[derive(Debug, Clone)]
-pub enum Message {
-    // Connection events
-    ServerConnected(ServerId),
-    ServerDisconnected(ServerId),
-    
-    // UI events
-    TabSelected(ViewId),
+// Hook-based state management
+fn use_irc_connection(cx: &ScopeState) -> &UseState<ConnectionStatus> {
+    use_state(cx, || ConnectionStatus::Disconnected)
+}
+
+fn use_server_list(cx: &ScopeState) -> &UseState<Vec<ServerInfo>> {
+    let connection = use_irc_connection(cx);
+    use_effect(cx, (connection,), |(connection,)| {
+        // Update server list based on connection status
+        async move {}
+    });
+    use_state(cx, Vec::new)
+}
     InputSubmitted(String),
     UserListClicked(String),
     

@@ -187,9 +187,9 @@ fn KeyboardShortcuts() -> Element {
         // In desktop Dioxus apps, keyboard shortcuts are handled by the main window
         // or through component event handlers. Global shortcuts would be registered
         // with the desktop application framework.
-        
+
         let _ui_state = ui_state.clone();
-        
+
         // Desktop keyboard shortcut setup would happen here
         move || {
             // Desktop cleanup if needed
