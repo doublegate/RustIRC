@@ -10,7 +10,7 @@ pub mod canvas;
 
 // Re-export commonly used components
 pub use atoms::button::{MaterialButton, ButtonVariant};
-pub use atoms::typography::{MaterialText, TextVariant};
+pub use atoms::typography::{MaterialText, TypographyVariant};
 pub use atoms::card::MaterialCard;
 pub use atoms::chip::{MaterialChip, ChipVariant};
 pub use atoms::icon::MaterialIcon;
@@ -23,12 +23,12 @@ pub use molecules::dialog::MaterialDialog;
 pub use molecules::list_item::MaterialListItem;
 pub use molecules::message_bubble::MessageBubble;
 pub use molecules::search_bar::MaterialSearchBar;
-pub use molecules::snackbar::MaterialSnackbar;
+// pub use molecules::snackbar::MaterialSnackbar;
 
-pub use organisms::chat_view::ChatView;
+// pub use organisms::chat_view::ChatView;
 pub use organisms::responsive_layout::ResponsiveLayout;
 pub use organisms::rich_text_editor::RichTextEditor;
-pub use organisms::sidebar::MaterialSidebar;
+pub use organisms::sidebar::ModernSidebar;
 
-pub use canvas::animation_canvas::AnimationCanvas;
-pub use canvas::wave_effect::WaveEffect;
+// pub use canvas::animation_canvas::AnimationCanvas;
+// pub use canvas::wave_effect::WaveEffect;

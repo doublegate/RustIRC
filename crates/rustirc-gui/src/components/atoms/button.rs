@@ -5,11 +5,9 @@
 
 use crate::themes::material_design_3::{MaterialTheme, FontWeight};
 use iced::{
-    widget::{button, container, text, canvas, Canvas, mouse_area, stack},
-    Element, Length, Size, Point, Color, Background, Border,
-    alignment::{Horizontal, Vertical},
+    widget::{button, text},
+    Element, Length, Color, Background, Border, Vector,
 };
-use std::time::Duration;
 
 /// Material Design 3 Button variants
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -146,7 +144,7 @@ impl<Message> MaterialButton<Message> {
         let btn = button(content)
             .height(height)
             .width(width)
-            .padding([0, padding_horizontal])
+            .padding([0, padding_horizontal as u16])
             .style(move |_theme, status| {
                 let (background, text, border) = self.get_colors_for_status(status);
                 button::Style {
@@ -183,9 +181,7 @@ impl<Message> MaterialButton<Message> {
                 text(icon)
                     .size(icon_size)
                     .color(text_color)
-                    .align_x(Horizontal::Center)
-                    .align_y(Vertical::Center)
-                    .into()
+                                        .into()
             }
             (Some(icon), IconPosition::Left) => {
                 // Icon + text (icon left)
@@ -202,7 +198,6 @@ impl<Message> MaterialButton<Message> {
                         })
                 ]
                 .spacing(self.theme.spacing.sm)
-                .align_y(Vertical::Center)
                 .into()
             }
             (Some(icon), IconPosition::Right) => {
@@ -220,7 +215,6 @@ impl<Message> MaterialButton<Message> {
                         .color(text_color),
                 ]
                 .spacing(self.theme.spacing.sm)
-                .align_y(Vertical::Center)
                 .into()
             }
             (None, _) => {
@@ -232,9 +226,7 @@ impl<Message> MaterialButton<Message> {
                         weight: iced::font::Weight::Medium,
                         ..Default::default()
                     })
-                    .align_x(Horizontal::Center)
-                    .align_y(Vertical::Center)
-                    .into()
+                                        .into()
             }
         }
     }
@@ -328,9 +320,9 @@ impl<Message> MaterialButton<Message> {
             (ButtonVariant::Filled | ButtonVariant::FilledTonal, button::Status::Active) => {
                 iced::Shadow {
                     color: self.theme.elevation.level1.shadow_color,
-                    offset: iced::Vector::new(
+                    offset: Vector::new(
                         self.theme.elevation.level1.shadow_offset_x,
-                        self.theme.elevation.level1.shadow_offset_y,
+                        self.theme.elevation.level1.shadow_offset_y
                     ),
                     blur_radius: self.theme.elevation.level1.shadow_blur,
                 }
@@ -338,9 +330,9 @@ impl<Message> MaterialButton<Message> {
             (ButtonVariant::Filled | ButtonVariant::FilledTonal, button::Status::Hovered) => {
                 iced::Shadow {
                     color: self.theme.elevation.level2.shadow_color,
-                    offset: iced::Vector::new(
+                    offset: Vector::new(
                         self.theme.elevation.level2.shadow_offset_x,
-                        self.theme.elevation.level2.shadow_offset_y,
+                        self.theme.elevation.level2.shadow_offset_y
                     ),
                     blur_radius: self.theme.elevation.level2.shadow_blur,
                 }
@@ -357,6 +349,14 @@ impl<Message> MaterialButton<Message> {
             b: base.b * (1.0 - opacity) + overlay.b * opacity,
             a: base.a,
         }
+    }
+
+    /// Create view element (alias for build)
+    pub fn view(self) -> Element<'static, Message>
+    where
+        Message: Clone + 'static,
+    {
+        self.build()
     }
 }
 
@@ -442,16 +442,13 @@ impl<Message> FloatingActionButton<Message> {
                     })
             ]
             .spacing(self.theme.spacing.sm)
-            .align_y(Vertical::Center)
             .into()
         } else {
             // Normal FAB
             text(&self.icon)
                 .size(icon_size)
                 .color(self.theme.scheme.on_primary_container)
-                .align_x(Horizontal::Center)
-                .align_y(Vertical::Center)
-                .into()
+                                                .into()
         };
 
         let width = if self.extended {
@@ -482,25 +479,25 @@ impl<Message> FloatingActionButton<Message> {
                 let shadow = match status {
                     button::Status::Active => iced::Shadow {
                         color: self.theme.elevation.level3.shadow_color,
-                        offset: iced::Vector::new(
+                        offset: Vector::new(
                             self.theme.elevation.level3.shadow_offset_x,
-                            self.theme.elevation.level3.shadow_offset_y,
+                            self.theme.elevation.level3.shadow_offset_y
                         ),
                         blur_radius: self.theme.elevation.level3.shadow_blur,
                     },
                     button::Status::Hovered => iced::Shadow {
                         color: self.theme.elevation.level4.shadow_color,
-                        offset: iced::Vector::new(
+                        offset: Vector::new(
                             self.theme.elevation.level4.shadow_offset_x,
-                            self.theme.elevation.level4.shadow_offset_y,
+                            self.theme.elevation.level4.shadow_offset_y
                         ),
                         blur_radius: self.theme.elevation.level4.shadow_blur,
                     },
                     button::Status::Pressed => iced::Shadow {
                         color: self.theme.elevation.level2.shadow_color,
-                        offset: iced::Vector::new(
+                        offset: Vector::new(
                             self.theme.elevation.level2.shadow_offset_x,
-                            self.theme.elevation.level2.shadow_offset_y,
+                            self.theme.elevation.level2.shadow_offset_y
                         ),
                         blur_radius: self.theme.elevation.level2.shadow_blur,
                     },
@@ -533,6 +530,14 @@ impl<Message> FloatingActionButton<Message> {
             b: base.b * (1.0 - opacity) + overlay.b * opacity,
             a: base.a,
         }
+    }
+
+    /// Create view element (alias for build)
+    pub fn view(self) -> Element<'static, Message>
+    where
+        Message: Clone + 'static,
+    {
+        self.build()
     }
 }
 

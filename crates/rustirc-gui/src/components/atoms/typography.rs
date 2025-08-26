@@ -5,9 +5,8 @@
 
 use crate::themes::material_design_3::{MaterialTheme, TypographyToken, FontWeight};
 use iced::{
-    widget::{text, rich_text, text_input, container},
+    widget::{text, rich_text, span, text_input, container},
     Element, Color, Font, Length,
-    alignment::{Horizontal, Vertical},
 };
 
 /// Typography variant based on Material Design 3 type scale
@@ -131,17 +130,17 @@ impl MaterialText {
         };
 
         let horizontal_alignment = match self.align {
-            TextAlign::Left => Horizontal::Left,
-            TextAlign::Center => Horizontal::Center,
-            TextAlign::Right => Horizontal::Right,
-            TextAlign::Justify => Horizontal::Left, // Iced doesn't support justify
+            TextAlign::Left => iced::alignment::Horizontal::Left,
+            TextAlign::Center => iced::alignment::Horizontal::Center,
+            TextAlign::Right => iced::alignment::Horizontal::Right,
+            TextAlign::Justify => iced::alignment::Horizontal::Left, // Iced doesn't support justify
         };
 
         let mut txt = text(&self.content)
             .size(token.font_size)
             .color(text_color)
             .font(font)
-            .align_x(horizontal_alignment);
+            ;
 
         // Apply line height through container if needed
         if token.line_height != token.font_size {
@@ -275,34 +274,34 @@ impl RichText {
         // Create rich text spans
         let mut rich_spans = Vec::new();
         
-        for span in self.spans {
-            let color = span.color.unwrap_or(self.theme.scheme.on_surface);
-            let weight = span.weight.unwrap_or(FontWeight::Regular);
+        for text_span in self.spans {
+            let color = text_span.color.unwrap_or(self.theme.scheme.on_surface);
+            let weight = text_span.weight.unwrap_or(FontWeight::Regular);
             
             let font = Font {
-                family: if span.code {
+                family: if text_span.code {
                     iced::font::Family::Name("JetBrains Mono")
                 } else {
                     iced::font::Family::Name("Inter")
                 },
                 weight: self.convert_font_weight(weight),
                 stretch: iced::font::Stretch::Normal,
-                style: if span.italic {
+                style: if text_span.italic {
                     iced::font::Style::Italic
                 } else {
                     iced::font::Style::Normal
                 },
             };
 
-            let mut rich_span = iced::widget::rich_text::Span::new(&span.text)
+            let mut rich_span = span(&text_span.text)
                 .color(color)
                 .font(font);
 
-            if span.underline {
+            if text_span.underline {
                 rich_span = rich_span.underline(true);
             }
 
-            if span.strikethrough {
+            if text_span.strikethrough {
                 rich_span = rich_span.strikethrough(true);
             }
 

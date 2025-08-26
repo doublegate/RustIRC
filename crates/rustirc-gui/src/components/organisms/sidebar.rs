@@ -1,6 +1,5 @@
 use iced::{
-    widget::{canvas, column, container, mouse_area, row, text, Container},
-    widget::canvas::{Cache, Canvas, Geometry, Path, Stroke, Text},
+    widget::{column, container, mouse_area, row, text, Container},
     Background, Border, Color, Element, Length, Point, Rectangle, Renderer, Size, Theme, Vector,
     alignment::{Horizontal, Vertical},
     theme::palette::Extended,
@@ -11,7 +10,7 @@ use iced::{
 use std::collections::HashMap;
 
 use crate::themes::material_design_3::{MaterialTheme, ElevationLevel};
-use crate::components::atoms::typography::{MaterialText, TextVariant};
+use crate::components::atoms::typography::{MaterialText, TypographyVariant};
 use crate::components::atoms::button::{MaterialButton, ButtonVariant};
 
 // Server and channel data structures
@@ -66,7 +65,7 @@ pub struct ModernSidebar {
     servers: Vec<ServerInfo>,
     selected_server: Option<String>,
     selected_channel: Option<String>,
-    animation_cache: Cache,
+    // animation_cache: Cache, // TODO: Implement when canvas support is added
     animations: HashMap<String, CollapseAnimation>,
     width: f32,
     is_compact: bool,
@@ -97,7 +96,7 @@ impl ModernSidebar {
             servers: Vec::new(),
             selected_server: None,
             selected_channel: None,
-            animation_cache: Cache::default(),
+            // animation_cache: Cache::default(), // TODO: Implement when canvas support is added
             animations: HashMap::new(),
             width: 280.0,
             is_compact: false,
@@ -140,7 +139,7 @@ impl ModernSidebar {
                         },
                     );
                     
-                    self.animation_cache.clear();
+                    // self.animation_cache.clear(); // TODO: Implement when canvas support is added
                 }
             }
             SidebarMessage::ServerSelected(server_id) => {
@@ -154,7 +153,7 @@ impl ModernSidebar {
             SidebarMessage::ToggleCompact => {
                 self.is_compact = !self.is_compact;
                 self.width = if self.is_compact { 72.0 } else { 280.0 };
-                self.animation_cache.clear();
+                // self.animation_cache.clear(); // TODO: Implement when canvas support is added
             }
             SidebarMessage::AnimationTick => {
                 let now = Instant::now();
@@ -185,15 +184,15 @@ impl ModernSidebar {
                 }
                 
                 if !self.animations.is_empty() {
-                    self.animation_cache.clear();
+                    // self.animation_cache.clear(); // TODO: Implement when canvas support is added
                 }
             }
         }
     }
 
     pub fn view(&self) -> Element<'_, SidebarMessage, Theme, Renderer> {
-        let surface_color = self.theme.color_scheme.surface;
-        let surface_variant = self.theme.color_scheme.surface_variant;
+        let surface_color = self.theme.scheme.surface;
+        let surface_variant = self.theme.scheme.surface_variant;
         
         let content = if self.is_compact {
             self.compact_view()
@@ -223,16 +222,15 @@ impl ModernSidebar {
         let header = container(
             row![
                 MaterialText::new("Servers")
-                    .variant(TextVariant::HeadlineSmall)
-                    .color(self.theme.color_scheme.on_surface),
+                    .variant(TypographyVariant::HeadlineSmall)
+                    .color(self.theme.scheme.on_surface),
                     
                 MaterialButton::new("⇔")
                     .variant(ButtonVariant::Text)
                     .on_press(SidebarMessage::ToggleCompact)
             ]
             .spacing(8)
-            .align_items(iced::Alignment::Center)
-        )
+                    )
         .padding(16)
         .width(Length::Fill);
 
@@ -293,10 +291,10 @@ impl ModernSidebar {
         let is_selected = self.selected_server.as_ref() == Some(&server.id);
         
         let status_color = match server.status {
-            ConnectionStatus::Connected => self.theme.color_scheme.primary,
+            ConnectionStatus::Connected => self.theme.scheme.primary,
             ConnectionStatus::Connecting => Color::from_rgb(1.0, 0.6, 0.0), // Orange
-            ConnectionStatus::Disconnected => self.theme.color_scheme.outline,
-            ConnectionStatus::Error => self.theme.color_scheme.error,
+            ConnectionStatus::Disconnected => self.theme.scheme.outline,
+            ConnectionStatus::Error => self.theme.scheme.error,
         };
 
         let expand_icon = if server.is_expanded { "▼" } else { "▶" };
@@ -313,11 +311,11 @@ impl ModernSidebar {
             
             // Server name
             MaterialText::new(&server.name)
-                .variant(TextVariant::LabelLarge)
+                .variant(TypographyVariant::LabelLarge)
                 .color(if is_selected {
-                    self.theme.color_scheme.on_primary_container
+                    self.theme.scheme.on_primary_container
                 } else {
-                    self.theme.color_scheme.on_surface
+                    self.theme.scheme.on_surface
                 }),
             
             // Unread badge
@@ -331,7 +329,7 @@ impl ModernSidebar {
         .align_items(iced::Alignment::Center);
 
         let background_color = if is_selected {
-            self.theme.color_scheme.primary_container
+            self.theme.scheme.primary_container
         } else {
             Color::TRANSPARENT
         };
@@ -379,33 +377,33 @@ impl ModernSidebar {
         };
 
         let activity_color = match channel.activity_level {
-            ActivityLevel::None => self.theme.color_scheme.outline_variant,
-            ActivityLevel::Low => self.theme.color_scheme.primary,
+            ActivityLevel::None => self.theme.scheme.outline_variant,
+            ActivityLevel::Low => self.theme.scheme.primary,
             ActivityLevel::Medium => Color::from_rgb(1.0, 0.6, 0.0), // Orange
-            ActivityLevel::High => self.theme.color_scheme.error,
+            ActivityLevel::High => self.theme.scheme.error,
         };
 
         let content = row![
             // Channel type icon
             MaterialText::new(channel_icon)
-                .variant(TextVariant::LabelMedium)
+                .variant(TypographyVariant::LabelMedium)
                 .color(activity_color),
             
             // Channel name
             MaterialText::new(&channel.name)
-                .variant(TextVariant::LabelMedium)
+                .variant(TypographyVariant::LabelMedium)
                 .color(if is_selected {
-                    self.theme.color_scheme.on_secondary_container
+                    self.theme.scheme.on_secondary_container
                 } else {
-                    self.theme.color_scheme.on_surface_variant
+                    self.theme.scheme.on_surface_variant
                 }),
             
             // User count for channels
             if channel.channel_type != ChannelType::DirectMessage && channel.user_count > 0 {
                 Some(
                     MaterialText::new(&format!("({})", channel.user_count))
-                        .variant(TextVariant::LabelSmall)
-                        .color(self.theme.color_scheme.outline)
+                        .variant(TypographyVariant::LabelSmall)
+                        .color(self.theme.scheme.outline)
                 )
             } else {
                 None
@@ -424,7 +422,7 @@ impl ModernSidebar {
         .align_items(iced::Alignment::Center);
 
         let background_color = if is_selected {
-            self.theme.color_scheme.secondary_container
+            self.theme.scheme.secondary_container
         } else {
             Color::TRANSPARENT
         };
@@ -450,21 +448,21 @@ impl ModernSidebar {
         let is_selected = self.selected_server.as_ref() == Some(&server.id);
         
         let status_color = match server.status {
-            ConnectionStatus::Connected => self.theme.color_scheme.primary,
+            ConnectionStatus::Connected => self.theme.scheme.primary,
             ConnectionStatus::Connecting => Color::from_rgb(1.0, 0.6, 0.0),
-            ConnectionStatus::Disconnected => self.theme.color_scheme.outline,
-            ConnectionStatus::Error => self.theme.color_scheme.error,
+            ConnectionStatus::Disconnected => self.theme.scheme.outline,
+            ConnectionStatus::Error => self.theme.scheme.error,
         };
 
         let server_initial = server.name.chars().next().unwrap_or('?').to_uppercase().to_string();
         
         let content = container(
             MaterialText::new(&server_initial)
-                .variant(TextVariant::LabelLarge)
+                .variant(TypographyVariant::LabelLarge)
                 .color(if is_selected {
-                    self.theme.color_scheme.on_primary
+                    self.theme.scheme.on_primary
                 } else {
-                    self.theme.color_scheme.on_surface
+                    self.theme.scheme.on_surface
                 })
         )
         .padding(8)
@@ -472,9 +470,9 @@ impl ModernSidebar {
         .height(Length::Fixed(48.0))
         .style(move |_theme: &Theme| container::Style {
             background: Some(Background::Color(if is_selected {
-                self.theme.color_scheme.primary
+                self.theme.scheme.primary
             } else {
-                self.theme.color_scheme.surface_variant
+                self.theme.scheme.surface_variant
             })),
             border: Border {
                 color: status_color,
@@ -494,12 +492,12 @@ impl ModernSidebar {
         
         container(
             MaterialText::new(&count_text)
-                .variant(TextVariant::LabelSmall)
-                .color(self.theme.color_scheme.on_primary)
+                .variant(TypographyVariant::LabelSmall)
+                .color(self.theme.scheme.on_primary)
         )
         .padding([2, 6])
         .style(move |_theme: &Theme| container::Style {
-            background: Some(Background::Color(self.theme.color_scheme.primary)),
+            background: Some(Background::Color(self.theme.scheme.primary)),
             border: Border {
                 radius: 10.0.into(),
                 ..Default::default()
@@ -514,12 +512,12 @@ impl ModernSidebar {
         
         container(
             MaterialText::new(&count_text)
-                .variant(TextVariant::LabelSmall)
-                .color(self.theme.color_scheme.on_error)
+                .variant(TypographyVariant::LabelSmall)
+                .color(self.theme.scheme.on_error)
         )
         .padding([2, 6])
         .style(move |_theme: &Theme| container::Style {
-            background: Some(Background::Color(self.theme.color_scheme.error)),
+            background: Some(Background::Color(self.theme.scheme.error)),
             border: Border {
                 radius: 10.0.into(),
                 ..Default::default()
@@ -534,7 +532,7 @@ impl ModernSidebar {
             .width(Length::Fixed(8.0))
             .height(Length::Fixed(8.0))
             .style(move |_theme: &Theme| container::Style {
-                background: Some(Background::Color(self.theme.color_scheme.primary)),
+                background: Some(Background::Color(self.theme.scheme.primary)),
                 border: Border {
                     radius: 4.0.into(),
                     ..Default::default()

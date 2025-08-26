@@ -16,7 +16,7 @@ use crate::{
 };
 use iced::{
     widget::{
-        container, row, column, button, text, canvas, Canvas,
+        container, row, column, button, text,
         mouse_area, stack, scrollable, tooltip,
     },
     Element, Length, Color, Background, Border, Point, Rectangle,

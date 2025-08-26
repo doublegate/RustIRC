@@ -8,7 +8,7 @@ use iced::{
 use std::collections::HashMap;
 
 use crate::themes::material_design_3::{MaterialTheme, ElevationLevel};
-use crate::components::atoms::typography::{MaterialText, TextVariant};
+use crate::components::atoms::typography::{MaterialText, TypographyVariant};
 use crate::components::atoms::button::{MaterialButton, ButtonVariant};
 
 // Rich text editor with IRC formatting support
@@ -215,13 +215,13 @@ impl RichTextEditor {
         // Character counter
         if let Some(max_len) = self.max_length {
             let counter_color = if self.content.len() > max_len * 9 / 10 {
-                self.theme.color_scheme.error
+                self.theme.scheme.error
             } else {
-                self.theme.color_scheme.outline
+                self.theme.scheme.outline
             };
             
             let counter = MaterialText::new(&format!("{}/{}", self.content.len(), max_len))
-                .variant(TextVariant::LabelSmall)
+                .variant(TypographyVariant::LabelSmall)
                 .color(counter_color);
             
             content = content.push(
@@ -239,9 +239,9 @@ impl RichTextEditor {
         container(content)
             .padding(8)
             .style(move |_theme: &Theme| container::Style {
-                background: Some(Background::Color(self.theme.color_scheme.surface_container)),
+                background: Some(Background::Color(self.theme.scheme.surface_container)),
                 border: Border {
-                    color: self.theme.color_scheme.outline_variant,
+                    color: self.theme.scheme.outline_variant,
                     width: 1.0,
                     radius: 12.0.into(),
                 },
@@ -291,7 +291,7 @@ impl RichTextEditor {
                 .on_press(RichTextMessage::ToggleToolbar), // TODO: Show color picker
                 
             // Monospace toggle
-            MaterialButton::new("</>"")
+            MaterialButton::new("</>")
                 .variant(if self.formatting_stack.contains(&FormatType::Monospace) {
                     ButtonVariant::Filled
                 } else {
@@ -314,13 +314,13 @@ impl RichTextEditor {
                 .on_press(RichTextMessage::FormatToggled(FormatType::Reset)),
         ]
         .spacing(4)
-        .align_items(iced::Alignment::Center);
+        ;
 
         container(toolbar_content)
             .padding([4, 8])
             .width(Length::Fill)
             .style(move |_theme: &Theme| container::Style {
-                background: Some(Background::Color(self.theme.color_scheme.surface_variant)),
+                background: Some(Background::Color(self.theme.scheme.surface_variant)),
                 border: Border {
                     radius: 8.0.into(),
                     ..Default::default()
@@ -349,26 +349,26 @@ impl RichTextEditor {
                 let palette = theme.extended_palette();
                 
                 let background_color = match status {
-                    text_input::Status::Active => self.theme.color_scheme.surface_container_high,
-                    text_input::Status::Hovered => self.theme.color_scheme.surface_container_highest,
-                    text_input::Status::Focused => self.theme.color_scheme.surface_container_highest,
-                    text_input::Status::Disabled => self.theme.color_scheme.surface_variant,
+                    text_input::Status::Active => self.theme.scheme.surface_container_high,
+                    text_input::Status::Hovered => self.theme.scheme.surface_container_highest,
+                    text_input::Status::Focused => self.theme.scheme.surface_container_highest,
+                    text_input::Status::Disabled => self.theme.scheme.surface_variant,
                 };
 
                 text_input::Style {
                     background: Background::Color(background_color),
                     border: Border {
                         color: match status {
-                            text_input::Status::Focused => self.theme.color_scheme.primary,
-                            _ => self.theme.color_scheme.outline,
+                            text_input::Status::Focused => self.theme.scheme.primary,
+                            _ => self.theme.scheme.outline,
                         },
                         width: if matches!(status, text_input::Status::Focused) { 2.0 } else { 1.0 },
                         radius: 8.0.into(),
                     },
-                    icon: self.theme.color_scheme.on_surface_variant,
-                    placeholder: self.theme.color_scheme.on_surface_variant,
-                    value: self.theme.color_scheme.on_surface,
-                    selection: self.theme.color_scheme.primary_container,
+                    icon: self.theme.scheme.on_surface_variant,
+                    placeholder: self.theme.scheme.on_surface_variant,
+                    value: self.theme.scheme.on_surface,
+                    selection: self.theme.scheme.primary_container,
                 }
             })
             .into()
@@ -380,12 +380,12 @@ impl RichTextEditor {
         // Recent emojis section
         if !self.recent_emojis.is_empty() {
             let recent_label = MaterialText::new("Recently Used")
-                .variant(TextVariant::LabelSmall)
-                .color(self.theme.color_scheme.on_surface_variant);
+                .variant(TypographyVariant::LabelSmall)
+                .color(self.theme.scheme.on_surface_variant);
             
             emoji_grid = emoji_grid.push(
                 container(recent_label)
-                    .padding([8, 12, 4, 12])
+                    .padding([8, 12])
             );
 
             let mut recent_row = row![].spacing(4);
@@ -395,8 +395,8 @@ impl RichTextEditor {
                     .style(|theme: &Theme, status| {
                         button::Style {
                             background: Some(Background::Color(match status {
-                                button::Status::Hovered => self.theme.color_scheme.surface_container_high,
-                                button::Status::Pressed => self.theme.color_scheme.surface_container_highest,
+                                button::Status::Hovered => self.theme.scheme.surface_container_high,
+                                button::Status::Pressed => self.theme.scheme.surface_container_highest,
                                 _ => Color::TRANSPARENT,
                             })),
                             border: Border {
@@ -418,12 +418,12 @@ impl RichTextEditor {
 
         // All emojis grid
         let all_label = MaterialText::new("All Emojis")
-            .variant(TextVariant::LabelSmall)
-            .color(self.theme.color_scheme.on_surface_variant);
+            .variant(TypographyVariant::LabelSmall)
+            .color(self.theme.scheme.on_surface_variant);
         
         emoji_grid = emoji_grid.push(
             container(all_label)
-                .padding([12, 12, 4, 12])
+                .padding(12)
         );
 
         let mut current_row = row![].spacing(2);
@@ -435,8 +435,8 @@ impl RichTextEditor {
                 .style(|theme: &Theme, status| {
                     button::Style {
                         background: Some(Background::Color(match status {
-                            button::Status::Hovered => self.theme.color_scheme.surface_container_high,
-                            button::Status::Pressed => self.theme.color_scheme.surface_container_highest,
+                            button::Status::Hovered => self.theme.scheme.surface_container_high,
+                            button::Status::Pressed => self.theme.scheme.surface_container_highest,
                             _ => Color::TRANSPARENT,
                         })),
                         border: Border {
@@ -473,9 +473,9 @@ impl RichTextEditor {
         )
         .padding(4)
         .style(move |_theme: &Theme| container::Style {
-            background: Some(Background::Color(self.theme.color_scheme.surface_container)),
+            background: Some(Background::Color(self.theme.scheme.surface_container)),
             border: Border {
-                color: self.theme.color_scheme.outline_variant,
+                color: self.theme.scheme.outline_variant,
                 width: 1.0,
                 radius: 12.0.into(),
             },
@@ -489,7 +489,7 @@ impl RichTextEditor {
         match format_type {
             FormatType::Reset => {
                 self.formatting_stack.clear();
-                self.insert_text_at_cursor("\u{000f}"); // IRC reset character
+                self.insert_text_at_cursor("\u{000F}"); // IRC reset character
             }
             _ => {
                 if let Some(pos) = self.formatting_stack.iter().position(|f| std::mem::discriminant(f) == std::mem::discriminant(&format_type)) {
@@ -500,9 +500,9 @@ impl RichTextEditor {
                 
                 match format_type {
                     FormatType::Bold => self.insert_text_at_cursor("\u{0002}"),
-                    FormatType::Italic => self.insert_text_at_cursor("\u{001d}"),
-                    FormatType::Underline => self.insert_text_at_cursor("\u{001f}"),
-                    FormatType::Strikethrough => self.insert_text_at_cursor("\u{001e}"),
+                    FormatType::Italic => self.insert_text_at_cursor("\u{001D}"),
+                    FormatType::Underline => self.insert_text_at_cursor("\u{001F}"),
+                    FormatType::Strikethrough => self.insert_text_at_cursor("\u{001E}"),
                     FormatType::Color(code) => {
                         // Insert proper IRC color code
                         let color_code = format!("\u{0003}{:02}", code);
@@ -514,7 +514,7 @@ impl RichTextEditor {
                         self.insert_text_at_cursor(&bg_code);
                     }
                     FormatType::Monospace => self.insert_text_at_cursor("\u{0011}"),
-                    FormatType::Reset => self.insert_text_at_cursor("\u{000f}"),
+                    FormatType::Reset => self.insert_text_at_cursor("\u{000F}"),
                 };
             }
         }

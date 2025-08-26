@@ -5,7 +5,7 @@
 
 use crate::themes::material_design_3::MaterialTheme;
 use iced::{
-    widget::{canvas, Canvas},
+    // widget::{canvas, Canvas},
     Color, Element, Length, Point, Rectangle, Size, Vector,
     mouse, renderer, time,
 };

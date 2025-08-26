@@ -18,7 +18,7 @@
 
 A powerful, modern IRC client built in Rust featuring an enhanced Material Design 3 interface
 
-**Last Updated**: 2025-08-25 10:23 PM EDT | **Branch**: Enhanced Iced Material Design GUI
+**Last Updated**: 2025-08-25 11:19 PM EDT | **Branch**: Enhanced Iced Material Design GUI (impr_gui)
 
 [Features](#-features) • [Documentation](#-documentation) • [Development Plan](#-development-plan) • [Architecture](#️-architecture) • [Contributing](#-contributing)
 
@@ -84,7 +84,7 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 
 ## 🏗️ Current Development Status
 
-**Last Updated**: August 25, 2025 10:23 PM EDT - v0.3.8 Enhanced Iced Material Design GUI Branch
+**Last Updated**: August 25, 2025 11:19 PM EDT - v0.3.8 Enhanced Iced Material Design GUI Branch (impr_gui)
 
 ### ✅ **Phase 1: Research & Setup** - **COMPLETE** (100%)
 

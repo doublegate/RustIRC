@@ -170,6 +170,17 @@ pub struct ElevationToken {
     pub surface_tint_opacity: f32,
 }
 
+/// Elevation levels for Material Design 3 components
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub enum ElevationLevel {
+    Level0 = 0,
+    Level1 = 1,
+    Level2 = 2,
+    Level3 = 3,
+    Level4 = 4,
+    Level5 = 5,
+}
+
 /// Spacing scale based on 4px grid
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SpacingScale {
@@ -208,6 +219,12 @@ pub struct ShapeSystem {
     pub corner_large: f32,      // 16px
     pub corner_extra_large: f32, // 28px
     pub corner_full: f32,       // 9999px (fully rounded)
+}
+
+impl Default for MaterialTheme {
+    fn default() -> Self {
+        Self::dark()
+    }
 }
 
 impl MaterialTheme {
