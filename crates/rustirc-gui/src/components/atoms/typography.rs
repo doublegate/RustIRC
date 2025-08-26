@@ -192,20 +192,20 @@ impl MaterialText {
             | TypographyVariant::HeadlineMedium
             | TypographyVariant::HeadlineSmall
             | TypographyVariant::TitleLarge
-            | TypographyVariant::BodyLarge => self.theme.scheme.on_surface,
+            | TypographyVariant::BodyLarge => self.theme.scheme.on_surface.into(),
 
             TypographyVariant::TitleMedium
             | TypographyVariant::TitleSmall
             | TypographyVariant::BodyMedium
             | TypographyVariant::CodeLarge
-            | TypographyVariant::CodeMedium => self.theme.scheme.on_surface_variant,
+            | TypographyVariant::CodeMedium => self.theme.scheme.on_surface_variant.into(),
 
             TypographyVariant::LabelLarge
             | TypographyVariant::LabelMedium
-            | TypographyVariant::LabelSmall => self.theme.scheme.primary,
+            | TypographyVariant::LabelSmall => self.theme.scheme.primary.into(),
 
             TypographyVariant::BodySmall | TypographyVariant::CodeSmall => {
-                self.theme.scheme.on_surface_variant
+                self.theme.scheme.on_surface_variant.into()
             }
         }
     }
@@ -289,7 +289,7 @@ impl RichText {
 
         // Use the first span's formatting if any exists
         let (font, color) = if let Some(first_span) = self.spans.first() {
-            let span_color = first_span.color.unwrap_or(self.theme.scheme.on_surface);
+            let span_color = first_span.color.unwrap_or(self.theme.scheme.on_surface.into());
             let weight = first_span.weight.unwrap_or(FontWeight::Regular);
 
             let font = Font {

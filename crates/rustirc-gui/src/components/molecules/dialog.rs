@@ -107,7 +107,7 @@ impl<'a, Message: Clone> MaterialDialog<'a, Message> {
         // Title
         if let Some(title) = &self.title {
             dialog_content =
-                dialog_content.push(text(title).size(24).color(self.theme.scheme.on_surface));
+                dialog_content.push(text(title).size(24).color(self.theme.scheme.on_surface.into()));
         }
 
         // Content
@@ -144,8 +144,8 @@ impl<'a, Message: Clone> MaterialDialog<'a, Message> {
                 .padding(24)
                 .style(move |_theme: &Theme| container::Style {
                     background: Some(Background::Color(match self.variant {
-                        DialogVariant::FullScreen => self.theme.scheme.surface,
-                        _ => self.theme.scheme.surface_container_high,
+                        DialogVariant::FullScreen => self.theme.scheme.surface.into(),
+                        _ => self.theme.scheme.surface.into()_container_high,
                     })),
                     border: Border {
                         color: Color::TRANSPARENT,
@@ -188,8 +188,8 @@ impl<'a, Message: Clone> MaterialDialog<'a, Message> {
             container(sized_dialog)
                 .width(Length::Fill)
                 .height(Length::Fill)
-                .center_x()
-                .center_y()
+                .center_x(Length::Fill)
+                .center_y(Length::Fill)
                 .style(|_theme: &Theme| container::Style {
                     background: Some(Background::Color(Color::BLACK.scale_alpha(0.32))),
                     border: Border::default(),

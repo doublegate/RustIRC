@@ -85,9 +85,9 @@ where
                 };
 
                 container::Style {
-                    background: Some(Background::Color(surface_color)),
+                    background: Some(Background::Color(surface_color.into())),
                     border: Border {
-                        color: self.theme.scheme.outline_variant,
+                        color: self.theme.scheme.outline_variant.into(),
                         width: 1.0,
                         radius: 12.0.into(),
                     },

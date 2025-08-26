@@ -54,7 +54,7 @@ impl<Message: Clone> MaterialBottomNavigation<Message> {
     }
 
     pub fn view(self) -> Element<'static, Message, Theme, Renderer> {
-        let mut nav_items = row![].spacing(0).align_items(iced::Alignment::Center);
+        let mut nav_items = row![].spacing(0).align_y(iced::Alignment::Center);
 
         let item_width = Length::Fill;
 
@@ -69,9 +69,9 @@ impl<Message: Clone> MaterialBottomNavigation<Message> {
             };
 
             let icon_color = if is_selected {
-                self.theme.scheme.on_secondary_container
+                self.theme.scheme.on_secondary_container.into()
             } else {
-                self.theme.scheme.on_surface_variant
+                self.theme.scheme.on_surface_variant.into()
             };
 
             let mut item_content = column![].spacing(4);
@@ -81,7 +81,7 @@ impl<Message: Clone> MaterialBottomNavigation<Message> {
                 MaterialIcon::new(icon_text)
                     .size(24.0)
                     .color(icon_color)
-                    .view::<Message>(),
+                    .build(),
             )
             .padding(4);
 
@@ -95,16 +95,16 @@ impl<Message: Clone> MaterialBottomNavigation<Message> {
             // Label
             if self.show_labels {
                 let label_color = if is_selected {
-                    self.theme.scheme.on_surface
+                    self.theme.scheme.on_surface.into()
                 } else {
-                    self.theme.scheme.on_surface_variant
+                    self.theme.scheme.on_surface.into()_variant
                 };
 
                 item_content = item_content.push(text(&item.label).size(12).color(label_color));
             }
 
             // Navigation item button
-            let nav_item = button(container(item_content).width(Length::Fill).center_x())
+            let nav_item = button(container(item_content).width(Length::Fill).center_x(Length::Fill))
                 .on_press(item.on_press.clone())
                 .width(item_width)
                 .padding([12, 8])
@@ -114,10 +114,10 @@ impl<Message: Clone> MaterialBottomNavigation<Message> {
                     } else {
                         match status {
                             button::Status::Hovered => Some(Background::Color(
-                                self.theme.scheme.on_surface.scale_alpha(0.08),
+                                self.theme.scheme.on_surface.into().scale_alpha(0.08),
                             )),
                             button::Status::Pressed => Some(Background::Color(
-                                self.theme.scheme.on_surface.scale_alpha(0.12),
+                                self.theme.scheme.on_surface.into().scale_alpha(0.12),
                             )),
                             _ => Some(Background::Color(Color::TRANSPARENT)),
                         }
@@ -141,9 +141,9 @@ impl<Message: Clone> MaterialBottomNavigation<Message> {
             .width(Length::Fill)
             .height(Length::Fixed(if self.show_labels { 80.0 } else { 64.0 }))
             .style(move |_theme: &Theme| container::Style {
-                background: Some(Background::Color(self.theme.scheme.surface_container)),
+                background: Some(Background::Color(self.theme.scheme.surface.into()_container)),
                 border: Border {
-                    color: self.theme.scheme.outline_variant,
+                    color: self.theme.scheme.outline_variant.into(),
                     width: 1.0,
                     radius: 0.0.into(),
                 },

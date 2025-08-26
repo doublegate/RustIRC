@@ -104,7 +104,7 @@ impl AnimatedSpinner {
 
     /// Get spinner color
     fn get_color(&self) -> Color {
-        self.color.unwrap_or(self.theme.scheme.primary)
+        self.color.unwrap_or(self.theme.scheme.primary.into())
     }
 }
 

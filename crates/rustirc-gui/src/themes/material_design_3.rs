@@ -518,7 +518,7 @@ impl ColorScheme {
         // In a full implementation, you would use the Material Color Utilities
         // to generate a complete palette from the seed color
         let mut dark_scheme = Self::dark();
-        dark_scheme.primary = seed;
+        dark_scheme.primary = seed.into();
         // Adjust other colors based on the seed...
         dark_scheme
     }
@@ -526,7 +526,7 @@ impl ColorScheme {
     /// Generate light color scheme from seed color
     pub fn from_seed_light(seed: Color) -> Self {
         let mut light_scheme = Self::light();
-        light_scheme.primary = seed;
+        light_scheme.primary = seed.into();
         // Adjust other colors based on the seed...
         light_scheme
     }

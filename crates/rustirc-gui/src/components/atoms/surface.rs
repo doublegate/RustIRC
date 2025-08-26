@@ -122,13 +122,13 @@ where
 
     fn get_surface_color(&self) -> Color {
         match self.surface_type {
-            SurfaceType::Surface => self.theme.scheme.surface,
-            SurfaceType::SurfaceVariant => self.theme.scheme.surface_variant,
-            SurfaceType::SurfaceContainer => self.theme.scheme.surface_container,
-            SurfaceType::SurfaceContainerLow => self.theme.scheme.surface_container_low,
-            SurfaceType::SurfaceContainerHigh => self.theme.scheme.surface_container_high,
-            SurfaceType::SurfaceContainerHighest => self.theme.scheme.surface_container_highest,
-            SurfaceType::InverseSurface => self.theme.scheme.inverse_surface,
+            SurfaceType::Surface => self.theme.scheme.surface.into(),
+            SurfaceType::SurfaceVariant => self.theme.scheme.surface_variant.into(),
+            SurfaceType::SurfaceContainer => self.theme.scheme.surface_container.into(),
+            SurfaceType::SurfaceContainerLow => self.theme.scheme.surface_container_low.into(),
+            SurfaceType::SurfaceContainerHigh => self.theme.scheme.surface_container_high.into(),
+            SurfaceType::SurfaceContainerHighest => self.theme.scheme.surface_container_highest.into(),
+            SurfaceType::InverseSurface => self.theme.scheme.inverse_surface.into(),
         }
     }
 }

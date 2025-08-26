@@ -108,12 +108,12 @@ impl<'a, Message: Clone + 'a> MaterialChip<'a, Message> {
         if let Some(icon) = leading_icon {
             content = content.push(text(icon).size(18).color(if enabled {
                 if selected {
-                    theme.scheme.on_secondary_container
+                    theme.scheme.on_secondary_container.into()
                 } else {
-                    theme.scheme.primary
+                    theme.scheme.primary.into()
                 }
             } else {
-                theme.scheme.on_surface.scale_alpha(0.38)
+                theme.scheme.on_surface.scale_alpha(0.38).into()
             }));
         }
 
@@ -121,14 +121,14 @@ impl<'a, Message: Clone + 'a> MaterialChip<'a, Message> {
         content = content.push(text(label).size(14).color(if enabled {
             if selected {
                 match variant {
-                    ChipVariant::Filter => theme.scheme.on_secondary_container,
-                    _ => theme.scheme.on_surface,
+                    ChipVariant::Filter => theme.scheme.on_secondary_container.into(),
+                    _ => theme.scheme.on_surface.into(),
                 }
             } else {
-                theme.scheme.on_surface
+                theme.scheme.on_surface.into()
             }
         } else {
-            theme.scheme.on_surface.scale_alpha(0.38)
+            theme.scheme.on_surface.scale_alpha(0.38).into()
         }));
 
         // Trailing icon or remove button
@@ -143,9 +143,9 @@ impl<'a, Message: Clone + 'a> MaterialChip<'a, Message> {
             ));
         } else if let Some(icon) = trailing_icon {
             content = content.push(text(icon).size(18).color(if enabled {
-                theme.scheme.on_surface_variant
+                theme.scheme.on_surface_variant.into()
             } else {
-                theme.scheme.on_surface.scale_alpha(0.38)
+                theme.scheme.on_surface.scale_alpha(0.38).into()
             }));
         }
 
@@ -156,22 +156,22 @@ impl<'a, Message: Clone + 'a> MaterialChip<'a, Message> {
                     let (background_color, border_color) =
                         match (&variant, selected, enabled) {
                             (ChipVariant::Filter, true, true) => {
-                                (theme.scheme.secondary_container, Color::TRANSPARENT)
+                                (theme.scheme.secondary_container.into(), Color::TRANSPARENT)
                             }
                             (ChipVariant::Input, _, true) => (
-                                theme.scheme.surface_container_low,
-                                theme.scheme.outline,
+                                theme.scheme.surface_container_low.into(),
+                                theme.scheme.outline.into(),
                             ),
                             (ChipVariant::Assist, true, true) => {
-                                (theme.scheme.surface_container_low, Color::TRANSPARENT)
+                                (theme.scheme.surface_container_low.into(), Color::TRANSPARENT)
                             }
                             (ChipVariant::Suggestion, true, true) => {
-                                (theme.scheme.surface_container_low, Color::TRANSPARENT)
+                                (theme.scheme.surface_container_low.into(), Color::TRANSPARENT)
                             }
-                            (_, false, true) => (Color::TRANSPARENT, theme.scheme.outline),
+                            (_, false, true) => (Color::TRANSPARENT, theme.scheme.outline.into()),
                             (_, _, false) => (
-                                theme.scheme.on_surface.scale_alpha(0.12),
-                                theme.scheme.on_surface.scale_alpha(0.12),
+                                theme.scheme.on_surface.scale_alpha(0.12).into(),
+                                theme.scheme.on_surface.scale_alpha(0.12).into(),
                             ),
                         };
 
@@ -196,10 +196,10 @@ impl<'a, Message: Clone + 'a> MaterialChip<'a, Message> {
                 .style(move |_theme: &Theme, status| {
                     let hover_color = match status {
                         button::Status::Hovered => {
-                            Some(theme.scheme.on_surface.scale_alpha(0.08))
+                            Some(theme.scheme.on_surface.scale_alpha(0.08).into())
                         }
                         button::Status::Pressed => {
-                            Some(theme.scheme.on_surface.scale_alpha(0.12))
+                            Some(theme.scheme.on_surface.scale_alpha(0.12).into())
                         }
                         _ => None,
                     };

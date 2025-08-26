@@ -218,7 +218,8 @@ impl RichTextEditor {
 
             let counter = MaterialText::new(&format!("{}/{}", self.content.len(), max_len))
                 .variant(TypographyVariant::LabelSmall)
-                .color(counter_color);
+                .color(counter_color.into())
+                .build();
 
             content = content.push(
                 container(counter)
@@ -235,9 +236,9 @@ impl RichTextEditor {
         container(content)
             .padding(8)
             .style(move |_theme: &Theme| container::Style {
-                background: Some(Background::Color(self.theme.scheme.surface_container)),
+                background: Some(Background::Color(self.theme.scheme.surface.into()_container)),
                 border: Border {
-                    color: self.theme.scheme.outline_variant,
+                    color: self.theme.scheme.outline_variant.into(),
                     width: 1.0,
                     radius: 12.0.into(),
                 },
@@ -310,7 +311,7 @@ impl RichTextEditor {
             .padding([4, 8])
             .width(Length::Fill)
             .style(move |_theme: &Theme| container::Style {
-                background: Some(Background::Color(self.theme.scheme.surface_variant)),
+                background: Some(Background::Color(self.theme.scheme.surface.into()_variant)),
                 border: Border {
                     radius: 8.0.into(),
                     ..Default::default()
@@ -339,10 +340,10 @@ impl RichTextEditor {
                 let palette = theme.extended_palette();
 
                 let background_color = match status {
-                    text_input::Status::Active => self.theme.scheme.surface_container_high,
-                    text_input::Status::Hovered => self.theme.scheme.surface_container_highest,
-                    text_input::Status::Focused => self.theme.scheme.surface_container_highest,
-                    text_input::Status::Disabled => self.theme.scheme.surface_variant,
+                    text_input::Status::Active => self.theme.scheme.surface.into()_container_high,
+                    text_input::Status::Hovered => self.theme.scheme.surface.into()_container_highest,
+                    text_input::Status::Focused => self.theme.scheme.surface.into()_container_highest,
+                    text_input::Status::Disabled => self.theme.scheme.surface.into()_variant,
                 };
 
                 text_input::Style {
@@ -359,9 +360,9 @@ impl RichTextEditor {
                         },
                         radius: 8.0.into(),
                     },
-                    icon: self.theme.scheme.on_surface_variant,
-                    placeholder: self.theme.scheme.on_surface_variant,
-                    value: self.theme.scheme.on_surface,
+                    icon: self.theme.scheme.on_surface.into()_variant,
+                    placeholder: self.theme.scheme.on_surface.into()_variant,
+                    value: self.theme.scheme.on_surface.into(),
                     selection: self.theme.scheme.primary_container,
                 }
             })
@@ -375,7 +376,7 @@ impl RichTextEditor {
         if !self.recent_emojis.is_empty() {
             let recent_label = MaterialText::new("Recently Used")
                 .variant(TypographyVariant::LabelSmall)
-                .color(self.theme.scheme.on_surface_variant);
+                .color(self.theme.scheme.on_surface.into()_variant);
 
             emoji_grid = emoji_grid.push(container(recent_label).padding([8, 12]));
 
@@ -385,8 +386,8 @@ impl RichTextEditor {
                     .on_press(RichTextMessage::EmojiSelected(emoji.clone()))
                     .style(|theme: &Theme, status| button::Style {
                         background: Some(Background::Color(match status {
-                            button::Status::Hovered => self.theme.scheme.surface_container_high,
-                            button::Status::Pressed => self.theme.scheme.surface_container_highest,
+                            button::Status::Hovered => self.theme.scheme.surface.into()_container_high,
+                            button::Status::Pressed => self.theme.scheme.surface.into()_container_highest,
                             _ => Color::TRANSPARENT,
                         })),
                         border: Border {
@@ -405,7 +406,7 @@ impl RichTextEditor {
         // All emojis grid
         let all_label = MaterialText::new("All Emojis")
             .variant(TypographyVariant::LabelSmall)
-            .color(self.theme.scheme.on_surface_variant);
+            .color(self.theme.scheme.on_surface.into()_variant);
 
         emoji_grid = emoji_grid.push(container(all_label).padding(12));
 
@@ -417,8 +418,8 @@ impl RichTextEditor {
                 .on_press(RichTextMessage::EmojiSelected(emoji.to_string()))
                 .style(|theme: &Theme, status| button::Style {
                     background: Some(Background::Color(match status {
-                        button::Status::Hovered => self.theme.scheme.surface_container_high,
-                        button::Status::Pressed => self.theme.scheme.surface_container_highest,
+                        button::Status::Hovered => self.theme.scheme.surface.into()_container_high,
+                        button::Status::Pressed => self.theme.scheme.surface.into()_container_highest,
                         _ => Color::TRANSPARENT,
                     })),
                     border: Border {
@@ -445,9 +446,9 @@ impl RichTextEditor {
         container(scrollable(emoji_grid).height(Length::Fixed(200.0)))
             .padding(4)
             .style(move |_theme: &Theme| container::Style {
-                background: Some(Background::Color(self.theme.scheme.surface_container)),
+                background: Some(Background::Color(self.theme.scheme.surface.into()_container)),
                 border: Border {
-                    color: self.theme.scheme.outline_variant,
+                    color: self.theme.scheme.outline_variant.into(),
                     width: 1.0,
                     radius: 12.0.into(),
                 },

@@ -196,8 +196,8 @@ impl ModernSidebar {
     }
 
     pub fn view(&self) -> Element<'_, SidebarMessage, Theme, Renderer> {
-        let surface_color = self.theme.scheme.surface;
-        let surface_variant = self.theme.scheme.surface_variant;
+        let surface_color = self.theme.scheme.surface.into();
+        let surface_variant = self.theme.scheme.surface_variant.into();
 
         let content = if self.is_compact {
             self.compact_view()
@@ -228,7 +228,8 @@ impl ModernSidebar {
             row![
                 MaterialText::new("Servers")
                     .variant(TypographyVariant::HeadlineSmall)
-                    .color(self.theme.scheme.on_surface),
+                    .color(self.theme.scheme.on_surface.into())
+                    .build(),
                 MaterialButton::new("⇔")
                     .variant(ButtonVariant::Text)
                     .on_press(SidebarMessage::ToggleCompact)
@@ -318,10 +319,11 @@ impl ModernSidebar {
             MaterialText::new(&server.name)
                 .variant(TypographyVariant::LabelLarge)
                 .color(if is_selected {
-                    self.theme.scheme.on_primary_container
+                    self.theme.scheme.on_primary_container.into()
                 } else {
-                    self.theme.scheme.on_surface
-                }),
+                    self.theme.scheme.on_surface.into()
+                })
+                .build(),
             // Unread badge
             if server.unread_count > 0 {
                 Some(self.create_unread_badge(server.unread_count))
@@ -333,7 +335,7 @@ impl ModernSidebar {
         .align_items(iced::Alignment::Center);
 
         let background_color = if is_selected {
-            self.theme.scheme.primary_container
+            self.theme.scheme.primary_container.into()
         } else {
             Color::TRANSPARENT
         };
@@ -399,21 +401,24 @@ impl ModernSidebar {
             // Channel type icon
             MaterialText::new(channel_icon)
                 .variant(TypographyVariant::LabelMedium)
-                .color(activity_color),
+                .color(activity_color.into())
+                .build(),
             // Channel name
             MaterialText::new(&channel.name)
                 .variant(TypographyVariant::LabelMedium)
                 .color(if is_selected {
-                    self.theme.scheme.on_secondary_container
+                    self.theme.scheme.on_secondary_container.into()
                 } else {
-                    self.theme.scheme.on_surface_variant
-                }),
+                    self.theme.scheme.on_surface_variant.into()
+                })
+                .build(),
             // User count for channels
             if channel.channel_type != ChannelType::DirectMessage && channel.user_count > 0 {
                 Some(
                     MaterialText::new(&format!("({})", channel.user_count))
                         .variant(TypographyVariant::LabelSmall)
-                        .color(self.theme.scheme.outline),
+                        .color(self.theme.scheme.outline.into())
+                        .build(),
                 )
             } else {
                 None
@@ -431,7 +436,7 @@ impl ModernSidebar {
         .align_items(iced::Alignment::Center);
 
         let background_color = if is_selected {
-            self.theme.scheme.secondary_container
+            self.theme.scheme.secondary_container.into()
         } else {
             Color::TRANSPARENT
         };
@@ -481,10 +486,11 @@ impl ModernSidebar {
             MaterialText::new(&server_initial)
                 .variant(TypographyVariant::LabelLarge)
                 .color(if is_selected {
-                    self.theme.scheme.on_primary
+                    self.theme.scheme.on_primary.into()
                 } else {
-                    self.theme.scheme.on_surface
-                }),
+                    self.theme.scheme.on_surface.into()
+                })
+                .build(),
         )
         .padding(8)
         .width(Length::Fixed(48.0))
@@ -493,7 +499,7 @@ impl ModernSidebar {
             background: Some(Background::Color(if is_selected {
                 self.theme.scheme.primary
             } else {
-                self.theme.scheme.surface_variant
+                self.theme.scheme.surface_variant.into()
             })),
             border: Border {
                 color: status_color,
@@ -518,11 +524,12 @@ impl ModernSidebar {
         container(
             MaterialText::new(&count_text)
                 .variant(TypographyVariant::LabelSmall)
-                .color(self.theme.scheme.on_primary),
+                .color(self.theme.scheme.on_primary.into())
+                .build(),
         )
         .padding([2, 6])
         .style(move |_theme: &Theme| container::Style {
-            background: Some(Background::Color(self.theme.scheme.primary)),
+            background: Some(Background::Color(self.theme.scheme.primary.into())),
             border: Border {
                 radius: 10.0.into(),
                 ..Default::default()
@@ -542,11 +549,12 @@ impl ModernSidebar {
         container(
             MaterialText::new(&count_text)
                 .variant(TypographyVariant::LabelSmall)
-                .color(self.theme.scheme.on_error),
+                .color(self.theme.scheme.on_error.into())
+                .build(),
         )
         .padding([2, 6])
         .style(move |_theme: &Theme| container::Style {
-            background: Some(Background::Color(self.theme.scheme.error)),
+            background: Some(Background::Color(self.theme.scheme.error.into())),
             border: Border {
                 radius: 10.0.into(),
                 ..Default::default()
@@ -561,7 +569,7 @@ impl ModernSidebar {
             .width(Length::Fixed(8.0))
             .height(Length::Fixed(8.0))
             .style(move |_theme: &Theme| container::Style {
-                background: Some(Background::Color(self.theme.scheme.primary)),
+                background: Some(Background::Color(self.theme.scheme.primary.into())),
                 border: Border {
                     radius: 4.0.into(),
                     ..Default::default()

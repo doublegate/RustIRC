@@ -93,7 +93,7 @@ impl<Message: Clone> MaterialAppBar<Message> {
                 button(
                     MaterialIcon::new(&leading.icon)
                         .size(24.0)
-                        .color(self.theme.scheme.on_surface)
+                        .color(self.theme.scheme.on_surface.into())
                         .view(),
                 )
                 .on_press(message.clone())
@@ -107,11 +107,11 @@ impl<Message: Clone> MaterialAppBar<Message> {
             } else {
                 MaterialIcon::new(&leading.icon)
                     .size(24.0)
-                    .color(self.theme.scheme.on_surface)
+                    .color(self.theme.scheme.on_surface.into())
                     .view()
             };
 
-            content = content.push(container(leading_button).padding(16).center_y());
+            content = content.push(container(leading_button).padding(16).center_y(Length::Fill));
         }
 
         // Title
@@ -119,15 +119,15 @@ impl<Message: Clone> MaterialAppBar<Message> {
             AppBarVariant::CenterAligned => container(
                 text(&self.title)
                     .size(22)
-                    .color(self.theme.scheme.on_surface),
+                    .color(self.theme.scheme.on_surface.into()),
             )
             .width(Length::Fill)
-            .center_x()
-            .center_y(),
+            .center_x(Length::Fill)
+            .center_y(Length::Fill),
             AppBarVariant::Large => container(
                 text(&self.title)
                     .size(32)
-                    .color(self.theme.scheme.on_surface),
+                    .color(self.theme.scheme.on_surface.into()),
             )
             .width(Length::Fill)
             .padding([24, 16])
@@ -135,7 +135,7 @@ impl<Message: Clone> MaterialAppBar<Message> {
             AppBarVariant::Medium => container(
                 text(&self.title)
                     .size(28)
-                    .color(self.theme.scheme.on_surface),
+                    .color(self.theme.scheme.on_surface.into()),
             )
             .width(Length::Fill)
             .padding([16, 16])
@@ -143,10 +143,10 @@ impl<Message: Clone> MaterialAppBar<Message> {
             _ => container(
                 text(&self.title)
                     .size(22)
-                    .color(self.theme.scheme.on_surface),
+                    .color(self.theme.scheme.on_surface.into()),
             )
             .width(Length::Fill)
-            .center_y()
+            .center_y(Length::Fill)
             .padding([0, 16]),
         };
 
@@ -159,14 +159,14 @@ impl<Message: Clone> MaterialAppBar<Message> {
                 button(
                     MaterialIcon::new(&action.icon)
                         .size(24.0)
-                        .color(self.theme.scheme.on_surface)
+                        .color(self.theme.scheme.on_surface.into())
                         .view(),
                 )
                 .on_press(message.clone())
                 .style(|_theme: &Theme, status| button::Style {
                     background: Some(Background::Color(match status {
-                        button::Status::Hovered => self.theme.scheme.on_surface.scale_alpha(0.08),
-                        button::Status::Pressed => self.theme.scheme.on_surface.scale_alpha(0.12),
+                        button::Status::Hovered => self.theme.scheme.on_surface.into().scale_alpha(0.08),
+                        button::Status::Pressed => self.theme.scheme.on_surface.into().scale_alpha(0.12),
                         _ => Color::TRANSPARENT,
                     })),
                     border: Border {
@@ -181,7 +181,7 @@ impl<Message: Clone> MaterialAppBar<Message> {
                 button(
                     MaterialIcon::new(&action.icon)
                         .size(24.0)
-                        .color(self.theme.scheme.on_surface.scale_alpha(0.38))
+                        .color(self.theme.scheme.on_surface.into().scale_alpha(0.38))
                         .view(),
                 )
                 .style(|_theme: &Theme, _status| button::Style {
@@ -197,7 +197,7 @@ impl<Message: Clone> MaterialAppBar<Message> {
         }
 
         if !self.trailing_actions.is_empty() {
-            content = content.push(container(actions_row).padding([0, 16]).center_y());
+            content = content.push(container(actions_row).padding([0, 16]).center_y(Length::Fill));
         }
 
         container(content)
@@ -206,10 +206,10 @@ impl<Message: Clone> MaterialAppBar<Message> {
             .style(move |_theme: &Theme| container::Style {
                 background: Some(Background::Color(match self.variant {
                     AppBarVariant::Small | AppBarVariant::Top | AppBarVariant::CenterAligned => {
-                        self.theme.scheme.surface
+                        self.theme.scheme.surface.into()
                     }
                     AppBarVariant::Medium | AppBarVariant::Large => {
-                        self.theme.scheme.surface_container
+                        self.theme.scheme.surface.into()_container
                     }
                 })),
                 border: Border::default(),

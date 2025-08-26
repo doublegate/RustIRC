@@ -135,22 +135,22 @@ impl<Message: Clone> MaterialListItem<Message> {
                     ListLeading::Icon(icon) => MaterialIcon::new(icon)
                         .size(24.0)
                         .color(if self.enabled {
-                            self.theme.scheme.on_surface_variant
+                            self.theme.scheme.on_surface_variant.into()
                         } else {
-                            self.theme.scheme.on_surface.scale_alpha(0.38)
+                            self.theme.scheme.on_surface.into().scale_alpha(0.38)
                         })
-                        .view(),
+                        .build(),
                     ListLeading::Avatar(initial) => container(
                         text(initial)
                             .size(16)
-                            .color(self.theme.scheme.on_primary_container),
+                            .color(self.theme.scheme.on_primary_container.into()),
                     )
                     .width(Length::Fixed(40.0))
                     .height(Length::Fixed(40.0))
-                    .center_x()
-                    .center_y()
+                    .center_x(Length::Fill)
+                    .center_y(Length::Fill)
                     .style(move |_theme: &Theme| container::Style {
-                        background: Some(Background::Color(self.theme.scheme.primary_container)),
+                        background: Some(Background::Color(self.theme.scheme.primary_container.into())),
                         border: Border {
                             radius: 20.0.into(),
                             ..Default::default()
@@ -164,7 +164,7 @@ impl<Message: Clone> MaterialListItem<Message> {
                             if *checked {
                                 self.theme.scheme.primary
                             } else {
-                                self.theme.scheme.on_surface_variant
+                                self.theme.scheme.on_surface_variant.into()
                             },
                         ))
                         .into()
@@ -175,7 +175,7 @@ impl<Message: Clone> MaterialListItem<Message> {
                             if *selected {
                                 self.theme.scheme.primary
                             } else {
-                                self.theme.scheme.on_surface_variant
+                                self.theme.scheme.on_surface_variant.into()
                             },
                         ))
                         .into()
@@ -198,26 +198,26 @@ impl<Message: Clone> MaterialListItem<Message> {
         // Primary text
         text_content =
             text_content.push(text(&self.primary_text).size(16).color(if self.enabled {
-                self.theme.scheme.on_surface
+                self.theme.scheme.on_surface.into()
             } else {
-                self.theme.scheme.on_surface.scale_alpha(0.38)
+                self.theme.scheme.on_surface.into().scale_alpha(0.38)
             }));
 
         // Secondary text
         if let Some(secondary) = &self.secondary_text {
             text_content = text_content.push(text(secondary).size(14).color(if self.enabled {
-                self.theme.scheme.on_surface_variant
+                self.theme.scheme.on_surface.into()_variant
             } else {
-                self.theme.scheme.on_surface.scale_alpha(0.38)
+                self.theme.scheme.on_surface.into().scale_alpha(0.38)
             }));
         }
 
         // Tertiary text
         if let Some(tertiary) = &self.tertiary_text {
             text_content = text_content.push(text(tertiary).size(12).color(if self.enabled {
-                self.theme.scheme.on_surface_variant
+                self.theme.scheme.on_surface.into()_variant
             } else {
-                self.theme.scheme.on_surface.scale_alpha(0.38)
+                self.theme.scheme.on_surface.into().scale_alpha(0.38)
             }));
         }
 
@@ -228,13 +228,13 @@ impl<Message: Clone> MaterialListItem<Message> {
             let trailing_element = match trailing {
                 ListTrailing::Text(text_val) => text(text_val)
                     .size(14)
-                    .color(self.theme.scheme.on_surface_variant)
+                    .color(self.theme.scheme.on_surface.into()_variant.into())
                     .into(),
                 ListTrailing::IconButton { icon, on_press } => button(
                     MaterialIcon::new(icon)
                         .size(24.0)
-                        .color(self.theme.scheme.on_surface_variant)
-                        .view(),
+                        .color(self.theme.scheme.on_surface.into()_variant.into())
+                        .build(),
                 )
                 .on_press(on_press.clone())
                 .style(|_theme: &Theme, _status| button::Style {
@@ -261,7 +261,7 @@ impl<Message: Clone> MaterialListItem<Message> {
                         .color(if *checked {
                             self.theme.scheme.primary
                         } else {
-                            self.theme.scheme.on_surface_variant
+                            self.theme.scheme.on_surface_variant.into()
                         }),
                 )
                 .on_press(on_toggle.clone())
@@ -274,7 +274,7 @@ impl<Message: Clone> MaterialListItem<Message> {
                 .into(),
                 ListTrailing::Menu => MaterialIcon::new("⋮")
                     .size(24.0)
-                    .color(self.theme.scheme.on_surface_variant)
+                    .color(self.theme.scheme.on_surface.into()_variant.into())
                     .view(),
             };
 
@@ -291,7 +291,7 @@ impl<Message: Clone> MaterialListItem<Message> {
             .width(Length::Fill)
             .height(Length::Fixed(item_height))
             .padding([0, 16])
-            .center_y()
+            .center_y(Length::Fill)
             .style(move |_theme: &Theme| container::Style {
                 background: Some(Background::Color(if self.selected {
                     self.theme.scheme.secondary_container.scale_alpha(0.08)
@@ -309,10 +309,10 @@ impl<Message: Clone> MaterialListItem<Message> {
                 .style(move |_theme: &Theme, status| {
                     let hover_color = match status {
                         button::Status::Hovered => {
-                            Some(self.theme.scheme.on_surface.scale_alpha(0.08))
+                            Some(self.theme.scheme.on_surface.into().scale_alpha(0.08))
                         }
                         button::Status::Pressed => {
-                            Some(self.theme.scheme.on_surface.scale_alpha(0.12))
+                            Some(self.theme.scheme.on_surface.into().scale_alpha(0.12))
                         }
                         _ => None,
                     };

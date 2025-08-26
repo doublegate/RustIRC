@@ -121,11 +121,11 @@ impl<'a, Message: 'a + Clone> MaterialSearchBar<'a, Message> {
             let search_icon = MaterialIcon::new("🔍")
                 .size(24.0)
                 .color(if self.is_focused {
-                    self.theme.scheme.primary
+                    self.theme.scheme.primary.into()
                 } else {
-                    self.theme.scheme.on_surface_variant
+                    self.theme.scheme.on_surface_variant.into()
                 })
-                .view::<Message>();
+                .build();
 
             search_content = search_content.push(container(search_icon).padding([0, 4]));
         }
@@ -150,10 +150,10 @@ impl<'a, Message: 'a + Clone> MaterialSearchBar<'a, Message> {
             text_input::Style {
                 background: Background::Color(Color::TRANSPARENT),
                 border: Border::default(),
-                icon: self.theme.scheme.on_surface_variant,
-                placeholder: self.theme.scheme.on_surface_variant.scale_alpha(0.6),
-                value: self.theme.scheme.on_surface,
-                selection: self.theme.scheme.primary.scale_alpha(0.2),
+                icon: self.theme.scheme.on_surface_variant.into(),
+                placeholder: self.theme.scheme.on_surface_variant.into().scale_alpha(0.6),
+                value: self.theme.scheme.on_surface.into(),
+                selection: self.theme.scheme.primary.into().scale_alpha(0.2),
             }
         });
 
@@ -165,7 +165,7 @@ impl<'a, Message: 'a + Clone> MaterialSearchBar<'a, Message> {
                 button(
                     MaterialIcon::new("×")
                         .size(24.0)
-                        .color(self.theme.scheme.on_surface_variant)
+                        .color(self.theme.scheme.on_surface_variant.into())
                         .view::<Message>(),
                 )
                 .on_press(clear_message.clone())
@@ -187,7 +187,7 @@ impl<'a, Message: 'a + Clone> MaterialSearchBar<'a, Message> {
                 button(
                     MaterialIcon::new("×")
                         .size(24.0)
-                        .color(self.theme.scheme.on_surface_variant.scale_alpha(0.38))
+                        .color(self.theme.scheme.on_surface_variant.into().scale_alpha(0.38))
                         .view::<Message>(),
                 )
                 .style(|_theme: &Theme, _status| button::Style {
@@ -211,7 +211,7 @@ impl<'a, Message: 'a + Clone> MaterialSearchBar<'a, Message> {
             .width(self.width)
             .height(Length::Fixed(search_height))
             .padding([0, 16])
-            .center_y()
+            .center_y(Length::Fill)
             .style(move |_theme: &Theme| {
                 let background_color = match self.variant {
                     SearchBarVariant::Docked => {

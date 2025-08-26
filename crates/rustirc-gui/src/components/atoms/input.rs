@@ -208,14 +208,14 @@ impl<'a, Message: 'a + Clone> MaterialInput<'a, Message> {
                     width: border_width,
                     radius: 4.0.into(),
                 },
-                icon: theme_clone.scheme.on_surface_variant,
-                placeholder: theme_clone.scheme.on_surface_variant.scale_alpha(0.6),
+                icon: theme_clone.scheme.on_surface_variant.into(),
+                placeholder: theme_clone.scheme.on_surface_variant.scale_alpha(0.6).into(),
                 value: if is_enabled {
-                    theme_clone.scheme.on_surface
+                    theme_clone.scheme.on_surface.into()
                 } else {
-                    theme_clone.scheme.on_surface.scale_alpha(0.38)
+                    theme_clone.scheme.on_surface.scale_alpha(0.38).into()
                 },
-                selection: theme_clone.scheme.primary.scale_alpha(0.2),
+                selection: theme_clone.scheme.primary.scale_alpha(0.2).into(),
             }
         });
 
@@ -223,12 +223,12 @@ impl<'a, Message: 'a + Clone> MaterialInput<'a, Message> {
 
         // Helper or error text
         if let Some(error) = error_text {
-            input_column = input_column.push(text(error).size(12).color(theme.scheme.error));
+            input_column = input_column.push(text(error).size(12).color(theme.scheme.error.into()));
         } else if let Some(helper) = helper_text {
             input_column = input_column.push(text(helper).size(12).color(if is_enabled {
-                theme.scheme.on_surface_variant
+                theme.scheme.on_surface_variant.into()
             } else {
-                theme.scheme.on_surface.scale_alpha(0.38)
+                theme.scheme.on_surface.scale_alpha(0.38).into()
             }));
         }
 

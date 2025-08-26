@@ -44,14 +44,14 @@ impl MaterialIcon {
 
     pub fn from_theme(mut self, theme: &MaterialTheme, variant: IconVariant) -> Self {
         self.color = match variant {
-            IconVariant::Primary => theme.scheme.primary,
-            IconVariant::OnSurface => theme.scheme.on_surface,
-            IconVariant::OnSurfaceVariant => theme.scheme.on_surface_variant,
-            IconVariant::OnPrimary => theme.scheme.on_primary,
-            IconVariant::OnSecondary => theme.scheme.on_secondary,
-            IconVariant::OnTertiary => theme.scheme.on_tertiary,
-            IconVariant::OnError => theme.scheme.on_error,
-            IconVariant::Outline => theme.scheme.outline,
+            IconVariant::Primary => theme.scheme.primary.into(),
+            IconVariant::OnSurface => theme.scheme.on_surface.into(),
+            IconVariant::OnSurfaceVariant => theme.scheme.on_surface_variant.into(),
+            IconVariant::OnPrimary => theme.scheme.on_primary.into(),
+            IconVariant::OnSecondary => theme.scheme.on_secondary.into(),
+            IconVariant::OnTertiary => theme.scheme.on_tertiary.into(),
+            IconVariant::OnError => theme.scheme.on_error.into(),
+            IconVariant::Outline => theme.scheme.outline.into(),
         };
         self
     }

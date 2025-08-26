@@ -141,26 +141,30 @@ impl<Message> MaterialButton<Message> {
 
         let content = self.build_content(font_size, icon_size, text_color);
         let disabled = self.disabled;
-
+        let on_press = self.on_press.clone();
+        
+        // Clone values needed in closure before move
+        let button_clone = self.clone();
+        
         let btn = button(content)
             .height(height)
             .width(width)
             .padding([0, padding_horizontal as u16])
             .style(move |_theme, status| {
-                let (background, text, border) = self.get_colors_for_status(status);
+                let (background, text, border) = button_clone.get_colors_for_status(status);
                 button::Style {
                     background: Some(background),
                     text_color: text,
                     border: Border {
                         color: border,
                         width: border_width,
-                        radius: self.theme.shapes.corner_large.into(),
+                        radius: button_clone.theme.shapes.corner_large.into(),
                     },
-                    shadow: self.get_shadow_for_status(status),
+                    shadow: button_clone.get_shadow_for_status(status),
                 }
             });
 
-        if let Some(on_press) = self.on_press {
+        if let Some(on_press) = on_press {
             if !disabled {
                 btn.on_press(on_press).into()
             } else {
@@ -322,7 +326,7 @@ impl<Message> MaterialButton<Message> {
         match (self.variant, status) {
             (ButtonVariant::Filled | ButtonVariant::FilledTonal, button::Status::Active) => {
                 iced::Shadow {
-                    color: self.theme.elevation.level1.shadow_color,
+                    color: self.theme.elevation.level1.shadow_color.into(),
                     offset: Vector::new(
                         self.theme.elevation.level1.shadow_offset_x,
                         self.theme.elevation.level1.shadow_offset_y,
@@ -332,7 +336,7 @@ impl<Message> MaterialButton<Message> {
             }
             (ButtonVariant::Filled | ButtonVariant::FilledTonal, button::Status::Hovered) => {
                 iced::Shadow {
-                    color: self.theme.elevation.level2.shadow_color,
+                    color: self.theme.elevation.level2.shadow_color.into(),
                     offset: Vector::new(
                         self.theme.elevation.level2.shadow_offset_x,
                         self.theme.elevation.level2.shadow_offset_y,
@@ -433,12 +437,12 @@ impl<Message> FloatingActionButton<Message> {
         let content = if self.extended && self.label.is_some() {
             // Extended FAB
             iced::widget::row![
-                text(self.icon.as_deref().unwrap_or(""))
+                text(&self.icon)
                     .size(icon_size)
-                    .color(self.theme.scheme.on_primary_container),
+                    .color(self.theme.scheme.on_primary_container.into()),
                 text(self.label.as_ref().unwrap())
                     .size(font_size)
-                    .color(self.theme.scheme.on_primary_container)
+                    .color(self.theme.scheme.on_primary_container.into())
                     .font(iced::Font {
                         weight: iced::font::Weight::Medium,
                         ..Default::default()
@@ -448,9 +452,9 @@ impl<Message> FloatingActionButton<Message> {
             .into()
         } else {
             // Normal FAB
-            text(self.icon.as_deref().unwrap_or(""))
+            text(&self.icon)
                 .size(icon_size)
-                .color(self.theme.scheme.on_primary_container)
+                .color(self.theme.scheme.on_primary_container.into())
                 .into()
         };
 
@@ -466,22 +470,22 @@ impl<Message> FloatingActionButton<Message> {
             .padding(if self.extended { [0, 16] } else { [0, 0] })
             .style(move |_theme, status| {
                 let background_color = match status {
-                    button::Status::Active => self.theme.scheme.primary_container,
+                    button::Status::Active => self.theme.scheme.primary_container.into(),
                     button::Status::Hovered => self.blend_colors(
-                        self.theme.scheme.primary_container,
-                        self.theme.scheme.on_primary_container,
+                        self.theme.scheme.primary_container.into(),
+                        self.theme.scheme.on_primary_container.into(),
                         0.08,
                     ),
                     button::Status::Pressed => self.blend_colors(
-                        self.theme.scheme.primary_container,
-                        self.theme.scheme.on_primary_container,
+                        self.theme.scheme.primary_container.into(),
+                        self.theme.scheme.on_primary_container.into(),
                         0.12,
                     ),
                 };
 
                 let shadow = match status {
                     button::Status::Active => iced::Shadow {
-                        color: self.theme.elevation.level3.shadow_color,
+                        color: self.theme.elevation.level3.shadow_color.into(),
                         offset: Vector::new(
                             self.theme.elevation.level3.shadow_offset_x,
                             self.theme.elevation.level3.shadow_offset_y,
@@ -489,7 +493,7 @@ impl<Message> FloatingActionButton<Message> {
                         blur_radius: self.theme.elevation.level3.shadow_blur,
                     },
                     button::Status::Hovered => iced::Shadow {
-                        color: self.theme.elevation.level4.shadow_color,
+                        color: self.theme.elevation.level4.shadow_color.into(),
                         offset: Vector::new(
                             self.theme.elevation.level4.shadow_offset_x,
                             self.theme.elevation.level4.shadow_offset_y,
@@ -497,7 +501,7 @@ impl<Message> FloatingActionButton<Message> {
                         blur_radius: self.theme.elevation.level4.shadow_blur,
                     },
                     button::Status::Pressed => iced::Shadow {
-                        color: self.theme.elevation.level2.shadow_color,
+                        color: self.theme.elevation.level2.shadow_color.into(),
                         offset: Vector::new(
                             self.theme.elevation.level2.shadow_offset_x,
                             self.theme.elevation.level2.shadow_offset_y,
@@ -508,7 +512,7 @@ impl<Message> FloatingActionButton<Message> {
 
                 button::Style {
                     background: Some(Background::Color(background_color)),
-                    text_color: self.theme.scheme.on_primary_container,
+                    text_color: self.theme.scheme.on_primary_container.into(),
                     border: Border {
                         color: Color::TRANSPARENT,
                         width: 0.0,

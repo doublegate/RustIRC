@@ -256,7 +256,7 @@ impl MessageBubble {
 
         let background_color = self.get_background_color();
         let border_color = if self.selected {
-            self.theme.scheme.primary
+            self.theme.scheme.primary.into()
         } else {
             Color::TRANSPARENT
         };
@@ -271,9 +271,13 @@ impl MessageBubble {
                     color: border_color,
                     radius: self.theme.shapes.corner_small.into(),
                 },
-                text_color: Some(self.theme.scheme.on_surface),
+                text_color: Some(self.theme.scheme.on_surface.into()),
                 shadow: if self.message.message_type == MessageType::Highlight {
-                    self.theme.elevation.level1.into()
+                    iced::Shadow {
+                        color: Color::from_rgba(0.0, 0.0, 0.0, 0.12),
+                        offset: iced::Vector::new(0.0, 2.0),
+                        blur_radius: 4.0,
+                    }
                 } else {
                     Default::default()
                 },
@@ -383,8 +387,8 @@ impl MessageBubble {
         )
         .width(Length::Fixed(size))
         .height(Length::Fixed(size))
-        .center_x()
-        .center_y()
+        .center_x(Length::Fill)
+        .center_y(Length::Fill)
         .style(move |_theme| container::Style {
             background: Some(Background::Color(avatar_color)),
             border: Border {
@@ -409,7 +413,7 @@ impl MessageBubble {
                 background: Some(Background::Color(status_color)),
                 border: Border {
                     width: 2.0,
-                    color: self.theme.scheme.surface,
+                    color: self.theme.scheme.surface.into(),
                     radius: 4.0.into(),
                 },
                 ..Default::default()
@@ -473,7 +477,7 @@ impl MessageBubble {
             header_elements.push(
                 MaterialText::new(timestamp_text)
                     .variant(TypographyVariant::BodySmall)
-                    .color(self.theme.scheme.on_surface_variant)
+                    .color(self.theme.scheme.on_surface_variant.into())
                     .theme(self.theme.clone())
                     .build(),
             );
@@ -484,7 +488,7 @@ impl MessageBubble {
             header_elements.push(
                 MaterialText::new("(edited)")
                     .variant(TypographyVariant::BodySmall)
-                    .color(self.theme.scheme.on_surface_variant)
+                    .color(self.theme.scheme.on_surface_variant.into())
                     .theme(self.theme.clone())
                     .build(),
             );
@@ -507,7 +511,7 @@ impl MessageBubble {
             MessageContent::Action(action) => {
                 MaterialText::new(format!("* {} {}", self.message.sender.nickname, action))
                     .variant(TypographyVariant::BodyMedium)
-                    .color(self.theme.scheme.on_surface_variant)
+                    .color(self.theme.scheme.on_surface_variant.into())
                     .theme(self.theme.clone())
                     .build()
             }
@@ -518,7 +522,7 @@ impl MessageBubble {
                 .build(),
             MessageContent::Notice(notice) => MaterialText::new(format!("Notice: {}", notice))
                 .variant(TypographyVariant::BodyMedium)
-                .color(self.theme.scheme.tertiary)
+                .color(self.theme.scheme.tertiary.into())
                 .theme(self.theme.clone())
                 .build(),
             MessageContent::Ctcp(ctcp) => MaterialText::new(format!("[CTCP] {}", ctcp))
@@ -601,12 +605,12 @@ impl MessageBubble {
                             .build(),
                         MaterialText::new(&preview.description)
                             .variant(TypographyVariant::BodySmall)
-                            .color(self.theme.scheme.on_surface_variant)
+                            .color(self.theme.scheme.on_surface_variant.into())
                             .theme(self.theme.clone())
                             .build(),
                         MaterialText::new(&preview.site_name)
                             .variant(TypographyVariant::LabelSmall)
-                            .color(self.theme.scheme.primary)
+                            .color(self.theme.scheme.primary.into())
                             .theme(self.theme.clone())
                             .build()
                     ]

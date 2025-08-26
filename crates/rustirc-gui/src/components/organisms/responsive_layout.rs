@@ -116,7 +116,7 @@ impl ResponsiveLayout {
             }
             LayoutMessage::PaneResized(resize_event) => {
                 self.pane_state
-                    .resize(&resize_event.split, resize_event.ratio);
+                    .resize(resize_event.split, resize_event.ratio);
             }
             LayoutMessage::ToggleSidebar => {
                 self.sidebar_collapsed = !self.sidebar_collapsed;
@@ -160,9 +160,9 @@ impl ResponsiveLayout {
                 .width(Length::Fixed(SIDEBAR_MIN_WIDTH))
                 .height(Length::Fill)
                 .style(move |_theme: &Theme| container::Style {
-                    background: Some(Background::Color(self.theme.scheme.surface_container)),
+                    background: Some(Background::Color(self.theme.scheme.surface_container.into())),
                     border: Border {
-                        color: self.theme.scheme.outline_variant,
+                        color: self.theme.scheme.outline_variant.into(),
                         width: 1.0,
                         radius: 12.0.into(),
                     },
@@ -207,15 +207,15 @@ impl ResponsiveLayout {
         .spacing(self.adaptive_spacing())
         .style(|theme: &Theme| pane_grid::Style {
             hovered_region: pane_grid::Line {
-                color: self.theme.scheme.primary,
+                color: self.theme.scheme.primary.into(),
                 width: 2.0,
             },
             picked_split: pane_grid::Line {
-                color: self.theme.scheme.primary,
+                color: self.theme.scheme.primary.into(),
                 width: 2.0,
             },
             hovered_split: pane_grid::Line {
-                color: self.theme.scheme.primary.scale_alpha(0.5),
+                color: self.theme.scheme.primary.scale_alpha(0.5).into(),
                 width: 2.0,
             },
             ..Default::default()
@@ -275,7 +275,7 @@ impl ResponsiveLayout {
                 avatar_url: None,
                 content: "Hello everyone! 👋".to_string(),
                 timestamp: chrono::Utc::now(),
-                message_type: crate::components::molecules::message_bubble::MessageType::Regular,
+                message_type: crate::components::molecules::message_bubble::MessageType::Normal,
                 reactions: vec![],
                 thread_count: 0,
                 is_edited: false,
@@ -291,7 +291,7 @@ impl ResponsiveLayout {
                 avatar_url: None,
                 content: "Hey Alice! How's the new IRC client coming along?".to_string(),
                 timestamp: chrono::Utc::now(),
-                message_type: crate::components::molecules::message_bubble::MessageType::Regular,
+                message_type: crate::components::molecules::message_bubble::MessageType::Normal,
                 reactions: vec![],
                 thread_count: 0,
                 is_edited: false,
@@ -331,7 +331,8 @@ impl ResponsiveLayout {
             container(
                 crate::components::atoms::typography::MaterialText::new("Channels")
                     .variant(crate::components::atoms::typography::TypographyVariant::HeadlineSmall)
-                    .color(self.theme.scheme.on_surface)
+                    .color(self.theme.scheme.on_surface.into())
+                    .build()
             )
             .padding(16),
             // Demo channels
@@ -341,26 +342,29 @@ impl ResponsiveLayout {
                         .variant(
                             crate::components::atoms::typography::TypographyVariant::LabelLarge
                         )
-                        .color(self.theme.scheme.primary),
+                        .color(self.theme.scheme.primary.into())
+                        .build(),
                     crate::components::atoms::typography::MaterialText::new("# programming")
                         .variant(
                             crate::components::atoms::typography::TypographyVariant::LabelLarge
                         )
-                        .color(self.theme.scheme.on_surface),
+                        .color(self.theme.scheme.on_surface.into())
+                        .build(),
                     crate::components::atoms::typography::MaterialText::new("# linux")
                         .variant(
                             crate::components::atoms::typography::TypographyVariant::LabelLarge
                         )
-                        .color(self.theme.scheme.on_surface),
+                        .color(self.theme.scheme.on_surface.into())
+                        .build(),
                 ]
                 .spacing(8)
             )
             .padding([0, 16])
         ])
         .style(move |_theme: &Theme| container::Style {
-            background: Some(Background::Color(self.theme.scheme.surface_container)),
+            background: Some(Background::Color(self.theme.scheme.surface_container.into())),
             border: Border {
-                color: self.theme.scheme.outline_variant,
+                color: self.theme.scheme.outline_variant.into(),
                 width: 1.0,
                 radius: 12.0.into(),
             },
@@ -374,7 +378,8 @@ impl ResponsiveLayout {
             container(
                 crate::components::atoms::typography::MaterialText::new("User Details")
                     .variant(crate::components::atoms::typography::TypographyVariant::HeadlineSmall)
-                    .color(self.theme.scheme.on_surface)
+                    .color(self.theme.scheme.on_surface.into())
+                    .build()
             )
             .padding(16),
             // Demo user info
@@ -384,26 +389,29 @@ impl ResponsiveLayout {
                         .variant(
                             crate::components::atoms::typography::TypographyVariant::TitleMedium
                         )
-                        .color(self.theme.scheme.on_surface),
+                        .color(self.theme.scheme.on_surface.into())
+                        .build(),
                     crate::components::atoms::typography::MaterialText::new("Online")
                         .variant(
                             crate::components::atoms::typography::TypographyVariant::LabelMedium
                         )
-                        .color(self.theme.scheme.primary),
+                        .color(self.theme.scheme.primary.into())
+                        .build(),
                     crate::components::atoms::typography::MaterialText::new("Rust developer")
                         .variant(
                             crate::components::atoms::typography::TypographyVariant::BodyMedium
                         )
-                        .color(self.theme.scheme.on_surface_variant),
+                        .color(self.theme.scheme.on_surface_variant.into())
+                        .build(),
                 ]
                 .spacing(4)
             )
             .padding([0, 16])
         ])
         .style(move |_theme: &Theme| container::Style {
-            background: Some(Background::Color(self.theme.scheme.surface_container)),
+            background: Some(Background::Color(self.theme.scheme.surface_container.into())),
             border: Border {
-                color: self.theme.scheme.outline_variant,
+                color: self.theme.scheme.outline_variant.into(),
                 width: 1.0,
                 radius: 12.0.into(),
             },
@@ -417,7 +425,8 @@ impl ResponsiveLayout {
             container(
                 crate::components::atoms::typography::MaterialText::new("Settings")
                     .variant(crate::components::atoms::typography::TypographyVariant::HeadlineSmall)
-                    .color(self.theme.scheme.on_surface)
+                    .color(self.theme.scheme.on_surface.into())
+                    .build()
             )
             .padding(16),
             // Demo settings
@@ -427,26 +436,29 @@ impl ResponsiveLayout {
                         .variant(
                             crate::components::atoms::typography::TypographyVariant::LabelLarge
                         )
-                        .color(self.theme.scheme.on_surface),
+                        .color(self.theme.scheme.on_surface.into())
+                        .build(),
                     crate::components::atoms::typography::MaterialText::new("Notifications")
                         .variant(
                             crate::components::atoms::typography::TypographyVariant::LabelLarge
                         )
-                        .color(self.theme.scheme.on_surface),
+                        .color(self.theme.scheme.on_surface.into())
+                        .build(),
                     crate::components::atoms::typography::MaterialText::new("Privacy")
                         .variant(
                             crate::components::atoms::typography::TypographyVariant::LabelLarge
                         )
-                        .color(self.theme.scheme.on_surface),
+                        .color(self.theme.scheme.on_surface.into())
+                        .build(),
                 ]
                 .spacing(8)
             )
             .padding([0, 16])
         ])
         .style(move |_theme: &Theme| container::Style {
-            background: Some(Background::Color(self.theme.scheme.surface_container)),
+            background: Some(Background::Color(self.theme.scheme.surface_container.into())),
             border: Border {
-                color: self.theme.scheme.outline_variant,
+                color: self.theme.scheme.outline_variant.into(),
                 width: 1.0,
                 radius: 12.0.into(),
             },

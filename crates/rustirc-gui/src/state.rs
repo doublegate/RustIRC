@@ -181,7 +181,7 @@ impl AppState {
                 timestamp: SystemTime::now(),
                 sender: sender.to_string(),
                 content: message.to_string(),
-                message_type: MessageType::Regular,
+                message_type: MessageType::Message,
                 formatted_spans: Vec::new(),
                 is_highlight: false,
                 is_own_message: sender == "self",
