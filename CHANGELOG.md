@@ -14,6 +14,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Script/plugin manager UI
 - Event-driven scripting API
 
+## [0.3.8] - 2025-08-25 (Enhanced Iced Material Design GUI - impr_gui branch)
+
+### Summary
+Enhanced Iced Material Design GUI Implementation - This release introduces a complete Material Design 3 component system built on top of Iced 0.13.1, providing a modern, responsive, and visually stunning IRC client interface with advanced animations, GPU acceleration, and comprehensive theming.
+
+### Major Features Added
+- **Material Design 3 Components**: Complete MD3 component library including navigation rails, FABs, cards, and material theming
+- **Advanced Animation System**: Spring physics, cubic bezier easing, stagger effects, and ripple animations
+- **GPU Acceleration**: WGPU backend with custom shader pipeline for high-performance rendering
+- **Responsive Design**: Adaptive layouts with Material breakpoint system for all screen sizes
+- **Enhanced Accessibility**: Improved keyboard navigation and screen reader support
+
+### GUI Framework Enhancements (August 25, 2025 10:23 PM EDT)
+- **Navigation Components**: Material navigation rails, drawers, bottom sheets, and tab systems
+- **Surface Components**: Elevated, filled, and outlined card variants with proper shadow handling
+- **Action Components**: Material buttons, FABs with extended states, and context menus
+- **Input Components**: Material text fields (outlined/filled), selection controls, and sliders
+- **Feedback Components**: Progress indicators, tooltips, badges, and toast notifications
+- **Material Icons**: Complete icon set with outlined and filled variants
+- **Custom Rendering**: Shader support for advanced visual effects and gradients
+- **Gesture Support**: Touch feedback with Material ripple effects and multi-touch handling
+
+### Technical Improvements
+- Enhanced Iced 0.13.1 runtime with WGPU GPU acceleration
+- Custom shader pipeline for advanced visual effects
+- Spring-based animation engine for smooth transitions
+- Flexbox-inspired responsive layout system
+- Runtime theme switching with smooth transitions
+- Optimized rendering with efficient diffing algorithms
+- Lazy loading for improved performance
+
+### Development Infrastructure
+- Three parallel GUI framework research branches maintained
+- impr_gui branch: Enhanced Iced with Material Design 3
+- dioxus branch: React-like component architecture with Dioxus v0.6
+- main branch: Stable Iced 0.13.1 implementation
+
 ## [0.3.7] - 2025-08-24 (Return to Proven Resilient Workflows)
 
 ### Summary
