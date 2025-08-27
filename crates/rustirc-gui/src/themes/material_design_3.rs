@@ -231,7 +231,7 @@ pub struct TypographyToken {
 }
 
 /// Font weight enumeration
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum FontWeight {
     Thin = 100,
     ExtraLight = 200,
