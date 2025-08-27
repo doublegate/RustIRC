@@ -604,9 +604,37 @@ jobs:
         run: |
           tag_name="${{ needs.quick-checks.outputs.release_tag }}"
 
+          # Create build information section
+          cat > build_info.md << EOF
+
+          ---
+
+          **Build Information:**
+          - Pipeline Run: [${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          - Commit: [${{ github.sha }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
+          - Build Date: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          EOF
+
           # Check if release already exists
           if gh release view "$tag_name" >/dev/null 2>&1; then
-            echo "Release $tag_name already exists. Uploading new artifacts only..."
+            echo "Release $tag_name already exists. Checking if we need to append build info..."
+
+            # Get existing release notes
+            existing_notes=$(gh release view "$tag_name" --json body -q '.body')
+            
+            # Check if build info already exists in notes
+            if ! echo "$existing_notes" | grep -q "Build Information:"; then
+              echo "Appending build information to existing release notes..."
+              
+              # Append build info to existing notes
+              echo "$existing_notes" > existing_notes.md
+              cat build_info.md >> existing_notes.md
+              
+              # Update release with appended notes
+              gh release edit "$tag_name" --notes-file existing_notes.md
+            else
+              echo "Build information already exists in release notes."
+            fi
 
             # Upload artifacts to existing release (will replace if they exist)
             for file in release-assets/*; do
@@ -618,7 +646,7 @@ jobs:
           else
             echo "Creating new release $tag_name..."
 
-            # Create release notes for new release
+            # Create minimal release notes for new release (preserves any manual notes that might be added later)
             cat > release_notes.md << EOF
           ## Release $tag_name
 
@@ -645,20 +673,16 @@ jobs:
           3. Run the client: \`./rustirc\` (Unix) or \`rustirc.exe\` (Windows)
 
           For detailed usage instructions, see the [README](https://github.com/doublegate/RustIRC#readme).
-
-          ---
-
-          **Build Information:**
-          - Pipeline Run: [${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-          - Commit: [${{ github.sha }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
-          - Build Date: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
           EOF
+          
+          # Append build info to new release notes
+          cat build_info.md >> release_notes.md
 
-            # Create the new release with manual notes only
-            gh release create "$tag_name" \
-              --title "RustIRC $tag_name" \
-              --notes-file release_notes.md \
-              release-assets/*
+          # Create the new release
+          gh release create "$tag_name" \
+            --title "RustIRC $tag_name" \
+            --notes-file release_notes.md \
+            release-assets/*
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
