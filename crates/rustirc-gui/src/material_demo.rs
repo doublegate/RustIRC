@@ -61,7 +61,7 @@ fn update(state: &mut MaterialDemoState, message: Message) -> Task<Message> {
     Task::none()
 }
 
-fn view(state: &MaterialDemoState) -> Element<Message> {
+fn view(state: &MaterialDemoState) -> Element<'_, Message> {
     // Create the scrollable content - wrap in container with no vertical fill
     let scroll_content = container(
         column![
@@ -125,7 +125,7 @@ fn theme(_state: &MaterialDemoState) -> Theme {
     Theme::Dark // Base theme, Material colors are applied through components
 }
 
-fn typography_section(theme: &MaterialTheme) -> Element<'static, Message> {
+fn typography_section(theme: &MaterialTheme) -> Element<'_, Message> {
     column![
         MaterialText::new("Typography")
             .variant(TypographyVariant::HeadlineLarge)
@@ -156,7 +156,7 @@ fn typography_section(theme: &MaterialTheme) -> Element<'static, Message> {
     .into()
 }
 
-fn buttons_section(theme: &MaterialTheme) -> Element<'static, Message> {
+fn buttons_section(theme: &MaterialTheme) -> Element<'_, Message> {
     column![
         MaterialText::new("Buttons")
             .variant(TypographyVariant::HeadlineMedium)
@@ -190,7 +190,7 @@ fn buttons_section(theme: &MaterialTheme) -> Element<'static, Message> {
     .into()
 }
 
-fn input_section(theme: &MaterialTheme, value: &str) -> Element<'static, Message> {
+fn input_section<'a>(theme: &'a MaterialTheme, value: &'a str) -> Element<'a, Message> {
     column![
         MaterialText::new("Input Fields")
             .variant(TypographyVariant::HeadlineMedium)
@@ -209,7 +209,7 @@ fn input_section(theme: &MaterialTheme, value: &str) -> Element<'static, Message
     .into()
 }
 
-fn chips_section(theme: &MaterialTheme, selected: Option<usize>) -> Element<'static, Message> {
+fn chips_section(theme: &MaterialTheme, selected: Option<usize>) -> Element<'_, Message> {
     column![
         MaterialText::new("Chips")
             .variant(TypographyVariant::HeadlineMedium)
@@ -247,7 +247,7 @@ fn chips_section(theme: &MaterialTheme, selected: Option<usize>) -> Element<'sta
     .into()
 }
 
-fn cards_section(theme: &MaterialTheme) -> Element<'static, Message> {
+fn cards_section(theme: &MaterialTheme) -> Element<'_, Message> {
     column![
         MaterialText::new("Cards")
             .variant(TypographyVariant::HeadlineMedium)
@@ -270,7 +270,7 @@ fn cards_section(theme: &MaterialTheme) -> Element<'static, Message> {
     .into()
 }
 
-fn search_section(theme: &MaterialTheme, value: &str) -> Element<'static, Message> {
+fn search_section<'a>(theme: &'a MaterialTheme, value: &'a str) -> Element<'a, Message> {
     column![
         MaterialText::new("Search Bar")
             .variant(TypographyVariant::HeadlineMedium)
@@ -285,7 +285,7 @@ fn search_section(theme: &MaterialTheme, value: &str) -> Element<'static, Messag
     .into()
 }
 
-fn list_items_section(theme: &MaterialTheme) -> Element<'static, Message> {
+fn list_items_section(theme: &MaterialTheme) -> Element<'_, Message> {
     column![
         MaterialText::new("List Items")
             .variant(TypographyVariant::HeadlineMedium)
@@ -314,7 +314,7 @@ fn list_items_section(theme: &MaterialTheme) -> Element<'static, Message> {
     .into()
 }
 
-fn message_bubbles_section(theme: &MaterialTheme) -> Element<'static, Message> {
+fn message_bubbles_section(theme: &MaterialTheme) -> Element<'_, Message> {
     column![
         MaterialText::new("Message Bubbles")
             .variant(TypographyVariant::HeadlineMedium)
