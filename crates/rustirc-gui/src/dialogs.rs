@@ -604,13 +604,33 @@ impl PreferencesDialog {
         settings.show_timestamps = self.show_timestamps;
         settings.nick_colors = self.nick_colors;
         settings.compact_mode = self.compact_mode;
+        settings.theme = self.theme.clone();
     }
 
     pub fn build(&self) -> Element<'_, DialogMessage> {
         let theme_options = vec![
             "Dark".to_string(),
             "Light".to_string(),
+            "Material Design 3".to_string(),
+            "Dracula".to_string(),
+            "Nord".to_string(),
+            "Solarized Light".to_string(),
             "Solarized Dark".to_string(),
+            "Gruvbox Light".to_string(),
+            "Gruvbox Dark".to_string(),
+            "Catppuccin Latte".to_string(),
+            "Catppuccin Frappe".to_string(),
+            "Catppuccin Macchiato".to_string(),
+            "Catppuccin Mocha".to_string(),
+            "Tokyo Night".to_string(),
+            "Tokyo Night Storm".to_string(),
+            "Tokyo Night Light".to_string(),
+            "Kanagawa Wave".to_string(),
+            "Kanagawa Dragon".to_string(),
+            "Kanagawa Lotus".to_string(),
+            "Moonfly".to_string(),
+            "Nightfly".to_string(),
+            "Oxocarbon".to_string(),
         ];
 
         let content = column![
@@ -675,7 +695,26 @@ impl PreferencesDialog {
         let theme_options = vec![
             "Dark".to_string(),
             "Light".to_string(),
+            "Material Design 3".to_string(),
+            "Dracula".to_string(),
+            "Nord".to_string(),
+            "Solarized Light".to_string(),
             "Solarized Dark".to_string(),
+            "Gruvbox Light".to_string(),
+            "Gruvbox Dark".to_string(),
+            "Catppuccin Latte".to_string(),
+            "Catppuccin Frappe".to_string(),
+            "Catppuccin Macchiato".to_string(),
+            "Catppuccin Mocha".to_string(),
+            "Tokyo Night".to_string(),
+            "Tokyo Night Storm".to_string(),
+            "Tokyo Night Light".to_string(),
+            "Kanagawa Wave".to_string(),
+            "Kanagawa Dragon".to_string(),
+            "Kanagawa Lotus".to_string(),
+            "Moonfly".to_string(),
+            "Nightfly".to_string(),
+            "Oxocarbon".to_string(),
         ];
 
         let theme_picker = pick_list(

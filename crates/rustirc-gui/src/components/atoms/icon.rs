@@ -1,10 +1,6 @@
 //! Material Design 3 Icon component
 
-use iced::{
-    font::Font,
-    widget::text,
-    Color, Element, Renderer, Theme,
-};
+use iced::{font::Font, widget::text, Color, Element, Renderer, Theme};
 
 use crate::themes::material_design_3::MaterialTheme;
 

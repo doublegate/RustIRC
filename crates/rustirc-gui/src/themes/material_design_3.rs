@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 /// // Create from iced::Color
 /// let iced_color = Color::from_rgb(0.2, 0.4, 0.8);
 /// let serializable: SerializableColor = iced_color.into();
-/// 
+///
 /// // Convert back to iced::Color
 /// let converted: Color = serializable.into();
 /// assert_eq!(converted.r, 0.2);
@@ -80,7 +80,7 @@ impl SerializableColor {
 ///
 /// // Create default theme
 /// let theme = MaterialTheme::default();
-/// 
+///
 /// // Access color scheme (Material Purple)
 /// assert!((theme.scheme.primary.r - 0.40392157).abs() < 0.001);  // 0x67 / 255
 /// assert!((theme.scheme.primary.g - 0.31372549).abs() < 0.001);  // 0x50 / 255  

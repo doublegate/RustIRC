@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum ThemeType {
     #[default]
+    MaterialDesign3,
     Dark,
     Light,
     Dracula,
@@ -115,6 +116,7 @@ impl ColorPalette {
             ThemeType::Light => Self::light(),
             ThemeType::Dracula => Self::dracula(),
             ThemeType::Nord => Self::nord(),
+            ThemeType::MaterialDesign3 => Self::material_design_3(),
             _ => Self::dark(), // Default fallback
         }
     }
@@ -328,6 +330,62 @@ impl ColorPalette {
             border_focused: Color::from_rgb(0.53, 0.75, 0.82),
             selection: Color::from_rgba(0.53, 0.75, 0.82, 0.3),
             hover: Color::from_rgba(0.93, 0.94, 0.96, 0.1),
+        }
+    }
+
+    pub fn material_design_3() -> Self {
+        // Material Design 3 color scheme - based on Material You design system
+        Self {
+            background: Color::from_rgb(0.11, 0.11, 0.118), // #1C1B1F - Surface
+            surface: Color::from_rgb(0.16, 0.15, 0.19),     // #28272C - Surface Container
+            surface_variant: Color::from_rgb(0.28, 0.27, 0.32), // #49454F - Surface Variant
+            primary: Color::from_rgb(0.82, 0.69, 1.0),      // #D0BCFF - Primary
+            secondary: Color::from_rgb(0.8, 0.78, 0.86),    // #CCC2DC - Secondary
+            accent: Color::from_rgb(0.92, 0.73, 0.77),      // #EFBBC3 - Tertiary
+
+            text_primary: Color::from_rgb(0.91, 0.89, 0.94), // #E6E1E5 - On Surface
+            text_secondary: Color::from_rgb(0.79, 0.76, 0.81), // #CAC4D0 - On Surface Variant
+            text_disabled: Color::from_rgb(0.56, 0.54, 0.58), // #8B8B93 - Outline
+
+            // Material Design 3 harmonized nick colors
+            nick_colors: vec![
+                Color::from_rgb(0.96, 0.46, 0.48), // Error Red
+                Color::from_rgb(0.77, 0.86, 0.45), // Success Green
+                Color::from_rgb(0.82, 0.69, 1.0),  // Primary Purple
+                Color::from_rgb(1.0, 0.86, 0.38),  // Warning Yellow
+                Color::from_rgb(0.92, 0.73, 0.77), // Tertiary Pink
+                Color::from_rgb(0.43, 0.85, 0.86), // Info Cyan
+            ],
+
+            // Standard IRC colors with Material Design 3 adjustments
+            irc_colors: [
+                Color::from_rgb(0.91, 0.89, 0.94),  // 0: White (On Surface)
+                Color::from_rgb(0.11, 0.11, 0.118), // 1: Black (Surface)
+                Color::from_rgb(0.42, 0.51, 0.93),  // 2: Blue
+                Color::from_rgb(0.47, 0.67, 0.35),  // 3: Green
+                Color::from_rgb(0.96, 0.46, 0.48),  // 4: Red
+                Color::from_rgb(0.64, 0.35, 0.23),  // 5: Brown
+                Color::from_rgb(0.65, 0.39, 0.80),  // 6: Purple
+                Color::from_rgb(0.95, 0.55, 0.22),  // 7: Orange
+                Color::from_rgb(1.0, 0.86, 0.38),   // 8: Yellow
+                Color::from_rgb(0.77, 0.86, 0.45),  // 9: Light Green
+                Color::from_rgb(0.43, 0.72, 0.73),  // 10: Cyan
+                Color::from_rgb(0.43, 0.85, 0.86),  // 11: Light Cyan
+                Color::from_rgb(0.67, 0.76, 0.98),  // 12: Light Blue
+                Color::from_rgb(0.96, 0.68, 0.86),  // 13: Pink
+                Color::from_rgb(0.48, 0.48, 0.48),  // 14: Grey
+                Color::from_rgb(0.73, 0.73, 0.73),  // 15: Light Grey
+            ],
+
+            error: Color::from_rgb(0.96, 0.46, 0.48), // #F2B8B5 - Error
+            warning: Color::from_rgb(1.0, 0.86, 0.38), // #FADB61 - Warning
+            success: Color::from_rgb(0.77, 0.86, 0.45), // #C3DC73 - Success
+            info: Color::from_rgb(0.67, 0.76, 0.98),  // #ABC2FA - Info
+
+            border: Color::from_rgb(0.37, 0.35, 0.40), // #5E5C66 - Outline Variant
+            border_focused: Color::from_rgb(0.82, 0.69, 1.0), // Primary
+            selection: Color::from_rgba(0.82, 0.69, 1.0, 0.3), // Primary with alpha
+            hover: Color::from_rgba(0.91, 0.89, 0.94, 0.08), // On Surface with low alpha
         }
     }
 

@@ -2538,6 +2538,11 @@ impl RustIrcGui {
             ThemeType::Moonfly => iced::Theme::Moonfly,
             ThemeType::Nightfly => iced::Theme::Nightfly,
             ThemeType::Oxocarbon => iced::Theme::Oxocarbon,
+            ThemeType::MaterialDesign3 => {
+                // Use a dark theme as base with Material Design 3 colors applied via custom theme
+                // In the future, we could create a custom iced::Theme with MD3 colors
+                iced::Theme::Dark
+            }
         }
     }
 

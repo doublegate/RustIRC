@@ -6,6 +6,7 @@ pub mod components;
 pub mod dialogs;
 pub mod event_handler;
 pub mod formatting;
+pub mod material_demo;
 pub mod menus;
 pub mod performance;
 pub mod platform;
