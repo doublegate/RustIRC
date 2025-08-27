@@ -344,15 +344,15 @@ impl DialogManager {
         }
     }
 
-    pub fn view(&self, app_state: &AppState) -> Option<Element<'_, DialogMessage>> {
+    pub fn build(&self, app_state: &AppState) -> Option<Element<'_, DialogMessage>> {
         match self.current_dialog {
             DialogType::None => None,
-            DialogType::Connection => Some(self.connection_dialog.view()),
-            DialogType::JoinChannel => Some(self.join_channel_dialog.view()),
+            DialogType::Connection => Some(self.connection_dialog.build()),
+            DialogType::JoinChannel => Some(self.join_channel_dialog.build()),
             DialogType::Preferences => Some(self.preferences_dialog.view_with_state(app_state)),
-            DialogType::About => Some(self.about_dialog.view()),
-            DialogType::Find => Some(self.find_dialog.view()),
-            DialogType::NetworkList => Some(self.network_list_dialog.view()),
+            DialogType::About => Some(self.about_dialog.build()),
+            DialogType::Find => Some(self.find_dialog.build()),
+            DialogType::NetworkList => Some(self.network_list_dialog.build()),
         }
     }
 }
@@ -407,7 +407,7 @@ impl ConnectionDialog {
         }
     }
 
-    pub fn view(&self) -> Element<'_, DialogMessage> {
+    pub fn build(&self) -> Element<'_, DialogMessage> {
         // Use Size for proper dialog dimensions
         let min_size = Size::new(400.0, 300.0);
         let max_size = Size::new(600.0, 500.0);
@@ -514,7 +514,7 @@ impl JoinChannelDialog {
         }
     }
 
-    pub fn view(&self) -> Element<'_, DialogMessage> {
+    pub fn build(&self) -> Element<'_, DialogMessage> {
         let content = column![
             text("Join Channel").size(20),
             vertical_space().height(10),
@@ -604,13 +604,33 @@ impl PreferencesDialog {
         settings.show_timestamps = self.show_timestamps;
         settings.nick_colors = self.nick_colors;
         settings.compact_mode = self.compact_mode;
+        settings.theme = self.theme.clone();
     }
 
-    pub fn view(&self) -> Element<'_, DialogMessage> {
+    pub fn build(&self) -> Element<'_, DialogMessage> {
         let theme_options = vec![
             "Dark".to_string(),
             "Light".to_string(),
+            "Material Design 3".to_string(),
+            "Dracula".to_string(),
+            "Nord".to_string(),
+            "Solarized Light".to_string(),
             "Solarized Dark".to_string(),
+            "Gruvbox Light".to_string(),
+            "Gruvbox Dark".to_string(),
+            "Catppuccin Latte".to_string(),
+            "Catppuccin Frappe".to_string(),
+            "Catppuccin Macchiato".to_string(),
+            "Catppuccin Mocha".to_string(),
+            "Tokyo Night".to_string(),
+            "Tokyo Night Storm".to_string(),
+            "Tokyo Night Light".to_string(),
+            "Kanagawa Wave".to_string(),
+            "Kanagawa Dragon".to_string(),
+            "Kanagawa Lotus".to_string(),
+            "Moonfly".to_string(),
+            "Nightfly".to_string(),
+            "Oxocarbon".to_string(),
         ];
 
         let content = column![
@@ -675,7 +695,26 @@ impl PreferencesDialog {
         let theme_options = vec![
             "Dark".to_string(),
             "Light".to_string(),
+            "Material Design 3".to_string(),
+            "Dracula".to_string(),
+            "Nord".to_string(),
+            "Solarized Light".to_string(),
             "Solarized Dark".to_string(),
+            "Gruvbox Light".to_string(),
+            "Gruvbox Dark".to_string(),
+            "Catppuccin Latte".to_string(),
+            "Catppuccin Frappe".to_string(),
+            "Catppuccin Macchiato".to_string(),
+            "Catppuccin Mocha".to_string(),
+            "Tokyo Night".to_string(),
+            "Tokyo Night Storm".to_string(),
+            "Tokyo Night Light".to_string(),
+            "Kanagawa Wave".to_string(),
+            "Kanagawa Dragon".to_string(),
+            "Kanagawa Lotus".to_string(),
+            "Moonfly".to_string(),
+            "Nightfly".to_string(),
+            "Oxocarbon".to_string(),
         ];
 
         let theme_picker = pick_list(
@@ -749,7 +788,7 @@ impl AboutDialog {
         Self
     }
 
-    pub fn view(&self) -> Element<'_, DialogMessage> {
+    pub fn build(&self) -> Element<'_, DialogMessage> {
         let content = column![
             text("RustIRC").size(24),
             text("Modern IRC Client").size(16),
@@ -800,7 +839,7 @@ impl FindDialog {
         }
     }
 
-    pub fn view(&self) -> Element<'_, DialogMessage> {
+    pub fn build(&self) -> Element<'_, DialogMessage> {
         let content = column![
             text("Find").size(20),
             vertical_space().height(10),
@@ -873,7 +912,7 @@ impl NetworkListDialog {
         }
     }
 
-    pub fn view(&self) -> Element<'_, DialogMessage> {
+    pub fn build(&self) -> Element<'_, DialogMessage> {
         let network_list = scrollable(column(
             self.networks
                 .iter()

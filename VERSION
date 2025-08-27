@@ -1,12 +1,13 @@
-0.3.7
+0.3.8
 
-# RustIRC Version 0.3.7 Release
-# Released: August 25, 2025
+# RustIRC Version 0.3.8 Release
+# Released: August 26, 2025
 # 
-# Return to Proven Resilient Workflows Release
+# Enhanced Iced Material Design GUI - 100% Complete
 # 
 # Major Achievements:
-# - Restored battle-tested workflow configurations from commit 928aad1
+# - Complete Material Design 3 implementation with ZERO compilation errors
+# - Fixed Material Demo scrollable widget panic issue
 # - Return to comprehensive sccache resilience for GitHub service outages
 # - Restored cross-platform timeout compatibility (including macOS)
 # - Restored BASH_ENV helper functions for workflow step persistence

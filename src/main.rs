@@ -38,6 +38,10 @@ struct Args {
     /// Run in CLI mode for testing
     #[arg(long)]
     cli: bool,
+
+    /// Run Material Design 3 demo showcase
+    #[arg(long)]
+    material_demo: bool,
 }
 
 fn main() -> Result<()> {
@@ -48,7 +52,9 @@ fn main() -> Result<()> {
 
     info!("Starting RustIRC v{}", env!("CARGO_PKG_VERSION"));
 
-    if args.cli {
+    if args.material_demo {
+        run_material_demo()?;
+    } else if args.cli {
         run_cli(args)?;
     } else if args.tui {
         run_tui(args)?;
@@ -68,6 +74,17 @@ fn init_logging(debug: bool) -> Result<()> {
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
+
+    Ok(())
+}
+
+fn run_material_demo() -> Result<()> {
+    info!("Starting Material Design 3 Components Demo");
+
+    use rustirc_gui::material_demo;
+
+    // Run the Material Design 3 demo showcase
+    material_demo::run().map_err(|e| anyhow::anyhow!("Material demo error: {}", e))?;
 
     Ok(())
 }
