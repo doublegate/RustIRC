@@ -1,8 +1,7 @@
 //! Material Design 3 Dialog components
 
 use iced::{
-    alignment::{Horizontal, Vertical},
-    widget::{button, column, container, row, text},
+    widget::{column, container, row, text},
     Background, Border, Color, Element, Length, Renderer, Theme,
 };
 
@@ -43,7 +42,7 @@ pub struct DialogAction<Message> {
     pub on_press: Option<Message>,
 }
 
-impl<'a, Message: Clone> MaterialDialog<'a, Message> {
+impl<'a, Message: Clone + 'static> MaterialDialog<'a, Message> {
     pub fn new(content: impl Into<Element<'a, Message, Theme, Renderer>>) -> Self {
         Self {
             title: None,
@@ -105,9 +104,12 @@ impl<'a, Message: Clone> MaterialDialog<'a, Message> {
         let mut dialog_content = column![].spacing(16);
 
         // Title
-        if let Some(title) = &self.title {
-            dialog_content =
-                dialog_content.push(text(title).size(24).color(self.theme.scheme.on_surface.into()));
+        if let Some(title) = self.title.clone() {
+            dialog_content = dialog_content.push(
+                text(title)
+                    .size(24)
+                    .color(iced::Color::from(self.theme.scheme.on_surface)),
+            );
         }
 
         // Content
@@ -120,13 +122,13 @@ impl<'a, Message: Clone> MaterialDialog<'a, Message> {
             for action in &self.actions {
                 let action_button = if let Some(message) = &action.on_press {
                     MaterialButton::new(&action.label)
-                        .variant(action.variant.clone())
+                        .variant(action.variant)
                         .on_press(message.clone())
-                        .view()
+                        .build()
                 } else {
                     MaterialButton::new(&action.label)
                         .variant(ButtonVariant::Text)
-                        .view()
+                        .build()
                 };
 
                 actions_row = actions_row.push(action_button);
@@ -139,23 +141,26 @@ impl<'a, Message: Clone> MaterialDialog<'a, Message> {
             );
         }
 
+        let variant = self.variant.clone();
+        let theme = self.theme.clone();
+
         let dialog_container =
             container(dialog_content)
                 .padding(24)
                 .style(move |_theme: &Theme| container::Style {
-                    background: Some(Background::Color(match self.variant {
-                        DialogVariant::FullScreen => self.theme.scheme.surface.into(),
-                        _ => self.theme.scheme.surface.into()_container_high,
+                    background: Some(Background::Color(match variant {
+                        DialogVariant::FullScreen => iced::Color::from(theme.scheme.surface),
+                        _ => iced::Color::from(theme.scheme.surface_container_high),
                     })),
                     border: Border {
                         color: Color::TRANSPARENT,
                         width: 0.0,
-                        radius: match self.variant {
+                        radius: match variant {
                             DialogVariant::FullScreen => 0.0.into(),
                             _ => 28.0.into(),
                         },
                     },
-                    shadow: match self.variant {
+                    shadow: match variant {
                         DialogVariant::FullScreen => iced::Shadow::default(),
                         _ => iced::Shadow {
                             color: Color::BLACK.scale_alpha(0.15),

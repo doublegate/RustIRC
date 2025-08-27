@@ -294,7 +294,9 @@ impl MessageView {
             };
 
             let sender_text = match message.message_type {
-                MessageType::Message | MessageType::Notice | MessageType::Regular => format!("<{sender}>"),
+                MessageType::Message | MessageType::Notice | MessageType::Regular => {
+                    format!("<{sender}>")
+                }
                 MessageType::Action => format!("* {sender}"),
                 MessageType::Join => format!("→ {sender}"),
                 MessageType::Part => format!("← {sender}"),

@@ -1,17 +1,13 @@
 use iced::{
-    alignment::{Horizontal, Vertical},
-    event::{self, Event},
-    mouse::{self, Cursor},
-    theme::palette::Extended,
     time::{Duration, Instant},
-    widget::{column, container, mouse_area, row, text, Container},
-    Background, Border, Color, Element, Length, Point, Rectangle, Renderer, Size, Theme, Vector,
+    widget::{column, container, mouse_area, row, text},
+    Background, Border, Color, Element, Length, Renderer, Theme,
 };
 use std::collections::HashMap;
 
 use crate::components::atoms::button::{ButtonVariant, MaterialButton};
 use crate::components::atoms::typography::{MaterialText, TypographyVariant};
-use crate::themes::material_design_3::{ElevationLevel, MaterialTheme};
+use crate::themes::material_design_3::MaterialTheme;
 
 // Server and channel data structures
 #[derive(Debug, Clone)]
@@ -78,6 +74,7 @@ struct CollapseAnimation {
     current_height: f32,
     start_time: Instant,
     duration: Duration,
+    #[allow(dead_code)]
     is_expanding: bool,
 }
 
@@ -196,8 +193,8 @@ impl ModernSidebar {
     }
 
     pub fn view(&self) -> Element<'_, SidebarMessage, Theme, Renderer> {
-        let surface_color = self.theme.scheme.surface.into();
-        let surface_variant = self.theme.scheme.surface_variant.into();
+        let surface_color = iced::Color::from(self.theme.scheme.surface);
+        let surface_variant = iced::Color::from(self.theme.scheme.surface_variant);
 
         let content = if self.is_compact {
             self.compact_view()
@@ -228,11 +225,12 @@ impl ModernSidebar {
             row![
                 MaterialText::new("Servers")
                     .variant(TypographyVariant::HeadlineSmall)
-                    .color(self.theme.scheme.on_surface.into())
+                    .color(iced::Color::from(self.theme.scheme.on_surface))
                     .build(),
                 MaterialButton::new("⇔")
                     .variant(ButtonVariant::Text)
                     .on_press(SidebarMessage::ToggleCompact)
+                    .build()
             ]
             .spacing(8),
         )
@@ -277,7 +275,8 @@ impl ModernSidebar {
         let header = container(
             MaterialButton::new("☰")
                 .variant(ButtonVariant::Text)
-                .on_press(SidebarMessage::ToggleCompact),
+                .on_press(SidebarMessage::ToggleCompact)
+                .build(),
         )
         .padding(8)
         .width(Length::Fill);
@@ -301,41 +300,41 @@ impl ModernSidebar {
 
         let status_color = match server.status {
             ConnectionStatus::Connected => self.theme.scheme.primary,
-            ConnectionStatus::Connecting => Color::from_rgb(1.0, 0.6, 0.0), // Orange
+            ConnectionStatus::Connecting => Color::from_rgb(1.0, 0.6, 0.0).into(),
             ConnectionStatus::Disconnected => self.theme.scheme.outline,
             ConnectionStatus::Error => self.theme.scheme.error,
         };
 
         let expand_icon = if server.is_expanded { "▼" } else { "▶" };
 
-        let content = row![
+        let mut content_row = row![
             // Expand/collapse button
             MaterialButton::new(expand_icon)
                 .variant(ButtonVariant::Text)
-                .on_press(SidebarMessage::ServerToggled(server.id.clone())),
+                .on_press(SidebarMessage::ServerToggled(server.id.clone()))
+                .build(),
             // Status indicator
             container(text("●").size(12).color(status_color)).padding(4),
             // Server name
             MaterialText::new(&server.name)
                 .variant(TypographyVariant::LabelLarge)
                 .color(if is_selected {
-                    self.theme.scheme.on_primary_container.into()
+                    iced::Color::from(self.theme.scheme.on_primary_container)
                 } else {
-                    self.theme.scheme.on_surface.into()
+                    iced::Color::from(self.theme.scheme.on_surface)
                 })
-                .build(),
-            // Unread badge
-            if server.unread_count > 0 {
-                Some(self.create_unread_badge(server.unread_count))
-            } else {
-                None
-            }
-        ]
-        .spacing(8)
-        .align_items(iced::Alignment::Center);
+                .build()
+        ];
+
+        // Add unread badge if needed
+        if server.unread_count > 0 {
+            content_row = content_row.push(self.create_unread_badge(server.unread_count));
+        }
+
+        let content = content_row.spacing(8).align_y(iced::Alignment::Center);
 
         let background_color = if is_selected {
-            self.theme.scheme.primary_container.into()
+            iced::Color::from(self.theme.scheme.primary_container)
         } else {
             Color::TRANSPARENT
         };
@@ -393,11 +392,11 @@ impl ModernSidebar {
         let activity_color = match channel.activity_level {
             ActivityLevel::None => self.theme.scheme.outline_variant,
             ActivityLevel::Low => self.theme.scheme.primary,
-            ActivityLevel::Medium => Color::from_rgb(1.0, 0.6, 0.0), // Orange
+            ActivityLevel::Medium => Color::from_rgb(1.0, 0.6, 0.0).into(),
             ActivityLevel::High => self.theme.scheme.error,
         };
 
-        let content = row![
+        let mut content_row = row![
             // Channel type icon
             MaterialText::new(channel_icon)
                 .variant(TypographyVariant::LabelMedium)
@@ -407,36 +406,34 @@ impl ModernSidebar {
             MaterialText::new(&channel.name)
                 .variant(TypographyVariant::LabelMedium)
                 .color(if is_selected {
-                    self.theme.scheme.on_secondary_container.into()
+                    iced::Color::from(self.theme.scheme.on_secondary_container)
                 } else {
-                    self.theme.scheme.on_surface_variant.into()
+                    iced::Color::from(self.theme.scheme.on_surface_variant)
                 })
-                .build(),
-            // User count for channels
-            if channel.channel_type != ChannelType::DirectMessage && channel.user_count > 0 {
-                Some(
-                    MaterialText::new(&format!("({})", channel.user_count))
-                        .variant(TypographyVariant::LabelSmall)
-                        .color(self.theme.scheme.outline.into())
-                        .build(),
-                )
-            } else {
-                None
-            },
-            // Unread indicators
-            if channel.mention_count > 0 {
-                Some(self.create_mention_badge(channel.mention_count))
-            } else if channel.unread_count > 0 {
-                Some(self.create_unread_indicator())
-            } else {
-                None
-            }
-        ]
-        .spacing(6)
-        .align_items(iced::Alignment::Center);
+                .build()
+        ];
+
+        // Add user count for channels if applicable
+        if channel.channel_type != ChannelType::DirectMessage && channel.user_count > 0 {
+            content_row = content_row.push(
+                MaterialText::new(format!("({})", channel.user_count))
+                    .variant(TypographyVariant::LabelSmall)
+                    .color(iced::Color::from(self.theme.scheme.outline))
+                    .build(),
+            );
+        }
+
+        // Add unread indicators if applicable
+        if channel.mention_count > 0 {
+            content_row = content_row.push(self.create_mention_badge(channel.mention_count));
+        } else if channel.unread_count > 0 {
+            content_row = content_row.push(self.create_unread_indicator());
+        }
+
+        let content = content_row.spacing(6).align_y(iced::Alignment::Center);
 
         let background_color = if is_selected {
-            self.theme.scheme.secondary_container.into()
+            iced::Color::from(self.theme.scheme.secondary_container)
         } else {
             Color::TRANSPARENT
         };
@@ -469,7 +466,7 @@ impl ModernSidebar {
 
         let status_color = match server.status {
             ConnectionStatus::Connected => self.theme.scheme.primary,
-            ConnectionStatus::Connecting => Color::from_rgb(1.0, 0.6, 0.0),
+            ConnectionStatus::Connecting => Color::from_rgb(1.0, 0.6, 0.0).into(),
             ConnectionStatus::Disconnected => self.theme.scheme.outline,
             ConnectionStatus::Error => self.theme.scheme.error,
         };
@@ -486,9 +483,9 @@ impl ModernSidebar {
             MaterialText::new(&server_initial)
                 .variant(TypographyVariant::LabelLarge)
                 .color(if is_selected {
-                    self.theme.scheme.on_primary.into()
+                    iced::Color::from(self.theme.scheme.on_primary)
                 } else {
-                    self.theme.scheme.on_surface.into()
+                    iced::Color::from(self.theme.scheme.on_surface)
                 })
                 .build(),
         )
@@ -497,12 +494,12 @@ impl ModernSidebar {
         .height(Length::Fixed(48.0))
         .style(move |_theme: &Theme| container::Style {
             background: Some(Background::Color(if is_selected {
-                self.theme.scheme.primary
+                iced::Color::from(self.theme.scheme.primary)
             } else {
-                self.theme.scheme.surface_variant.into()
+                iced::Color::from(self.theme.scheme.surface_variant)
             })),
             border: Border {
-                color: status_color,
+                color: status_color.into(),
                 width: 2.0,
                 radius: 24.0.into(),
             },
@@ -524,12 +521,14 @@ impl ModernSidebar {
         container(
             MaterialText::new(&count_text)
                 .variant(TypographyVariant::LabelSmall)
-                .color(self.theme.scheme.on_primary.into())
+                .color(iced::Color::from(self.theme.scheme.on_primary))
                 .build(),
         )
         .padding([2, 6])
         .style(move |_theme: &Theme| container::Style {
-            background: Some(Background::Color(self.theme.scheme.primary.into())),
+            background: Some(Background::Color(iced::Color::from(
+                self.theme.scheme.primary,
+            ))),
             border: Border {
                 radius: 10.0.into(),
                 ..Default::default()
@@ -549,12 +548,14 @@ impl ModernSidebar {
         container(
             MaterialText::new(&count_text)
                 .variant(TypographyVariant::LabelSmall)
-                .color(self.theme.scheme.on_error.into())
+                .color(iced::Color::from(self.theme.scheme.on_error))
                 .build(),
         )
         .padding([2, 6])
         .style(move |_theme: &Theme| container::Style {
-            background: Some(Background::Color(self.theme.scheme.error.into())),
+            background: Some(Background::Color(iced::Color::from(
+                self.theme.scheme.error,
+            ))),
             border: Border {
                 radius: 10.0.into(),
                 ..Default::default()
@@ -569,7 +570,9 @@ impl ModernSidebar {
             .width(Length::Fixed(8.0))
             .height(Length::Fixed(8.0))
             .style(move |_theme: &Theme| container::Style {
-                background: Some(Background::Color(self.theme.scheme.primary.into())),
+                background: Some(Background::Color(iced::Color::from(
+                    self.theme.scheme.primary,
+                ))),
                 border: Border {
                     radius: 4.0.into(),
                     ..Default::default()

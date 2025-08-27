@@ -1,7 +1,7 @@
 //! Material Design 3 Icon component
 
 use iced::{
-    font::{self, Font},
+    font::Font,
     widget::text,
     Color, Element, Renderer, Theme,
 };
@@ -44,14 +44,14 @@ impl MaterialIcon {
 
     pub fn from_theme(mut self, theme: &MaterialTheme, variant: IconVariant) -> Self {
         self.color = match variant {
-            IconVariant::Primary => theme.scheme.primary.into(),
-            IconVariant::OnSurface => theme.scheme.on_surface.into(),
-            IconVariant::OnSurfaceVariant => theme.scheme.on_surface_variant.into(),
-            IconVariant::OnPrimary => theme.scheme.on_primary.into(),
-            IconVariant::OnSecondary => theme.scheme.on_secondary.into(),
-            IconVariant::OnTertiary => theme.scheme.on_tertiary.into(),
-            IconVariant::OnError => theme.scheme.on_error.into(),
-            IconVariant::Outline => theme.scheme.outline.into(),
+            IconVariant::Primary => iced::Color::from(theme.scheme.primary),
+            IconVariant::OnSurface => iced::Color::from(theme.scheme.on_surface),
+            IconVariant::OnSurfaceVariant => iced::Color::from(theme.scheme.on_surface_variant),
+            IconVariant::OnPrimary => iced::Color::from(theme.scheme.on_primary),
+            IconVariant::OnSecondary => iced::Color::from(theme.scheme.on_secondary),
+            IconVariant::OnTertiary => iced::Color::from(theme.scheme.on_tertiary),
+            IconVariant::OnError => iced::Color::from(theme.scheme.on_error),
+            IconVariant::Outline => iced::Color::from(theme.scheme.outline),
         };
         self
     }

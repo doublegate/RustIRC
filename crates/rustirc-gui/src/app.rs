@@ -142,7 +142,31 @@ pub enum PaneType {
     InputArea,
 }
 
-/// Main GUI application state
+/// Main GUI application state for the RustIRC client
+///
+/// This struct manages the complete GUI state including IRC connections,
+/// themes, layout, and all UI components.
+///
+/// # Examples
+///
+/// ```
+/// use rustirc_gui::RustIrcGui;
+/// use rustirc_gui::themes::material_design_3::MaterialTheme;
+///
+/// // Create a new GUI application instance
+/// let app = RustIrcGui::new();
+///
+/// // The app starts with default state
+/// assert!(!app.has_active_connection());
+/// ```
+///
+/// # Architecture
+///
+/// The GUI is built using Iced 0.13.1 with a functional approach:
+/// - Event-driven message passing between components
+/// - Immutable state updates through message handlers
+/// - Resizable pane-based layout for flexible UI
+/// - Material Design 3 theming system
 pub struct RustIrcGui {
     // Core IRC functionality
     irc_client: Arc<RwLock<Option<Arc<IrcClient>>>>,
@@ -260,7 +284,24 @@ impl Default for RustIrcGui {
 }
 
 impl RustIrcGui {
-    /// Create a new RustIrcGui instance for testing
+    /// Create a new RustIrcGui instance
+    ///
+    /// Initializes a new GUI application with default state, no active IRC
+    /// connections, and the default theme.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustirc_gui::RustIrcGui;
+    ///
+    /// let app = RustIrcGui::new();
+    /// assert!(!app.has_active_connection());
+    /// assert_eq!(app.state().current_tab_id, None);
+    /// ```
+    ///
+    /// # Returns
+    ///
+    /// A new `RustIrcGui` instance ready for use with Iced
     pub fn new() -> Self {
         Self::default()
     }
@@ -268,6 +309,28 @@ impl RustIrcGui {
     /// Get current app state for testing
     pub fn state(&self) -> &AppState {
         &self.app_state
+    }
+
+    /// Check if there is an active IRC connection
+    ///
+    /// Returns `true` if an IRC client is currently connected to a server,
+    /// `false` otherwise.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rustirc_gui::RustIrcGui;
+    ///
+    /// let app = RustIrcGui::new();
+    /// // Initially no connection
+    /// assert!(!app.has_active_connection());
+    /// ```
+    pub fn has_active_connection(&self) -> bool {
+        // Use try_read since this is a sync method and we can't await
+        match self.irc_client.try_read() {
+            Ok(client) => client.is_some(),
+            Err(_) => false,
+        }
     }
 
     /// Connect an IRC message receiver for testing purposes

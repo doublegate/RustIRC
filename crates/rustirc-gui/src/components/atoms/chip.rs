@@ -1,9 +1,8 @@
 //! Material Design 3 Chip components
 
 use iced::{
-    alignment::{Horizontal, Vertical},
     widget::{button, container, row, text},
-    Background, Border, Color, Element, Length, Renderer, Theme,
+    Background, Border, Color, Element, Renderer, Theme,
 };
 
 use crate::themes::material_design_3::MaterialTheme;
@@ -106,14 +105,17 @@ impl<'a, Message: Clone + 'a> MaterialChip<'a, Message> {
 
         // Leading icon
         if let Some(icon) = leading_icon {
-            content = content.push(text(icon).size(18).color(if enabled {
-                if selected {
-                    theme.scheme.on_secondary_container.into()
+            content = content.push(text(icon).size(18).color({
+                let color: iced::Color = if enabled {
+                    if selected {
+                        iced::Color::from(theme.scheme.on_secondary_container)
+                    } else {
+                        iced::Color::from(theme.scheme.primary)
+                    }
                 } else {
-                    theme.scheme.primary.into()
-                }
-            } else {
-                theme.scheme.on_surface.scale_alpha(0.38).into()
+                    iced::Color::from(theme.scheme.on_surface.scale_alpha(0.38))
+                };
+                color
             }));
         }
 
@@ -121,14 +123,14 @@ impl<'a, Message: Clone + 'a> MaterialChip<'a, Message> {
         content = content.push(text(label).size(14).color(if enabled {
             if selected {
                 match variant {
-                    ChipVariant::Filter => theme.scheme.on_secondary_container.into(),
-                    _ => theme.scheme.on_surface.into(),
+                    ChipVariant::Filter => iced::Color::from(theme.scheme.on_secondary_container),
+                    _ => iced::Color::from(theme.scheme.on_surface),
                 }
             } else {
-                theme.scheme.on_surface.into()
+                iced::Color::from(theme.scheme.on_surface)
             }
         } else {
-            theme.scheme.on_surface.scale_alpha(0.38).into()
+            iced::Color::from(theme.scheme.on_surface.scale_alpha(0.38))
         }));
 
         // Trailing icon or remove button
@@ -143,9 +145,9 @@ impl<'a, Message: Clone + 'a> MaterialChip<'a, Message> {
             ));
         } else if let Some(icon) = trailing_icon {
             content = content.push(text(icon).size(18).color(if enabled {
-                theme.scheme.on_surface_variant.into()
+                iced::Color::from(theme.scheme.on_surface_variant)
             } else {
-                theme.scheme.on_surface.scale_alpha(0.38).into()
+                iced::Color::from(theme.scheme.on_surface.scale_alpha(0.38))
             }));
         }
 
@@ -153,27 +155,31 @@ impl<'a, Message: Clone + 'a> MaterialChip<'a, Message> {
             container(content.spacing(8))
                 .padding([8, 16])
                 .style(move |_theme: &Theme| {
-                    let (background_color, border_color) =
-                        match (&variant, selected, enabled) {
-                            (ChipVariant::Filter, true, true) => {
-                                (theme.scheme.secondary_container.into(), Color::TRANSPARENT)
-                            }
-                            (ChipVariant::Input, _, true) => (
-                                theme.scheme.surface_container_low.into(),
-                                theme.scheme.outline.into(),
-                            ),
-                            (ChipVariant::Assist, true, true) => {
-                                (theme.scheme.surface_container_low.into(), Color::TRANSPARENT)
-                            }
-                            (ChipVariant::Suggestion, true, true) => {
-                                (theme.scheme.surface_container_low.into(), Color::TRANSPARENT)
-                            }
-                            (_, false, true) => (Color::TRANSPARENT, theme.scheme.outline.into()),
-                            (_, _, false) => (
-                                theme.scheme.on_surface.scale_alpha(0.12).into(),
-                                theme.scheme.on_surface.scale_alpha(0.12).into(),
-                            ),
-                        };
+                    let (background_color, border_color) = match (&variant, selected, enabled) {
+                        (ChipVariant::Filter, true, true) => (
+                            iced::Color::from(theme.scheme.secondary_container),
+                            Color::TRANSPARENT,
+                        ),
+                        (ChipVariant::Input, _, true) => (
+                            iced::Color::from(theme.scheme.surface_container_low),
+                            iced::Color::from(theme.scheme.outline),
+                        ),
+                        (ChipVariant::Assist, true, true) => (
+                            iced::Color::from(theme.scheme.surface_container_low),
+                            Color::TRANSPARENT,
+                        ),
+                        (ChipVariant::Suggestion, true, true) => (
+                            iced::Color::from(theme.scheme.surface_container_low),
+                            Color::TRANSPARENT,
+                        ),
+                        (_, false, true) => {
+                            (Color::TRANSPARENT, iced::Color::from(theme.scheme.outline))
+                        }
+                        (_, _, false) => (
+                            iced::Color::from(theme.scheme.on_surface.scale_alpha(0.12)),
+                            iced::Color::from(theme.scheme.on_surface.scale_alpha(0.12)),
+                        ),
+                    };
 
                     container::Style {
                         background: Some(Background::Color(background_color)),
@@ -196,10 +202,10 @@ impl<'a, Message: Clone + 'a> MaterialChip<'a, Message> {
                 .style(move |_theme: &Theme, status| {
                     let hover_color = match status {
                         button::Status::Hovered => {
-                            Some(theme.scheme.on_surface.scale_alpha(0.08).into())
+                            Some(iced::Color::from(theme.scheme.on_surface.scale_alpha(0.08)))
                         }
                         button::Status::Pressed => {
-                            Some(theme.scheme.on_surface.scale_alpha(0.12).into())
+                            Some(iced::Color::from(theme.scheme.on_surface.scale_alpha(0.12)))
                         }
                         _ => None,
                     };

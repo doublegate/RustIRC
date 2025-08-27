@@ -1,7 +1,6 @@
 //! Material Design 3 Bottom Navigation component
 
 use iced::{
-    alignment::{Horizontal, Vertical},
     widget::{button, column, container, row, text},
     Background, Border, Color, Element, Length, Renderer, Theme,
 };
@@ -28,7 +27,7 @@ pub struct BottomNavigationItem<Message> {
     pub on_press: Message,
 }
 
-impl<Message: Clone> MaterialBottomNavigation<Message> {
+impl<Message: Clone + 'static> MaterialBottomNavigation<Message> {
     pub fn new(items: Vec<BottomNavigationItem<Message>>) -> Self {
         Self {
             items,
@@ -55,39 +54,40 @@ impl<Message: Clone> MaterialBottomNavigation<Message> {
 
     pub fn view(self) -> Element<'static, Message, Theme, Renderer> {
         let mut nav_items = row![].spacing(0).align_y(iced::Alignment::Center);
+        let theme = self.theme.clone();
+        let items = self.items.clone();
 
         let item_width = Length::Fill;
 
-        for (index, item) in self.items.iter().enumerate() {
+        for (index, item) in items.iter().enumerate() {
             let is_selected = index == self.selected_index;
 
             // Icon
             let icon_text = if is_selected {
-                item.selected_icon.as_ref().unwrap_or(&item.icon)
+                item.selected_icon.as_ref().unwrap_or(&item.icon).clone()
             } else {
-                &item.icon
+                item.icon.clone()
             };
 
             let icon_color = if is_selected {
-                self.theme.scheme.on_secondary_container.into()
+                iced::Color::from(theme.scheme.on_secondary_container)
             } else {
-                self.theme.scheme.on_surface_variant.into()
+                iced::Color::from(theme.scheme.on_surface_variant)
             };
 
             let mut item_content = column![].spacing(4);
 
             // Icon with badge
-            let mut icon_container = container(
-                MaterialIcon::new(icon_text)
+            let icon_container = container(
+                MaterialIcon::new(&icon_text)
                     .size(24.0)
                     .color(icon_color)
-                    .build(),
+                    .view(),
             )
             .padding(4);
 
-            if let Some(badge_text) = &item.badge {
+            if let Some(_badge_text) = &item.badge {
                 // TODO: Add badge overlay when available in Iced
-                icon_container = icon_container;
             }
 
             item_content = item_content.push(icon_container);
@@ -95,44 +95,52 @@ impl<Message: Clone> MaterialBottomNavigation<Message> {
             // Label
             if self.show_labels {
                 let label_color = if is_selected {
-                    self.theme.scheme.on_surface.into()
+                    iced::Color::from(theme.scheme.on_surface)
                 } else {
-                    self.theme.scheme.on_surface.into()_variant
+                    iced::Color::from(theme.scheme.on_surface_variant)
                 };
 
-                item_content = item_content.push(text(&item.label).size(12).color(label_color));
+                item_content =
+                    item_content.push(text(item.label.clone()).size(12).color(label_color));
             }
 
             // Navigation item button
-            let nav_item = button(container(item_content).width(Length::Fill).center_x(Length::Fill))
-                .on_press(item.on_press.clone())
-                .width(item_width)
-                .padding([12, 8])
-                .style(move |_theme: &Theme, status| {
-                    let background_color = if is_selected {
-                        Some(Background::Color(self.theme.scheme.secondary_container))
-                    } else {
-                        match status {
-                            button::Status::Hovered => Some(Background::Color(
-                                self.theme.scheme.on_surface.into().scale_alpha(0.08),
-                            )),
-                            button::Status::Pressed => Some(Background::Color(
-                                self.theme.scheme.on_surface.into().scale_alpha(0.12),
-                            )),
-                            _ => Some(Background::Color(Color::TRANSPARENT)),
-                        }
-                    };
-
-                    button::Style {
-                        background: background_color,
-                        border: Border {
-                            radius: 16.0.into(),
-                            ..Default::default()
-                        },
-                        shadow: iced::Shadow::default(),
-                        ..Default::default()
+            let theme_clone = theme.clone();
+            let nav_item = button(
+                container(item_content)
+                    .width(Length::Fill)
+                    .center_x(Length::Fill),
+            )
+            .on_press(item.on_press.clone())
+            .width(item_width)
+            .padding([12, 8])
+            .style(move |_theme: &Theme, status| {
+                let background_color = if is_selected {
+                    Some(Background::Color(iced::Color::from(
+                        theme_clone.scheme.secondary_container,
+                    )))
+                } else {
+                    match status {
+                        button::Status::Hovered => Some(Background::Color(
+                            iced::Color::from(theme_clone.scheme.on_surface).scale_alpha(0.08),
+                        )),
+                        button::Status::Pressed => Some(Background::Color(
+                            iced::Color::from(theme_clone.scheme.on_surface).scale_alpha(0.12),
+                        )),
+                        _ => Some(Background::Color(Color::TRANSPARENT)),
                     }
-                });
+                };
+
+                button::Style {
+                    background: background_color,
+                    border: Border {
+                        radius: 16.0.into(),
+                        ..Default::default()
+                    },
+                    shadow: iced::Shadow::default(),
+                    ..Default::default()
+                }
+            });
 
             nav_items = nav_items.push(nav_item);
         }
@@ -141,9 +149,11 @@ impl<Message: Clone> MaterialBottomNavigation<Message> {
             .width(Length::Fill)
             .height(Length::Fixed(if self.show_labels { 80.0 } else { 64.0 }))
             .style(move |_theme: &Theme| container::Style {
-                background: Some(Background::Color(self.theme.scheme.surface.into()_container)),
+                background: Some(Background::Color(iced::Color::from(
+                    theme.scheme.surface_container,
+                ))),
                 border: Border {
-                    color: self.theme.scheme.outline_variant.into(),
+                    color: iced::Color::from(theme.scheme.outline_variant),
                     width: 1.0,
                     radius: 0.0.into(),
                 },

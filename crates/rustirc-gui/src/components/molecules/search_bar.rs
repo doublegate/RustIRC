@@ -1,7 +1,6 @@
 //! Material Design 3 Search Bar component
 
 use iced::{
-    alignment::{Horizontal, Vertical},
     widget::{button, container, row, text_input},
     Background, Border, Color, Element, Length, Renderer, Theme,
 };
@@ -121,11 +120,11 @@ impl<'a, Message: 'a + Clone> MaterialSearchBar<'a, Message> {
             let search_icon = MaterialIcon::new("🔍")
                 .size(24.0)
                 .color(if self.is_focused {
-                    self.theme.scheme.primary.into()
+                    iced::Color::from(self.theme.scheme.primary)
                 } else {
-                    self.theme.scheme.on_surface_variant.into()
+                    iced::Color::from(self.theme.scheme.on_surface_variant)
                 })
-                .build();
+                .view();
 
             search_content = search_content.push(container(search_icon).padding([0, 4]));
         }
@@ -145,15 +144,16 @@ impl<'a, Message: 'a + Clone> MaterialSearchBar<'a, Message> {
         }
 
         let styled_input = search_input.style(move |_theme: &Theme, status| {
-            let is_focused = matches!(status, text_input::Status::Focused);
+            let _is_focused = matches!(status, text_input::Status::Focused);
 
             text_input::Style {
                 background: Background::Color(Color::TRANSPARENT),
                 border: Border::default(),
-                icon: self.theme.scheme.on_surface_variant.into(),
-                placeholder: self.theme.scheme.on_surface_variant.into().scale_alpha(0.6),
-                value: self.theme.scheme.on_surface.into(),
-                selection: self.theme.scheme.primary.into().scale_alpha(0.2),
+                icon: iced::Color::from(self.theme.scheme.on_surface_variant),
+                placeholder: iced::Color::from(self.theme.scheme.on_surface_variant)
+                    .scale_alpha(0.6),
+                value: iced::Color::from(self.theme.scheme.on_surface),
+                selection: iced::Color::from(self.theme.scheme.primary).scale_alpha(0.2),
             }
         });
 
@@ -162,17 +162,18 @@ impl<'a, Message: 'a + Clone> MaterialSearchBar<'a, Message> {
         // Trailing icon (clear button)
         if self.show_trailing_icon && !self.value.is_empty() {
             let clear_button = if let Some(clear_message) = &self.on_clear {
+                let on_surface_color = iced::Color::from(self.theme.scheme.on_surface);
                 button(
                     MaterialIcon::new("×")
                         .size(24.0)
-                        .color(self.theme.scheme.on_surface_variant.into())
+                        .color(iced::Color::from(self.theme.scheme.on_surface_variant))
                         .view::<Message>(),
                 )
                 .on_press(clear_message.clone())
-                .style(|_theme: &Theme, status| button::Style {
+                .style(move |_theme: &Theme, status| button::Style {
                     background: Some(Background::Color(match status {
-                        button::Status::Hovered => self.theme.scheme.on_surface.scale_alpha(0.08),
-                        button::Status::Pressed => self.theme.scheme.on_surface.scale_alpha(0.12),
+                        button::Status::Hovered => on_surface_color.scale_alpha(0.08),
+                        button::Status::Pressed => on_surface_color.scale_alpha(0.12),
                         _ => Color::TRANSPARENT,
                     })),
                     border: Border {
@@ -187,7 +188,10 @@ impl<'a, Message: 'a + Clone> MaterialSearchBar<'a, Message> {
                 button(
                     MaterialIcon::new("×")
                         .size(24.0)
-                        .color(self.theme.scheme.on_surface_variant.into().scale_alpha(0.38))
+                        .color(
+                            iced::Color::from(self.theme.scheme.on_surface_variant)
+                                .scale_alpha(0.38),
+                        )
                         .view::<Message>(),
                 )
                 .style(|_theme: &Theme, _status| button::Style {
@@ -233,9 +237,9 @@ impl<'a, Message: 'a + Clone> MaterialSearchBar<'a, Message> {
                 let border_width = if self.is_focused { 2.0 } else { 1.0 };
 
                 container::Style {
-                    background: Some(Background::Color(background_color)),
+                    background: Some(Background::Color(iced::Color::from(background_color))),
                     border: Border {
-                        color: border_color,
+                        color: iced::Color::from(border_color),
                         width: border_width,
                         radius: match self.variant {
                             SearchBarVariant::Docked => 24.0.into(),

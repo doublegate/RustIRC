@@ -161,42 +161,42 @@ impl<'a, Message: 'a + Clone> MaterialInput<'a, Message> {
             let (background_color, border_color, border_width) =
                 match (&variant, is_focused, has_error, is_enabled) {
                     (InputVariant::Filled, _, true, true) => (
-                        theme_clone.scheme.error_container.scale_alpha(0.08),
-                        theme_clone.scheme.error,
+                        theme_clone.scheme.error_container.scale_alpha(0.08).into(),
+                        theme_clone.scheme.error.into(),
                         2.0,
                     ),
                     (InputVariant::Filled, true, false, true) => (
-                        theme_clone.scheme.surface_container_highest,
-                        theme_clone.scheme.primary,
+                        theme_clone.scheme.surface_container_highest.into(),
+                        theme_clone.scheme.primary.into(),
                         2.0,
                     ),
                     (InputVariant::Filled, false, false, true) => (
-                        theme_clone.scheme.surface_container_highest,
-                        theme_clone.scheme.on_surface_variant,
+                        theme_clone.scheme.surface_container_highest.into(),
+                        theme_clone.scheme.on_surface_variant.into(),
                         1.0,
                     ),
                     (InputVariant::Filled, _, _, false) => (
-                        theme_clone.scheme.on_surface.scale_alpha(0.04),
-                        theme_clone.scheme.on_surface.scale_alpha(0.38),
+                        theme_clone.scheme.on_surface.scale_alpha(0.04).into(),
+                        theme_clone.scheme.on_surface.scale_alpha(0.38).into(),
                         1.0,
                     ),
                     (InputVariant::Outlined, _, true, true) => {
-                        (Color::TRANSPARENT, theme_clone.scheme.error, 2.0)
+                        (Color::TRANSPARENT, theme_clone.scheme.error.into(), 2.0)
                     }
                     (InputVariant::Outlined, true, false, true) => {
-                        (Color::TRANSPARENT, theme_clone.scheme.primary, 2.0)
+                        (Color::TRANSPARENT, theme_clone.scheme.primary.into(), 2.0)
                     }
                     (InputVariant::Outlined, false, false, true) => {
-                        (Color::TRANSPARENT, theme_clone.scheme.outline, 1.0)
+                        (Color::TRANSPARENT, theme_clone.scheme.outline.into(), 1.0)
                     }
                     (InputVariant::Outlined, _, _, false) => (
                         Color::TRANSPARENT,
-                        theme_clone.scheme.on_surface.scale_alpha(0.38),
+                        theme_clone.scheme.on_surface.scale_alpha(0.38).into(),
                         1.0,
                     ),
                 };
 
-            let border_radius = match &variant {
+            let _border_radius = match &variant {
                 InputVariant::Filled => [4.0, 4.0, 0.0, 0.0],
                 InputVariant::Outlined => [4.0, 4.0, 4.0, 4.0],
             };
@@ -209,7 +209,11 @@ impl<'a, Message: 'a + Clone> MaterialInput<'a, Message> {
                     radius: 4.0.into(),
                 },
                 icon: theme_clone.scheme.on_surface_variant.into(),
-                placeholder: theme_clone.scheme.on_surface_variant.scale_alpha(0.6).into(),
+                placeholder: theme_clone
+                    .scheme
+                    .on_surface_variant
+                    .scale_alpha(0.6)
+                    .into(),
                 value: if is_enabled {
                     theme_clone.scheme.on_surface.into()
                 } else {
@@ -223,12 +227,16 @@ impl<'a, Message: 'a + Clone> MaterialInput<'a, Message> {
 
         // Helper or error text
         if let Some(error) = error_text {
-            input_column = input_column.push(text(error).size(12).color(theme.scheme.error.into()));
+            input_column = input_column.push(
+                text(error)
+                    .size(12)
+                    .color(iced::Color::from(theme.scheme.error)),
+            );
         } else if let Some(helper) = helper_text {
             input_column = input_column.push(text(helper).size(12).color(if is_enabled {
-                theme.scheme.on_surface_variant.into()
+                iced::Color::from(theme.scheme.on_surface_variant)
             } else {
-                theme.scheme.on_surface.scale_alpha(0.38).into()
+                iced::Color::from(theme.scheme.on_surface.scale_alpha(0.38))
             }));
         }
 

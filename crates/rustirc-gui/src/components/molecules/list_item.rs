@@ -1,7 +1,6 @@
 //! Material Design 3 List Item component
 
 use iced::{
-    alignment::{Horizontal, Vertical},
     widget::{button, column, container, row, text},
     Background, Border, Color, Element, Length, Renderer, Theme,
 };
@@ -65,7 +64,7 @@ pub enum ListTrailing<Message> {
     Menu,
 }
 
-impl<Message: Clone> MaterialListItem<Message> {
+impl<Message: Clone + 'static> MaterialListItem<Message> {
     pub fn new(primary_text: impl Into<String>) -> Self {
         Self {
             primary_text: primary_text.into(),
@@ -129,28 +128,30 @@ impl<Message: Clone> MaterialListItem<Message> {
         let mut content_row = row![].spacing(16);
 
         // Leading content
-        if let Some(leading) = &self.leading_content {
+        if let Some(leading) = self.leading_content.clone() {
             let leading_element =
                 match leading {
-                    ListLeading::Icon(icon) => MaterialIcon::new(icon)
+                    ListLeading::Icon(icon) => MaterialIcon::new(&icon)
                         .size(24.0)
                         .color(if self.enabled {
-                            self.theme.scheme.on_surface_variant.into()
+                            iced::Color::from(self.theme.scheme.on_surface_variant)
                         } else {
-                            self.theme.scheme.on_surface.into().scale_alpha(0.38)
+                            iced::Color::from(self.theme.scheme.on_surface).scale_alpha(0.38)
                         })
-                        .build(),
+                        .view(),
                     ListLeading::Avatar(initial) => container(
                         text(initial)
                             .size(16)
-                            .color(self.theme.scheme.on_primary_container.into()),
+                            .color(iced::Color::from(self.theme.scheme.on_primary_container)),
                     )
                     .width(Length::Fixed(40.0))
                     .height(Length::Fixed(40.0))
                     .center_x(Length::Fill)
                     .center_y(Length::Fill)
                     .style(move |_theme: &Theme| container::Style {
-                        background: Some(Background::Color(self.theme.scheme.primary_container.into())),
+                        background: Some(Background::Color(iced::Color::from(
+                            self.theme.scheme.primary_container,
+                        ))),
                         border: Border {
                             radius: 20.0.into(),
                             ..Default::default()
@@ -160,22 +161,22 @@ impl<Message: Clone> MaterialListItem<Message> {
                     .into(),
                     ListLeading::Checkbox(checked) => {
                         // TODO: Replace with proper checkbox when available
-                        container(text(if *checked { "☑" } else { "☐" }).size(20).color(
-                            if *checked {
-                                self.theme.scheme.primary
+                        container(text(if checked { "☑" } else { "☐" }).size(20).color(
+                            if checked {
+                                iced::Color::from(self.theme.scheme.primary)
                             } else {
-                                self.theme.scheme.on_surface_variant.into()
+                                iced::Color::from(self.theme.scheme.on_surface_variant)
                             },
                         ))
                         .into()
                     }
                     ListLeading::Radio(selected) => {
                         // TODO: Replace with proper radio button when available
-                        container(text(if *selected { "●" } else { "○" }).size(20).color(
-                            if *selected {
-                                self.theme.scheme.primary
+                        container(text(if selected { "●" } else { "○" }).size(20).color(
+                            if selected {
+                                iced::Color::from(self.theme.scheme.primary)
                             } else {
-                                self.theme.scheme.on_surface_variant.into()
+                                iced::Color::from(self.theme.scheme.on_surface_variant)
                             },
                         ))
                         .into()
@@ -196,87 +197,89 @@ impl<Message: Clone> MaterialListItem<Message> {
         let mut text_content = column![].spacing(2);
 
         // Primary text
-        text_content =
-            text_content.push(text(&self.primary_text).size(16).color(if self.enabled {
-                self.theme.scheme.on_surface.into()
+        text_content = text_content.push(text(self.primary_text.clone()).size(16).color(
+            if self.enabled {
+                iced::Color::from(self.theme.scheme.on_surface)
             } else {
-                self.theme.scheme.on_surface.into().scale_alpha(0.38)
-            }));
+                iced::Color::from(self.theme.scheme.on_surface).scale_alpha(0.38)
+            },
+        ));
 
         // Secondary text
-        if let Some(secondary) = &self.secondary_text {
+        if let Some(secondary) = self.secondary_text.clone() {
             text_content = text_content.push(text(secondary).size(14).color(if self.enabled {
-                self.theme.scheme.on_surface.into()_variant
+                iced::Color::from(self.theme.scheme.on_surface_variant)
             } else {
-                self.theme.scheme.on_surface.into().scale_alpha(0.38)
+                iced::Color::from(self.theme.scheme.on_surface).scale_alpha(0.38)
             }));
         }
 
         // Tertiary text
-        if let Some(tertiary) = &self.tertiary_text {
+        if let Some(tertiary) = self.tertiary_text.clone() {
             text_content = text_content.push(text(tertiary).size(12).color(if self.enabled {
-                self.theme.scheme.on_surface.into()_variant
+                iced::Color::from(self.theme.scheme.on_surface_variant)
             } else {
-                self.theme.scheme.on_surface.into().scale_alpha(0.38)
+                iced::Color::from(self.theme.scheme.on_surface).scale_alpha(0.38)
             }));
         }
 
         content_row = content_row.push(container(text_content).width(Length::Fill));
 
         // Trailing content
-        if let Some(trailing) = &self.trailing_content {
-            let trailing_element = match trailing {
-                ListTrailing::Text(text_val) => text(text_val)
-                    .size(14)
-                    .color(self.theme.scheme.on_surface.into()_variant.into())
+        if let Some(trailing) = self.trailing_content.clone() {
+            let trailing_element =
+                match trailing {
+                    ListTrailing::Text(text_val) => text(text_val)
+                        .size(14)
+                        .color(iced::Color::from(self.theme.scheme.on_surface_variant))
+                        .into(),
+                    ListTrailing::IconButton { icon, on_press } => button(
+                        MaterialIcon::new(&icon)
+                            .size(24.0)
+                            .color(iced::Color::from(self.theme.scheme.on_surface_variant))
+                            .view(),
+                    )
+                    .on_press(on_press.clone())
+                    .style(|_theme: &Theme, _status| button::Style {
+                        background: Some(Background::Color(Color::TRANSPARENT)),
+                        border: Border::default(),
+                        shadow: iced::Shadow::default(),
+                        ..Default::default()
+                    })
                     .into(),
-                ListTrailing::IconButton { icon, on_press } => button(
-                    MaterialIcon::new(icon)
+                    ListTrailing::Switch(enabled) => {
+                        // TODO: Replace with proper switch when available
+                        container(text(if enabled { "🔛" } else { "🔘" }).size(20).color(
+                            if enabled {
+                                self.theme.scheme.primary
+                            } else {
+                                self.theme.scheme.outline
+                            },
+                        ))
+                        .into()
+                    }
+                    ListTrailing::Checkbox { checked, on_toggle } => button(
+                        text(if checked { "☑" } else { "☐" })
+                            .size(20)
+                            .color(if checked {
+                                iced::Color::from(self.theme.scheme.primary)
+                            } else {
+                                iced::Color::from(self.theme.scheme.on_surface_variant)
+                            }),
+                    )
+                    .on_press(on_toggle.clone())
+                    .style(|_theme: &Theme, _status| button::Style {
+                        background: Some(Background::Color(Color::TRANSPARENT)),
+                        border: Border::default(),
+                        shadow: iced::Shadow::default(),
+                        ..Default::default()
+                    })
+                    .into(),
+                    ListTrailing::Menu => MaterialIcon::new("⋮")
                         .size(24.0)
-                        .color(self.theme.scheme.on_surface.into()_variant.into())
-                        .build(),
-                )
-                .on_press(on_press.clone())
-                .style(|_theme: &Theme, _status| button::Style {
-                    background: Some(Background::Color(Color::TRANSPARENT)),
-                    border: Border::default(),
-                    shadow: iced::Shadow::default(),
-                    ..Default::default()
-                })
-                .into(),
-                ListTrailing::Switch(enabled) => {
-                    // TODO: Replace with proper switch when available
-                    container(text(if *enabled { "🔛" } else { "🔘" }).size(20).color(
-                        if *enabled {
-                            self.theme.scheme.primary
-                        } else {
-                            self.theme.scheme.outline
-                        },
-                    ))
-                    .into()
-                }
-                ListTrailing::Checkbox { checked, on_toggle } => button(
-                    text(if *checked { "☑" } else { "☐" })
-                        .size(20)
-                        .color(if *checked {
-                            self.theme.scheme.primary
-                        } else {
-                            self.theme.scheme.on_surface_variant.into()
-                        }),
-                )
-                .on_press(on_toggle.clone())
-                .style(|_theme: &Theme, _status| button::Style {
-                    background: Some(Background::Color(Color::TRANSPARENT)),
-                    border: Border::default(),
-                    shadow: iced::Shadow::default(),
-                    ..Default::default()
-                })
-                .into(),
-                ListTrailing::Menu => MaterialIcon::new("⋮")
-                    .size(24.0)
-                    .color(self.theme.scheme.on_surface.into()_variant.into())
-                    .view(),
-            };
+                        .color(iced::Color::from(self.theme.scheme.on_surface_variant))
+                        .view(),
+                };
 
             content_row = content_row.push(trailing_element);
         }
@@ -294,7 +297,7 @@ impl<Message: Clone> MaterialListItem<Message> {
             .center_y(Length::Fill)
             .style(move |_theme: &Theme| container::Style {
                 background: Some(Background::Color(if self.selected {
-                    self.theme.scheme.secondary_container.scale_alpha(0.08)
+                    iced::Color::from(self.theme.scheme.secondary_container).scale_alpha(0.08)
                 } else {
                     Color::TRANSPARENT
                 })),
@@ -309,10 +312,10 @@ impl<Message: Clone> MaterialListItem<Message> {
                 .style(move |_theme: &Theme, status| {
                     let hover_color = match status {
                         button::Status::Hovered => {
-                            Some(self.theme.scheme.on_surface.into().scale_alpha(0.08))
+                            Some(iced::Color::from(self.theme.scheme.on_surface).scale_alpha(0.08))
                         }
                         button::Status::Pressed => {
-                            Some(self.theme.scheme.on_surface.into().scale_alpha(0.12))
+                            Some(iced::Color::from(self.theme.scheme.on_surface).scale_alpha(0.12))
                         }
                         _ => None,
                     };

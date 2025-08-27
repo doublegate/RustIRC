@@ -1,7 +1,6 @@
 //! Material Design 3 App Bar components
 
 use iced::{
-    alignment::{Horizontal, Vertical},
     widget::{button, container, row, text},
     Background, Border, Color, Element, Length, Renderer, Theme,
 };
@@ -43,7 +42,7 @@ pub struct AppBarAction<Message> {
     pub on_press: Option<Message>,
 }
 
-impl<Message: Clone> MaterialAppBar<Message> {
+impl<Message: Clone + 'static> MaterialAppBar<Message> {
     pub fn new(title: impl Into<String>) -> Self {
         Self {
             title: title.into(),
@@ -93,7 +92,7 @@ impl<Message: Clone> MaterialAppBar<Message> {
                 button(
                     MaterialIcon::new(&leading.icon)
                         .size(24.0)
-                        .color(self.theme.scheme.on_surface.into())
+                        .color(iced::Color::from(self.theme.scheme.on_surface))
                         .view(),
                 )
                 .on_press(message.clone())
@@ -107,7 +106,7 @@ impl<Message: Clone> MaterialAppBar<Message> {
             } else {
                 MaterialIcon::new(&leading.icon)
                     .size(24.0)
-                    .color(self.theme.scheme.on_surface.into())
+                    .color(iced::Color::from(self.theme.scheme.on_surface))
                     .view()
             };
 
@@ -117,33 +116,33 @@ impl<Message: Clone> MaterialAppBar<Message> {
         // Title
         let title_element = match self.variant {
             AppBarVariant::CenterAligned => container(
-                text(&self.title)
+                text(self.title.clone())
                     .size(22)
-                    .color(self.theme.scheme.on_surface.into()),
+                    .color(iced::Color::from(self.theme.scheme.on_surface)),
             )
             .width(Length::Fill)
             .center_x(Length::Fill)
             .center_y(Length::Fill),
             AppBarVariant::Large => container(
-                text(&self.title)
+                text(self.title.clone())
                     .size(32)
-                    .color(self.theme.scheme.on_surface.into()),
+                    .color(iced::Color::from(self.theme.scheme.on_surface)),
             )
             .width(Length::Fill)
             .padding([24, 16])
             .align_y(iced::alignment::Vertical::Bottom),
             AppBarVariant::Medium => container(
-                text(&self.title)
+                text(self.title.clone())
                     .size(28)
-                    .color(self.theme.scheme.on_surface.into()),
+                    .color(iced::Color::from(self.theme.scheme.on_surface)),
             )
             .width(Length::Fill)
             .padding([16, 16])
             .align_y(iced::alignment::Vertical::Bottom),
             _ => container(
-                text(&self.title)
+                text(self.title.clone())
                     .size(22)
-                    .color(self.theme.scheme.on_surface.into()),
+                    .color(iced::Color::from(self.theme.scheme.on_surface)),
             )
             .width(Length::Fill)
             .center_y(Length::Fill)
@@ -156,17 +155,18 @@ impl<Message: Clone> MaterialAppBar<Message> {
         let mut actions_row = row![].spacing(8);
         for action in &self.trailing_actions {
             let action_button = if let Some(message) = &action.on_press {
+                let on_surface_color = iced::Color::from(self.theme.scheme.on_surface);
                 button(
                     MaterialIcon::new(&action.icon)
                         .size(24.0)
-                        .color(self.theme.scheme.on_surface.into())
+                        .color(on_surface_color)
                         .view(),
                 )
                 .on_press(message.clone())
-                .style(|_theme: &Theme, status| button::Style {
+                .style(move |_theme: &Theme, status| button::Style {
                     background: Some(Background::Color(match status {
-                        button::Status::Hovered => self.theme.scheme.on_surface.into().scale_alpha(0.08),
-                        button::Status::Pressed => self.theme.scheme.on_surface.into().scale_alpha(0.12),
+                        button::Status::Hovered => on_surface_color.scale_alpha(0.08),
+                        button::Status::Pressed => on_surface_color.scale_alpha(0.12),
                         _ => Color::TRANSPARENT,
                     })),
                     border: Border {
@@ -181,7 +181,7 @@ impl<Message: Clone> MaterialAppBar<Message> {
                 button(
                     MaterialIcon::new(&action.icon)
                         .size(24.0)
-                        .color(self.theme.scheme.on_surface.into().scale_alpha(0.38))
+                        .color(iced::Color::from(self.theme.scheme.on_surface).scale_alpha(0.38))
                         .view(),
                 )
                 .style(|_theme: &Theme, _status| button::Style {
@@ -197,7 +197,11 @@ impl<Message: Clone> MaterialAppBar<Message> {
         }
 
         if !self.trailing_actions.is_empty() {
-            content = content.push(container(actions_row).padding([0, 16]).center_y(Length::Fill));
+            content = content.push(
+                container(actions_row)
+                    .padding([0, 16])
+                    .center_y(Length::Fill),
+            );
         }
 
         container(content)
@@ -206,10 +210,10 @@ impl<Message: Clone> MaterialAppBar<Message> {
             .style(move |_theme: &Theme| container::Style {
                 background: Some(Background::Color(match self.variant {
                     AppBarVariant::Small | AppBarVariant::Top | AppBarVariant::CenterAligned => {
-                        self.theme.scheme.surface.into()
+                        iced::Color::from(self.theme.scheme.surface)
                     }
                     AppBarVariant::Medium | AppBarVariant::Large => {
-                        self.theme.scheme.surface.into()_container
+                        iced::Color::from(self.theme.scheme.surface_container)
                     }
                 })),
                 border: Border::default(),

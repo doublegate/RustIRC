@@ -3,11 +3,34 @@
 //! This module implements a comprehensive Material Design 3 theming system
 //! with proper color tokens, typography scale, and accessibility compliance.
 
-use iced::{color, Color, Font};
+use iced::{color, Color};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// Serializable wrapper for iced::Color
+///
+/// This type allows Material Design 3 colors to be serialized to/from configuration
+/// files while maintaining compatibility with Iced's Color type.
+///
+/// # Examples
+///
+/// ```
+/// use rustirc_gui::themes::material_design_3::SerializableColor;
+/// use iced::Color;
+///
+/// // Create from iced::Color
+/// let iced_color = Color::from_rgb(0.2, 0.4, 0.8);
+/// let serializable: SerializableColor = iced_color.into();
+/// 
+/// // Convert back to iced::Color
+/// let converted: Color = serializable.into();
+/// assert_eq!(converted.r, 0.2);
+/// assert_eq!(converted.g, 0.4);
+/// assert_eq!(converted.b, 0.8);
+///
+/// // Test alpha transparency
+/// let transparent = SerializableColor::from(Color::from_rgba(1.0, 0.5, 0.0, 0.7));
+/// assert_eq!(transparent.a, 0.7);
+/// ```
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct SerializableColor {
     pub r: f32,
@@ -46,6 +69,40 @@ impl SerializableColor {
 }
 
 /// Material Design 3 theme with full color system
+///
+/// Complete implementation of Google's Material Design 3 theming system,
+/// including color schemes, typography, elevation, spacing, motion, and shapes.
+///
+/// # Examples
+///
+/// ```
+/// use rustirc_gui::themes::material_design_3::MaterialTheme;
+///
+/// // Create default theme
+/// let theme = MaterialTheme::default();
+/// 
+/// // Access color scheme (Material Purple)
+/// assert!((theme.scheme.primary.r - 0.40392157).abs() < 0.001);  // 0x67 / 255
+/// assert!((theme.scheme.primary.g - 0.31372549).abs() < 0.001);  // 0x50 / 255  
+/// assert!((theme.scheme.primary.b - 0.64313725).abs() < 0.001);  // 0xA4 / 255
+///
+/// // Check typography scale
+/// assert_eq!(theme.typography.display_large.font_size, 57.0);
+/// assert_eq!(theme.typography.body_large.font_size, 16.0);
+///
+/// // Verify spacing system
+/// assert_eq!(theme.spacing.xs, 4.0);
+/// assert_eq!(theme.spacing.lg, 24.0);
+/// ```
+///
+/// # Theme Components
+///
+/// - **Color Scheme**: Primary, secondary, tertiary colors with variants
+/// - **Typography**: Complete type scale from display to labels
+/// - **Elevation**: Shadow and surface tint system
+/// - **Spacing**: Consistent spacing scale
+/// - **Motion**: Animation timing and easing
+/// - **Shapes**: Border radius and shape tokens
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MaterialTheme {
     pub scheme: ColorScheme,
@@ -120,7 +177,7 @@ pub struct ColorScheme {
     pub disabled_overlay: SerializableColor,
 
     // IRC-specific semantic colors
-    pub nick_colors: Vec<Color>,
+    pub nick_colors: Vec<SerializableColor>,
     pub mention_highlight: SerializableColor,
     pub unread_indicator: SerializableColor,
     pub typing_indicator: SerializableColor,
@@ -537,21 +594,21 @@ impl Default for TypographyScale {
         Self {
             // Display styles
             display_large: TypographyToken {
-                font_family: "Inter".to_string().into(),
+                font_family: "Inter".to_string(),
                 font_size: 57.0,
                 font_weight: FontWeight::Regular,
                 line_height: 64.0,
                 letter_spacing: -0.25,
             },
             display_medium: TypographyToken {
-                font_family: "Inter".to_string().into(),
+                font_family: "Inter".to_string(),
                 font_size: 45.0,
                 font_weight: FontWeight::Regular,
                 line_height: 52.0,
                 letter_spacing: 0.0,
             },
             display_small: TypographyToken {
-                font_family: "Inter".to_string().into(),
+                font_family: "Inter".to_string(),
                 font_size: 36.0,
                 font_weight: FontWeight::Regular,
                 line_height: 44.0,
@@ -560,21 +617,21 @@ impl Default for TypographyScale {
 
             // Headline styles
             headline_large: TypographyToken {
-                font_family: "Inter".to_string().into(),
+                font_family: "Inter".to_string(),
                 font_size: 32.0,
                 font_weight: FontWeight::Regular,
                 line_height: 40.0,
                 letter_spacing: 0.0,
             },
             headline_medium: TypographyToken {
-                font_family: "Inter".to_string().into(),
+                font_family: "Inter".to_string(),
                 font_size: 28.0,
                 font_weight: FontWeight::Regular,
                 line_height: 36.0,
                 letter_spacing: 0.0,
             },
             headline_small: TypographyToken {
-                font_family: "Inter".to_string().into(),
+                font_family: "Inter".to_string(),
                 font_size: 24.0,
                 font_weight: FontWeight::Regular,
                 line_height: 32.0,
@@ -583,21 +640,21 @@ impl Default for TypographyScale {
 
             // Title styles
             title_large: TypographyToken {
-                font_family: "Inter".to_string().into(),
+                font_family: "Inter".to_string(),
                 font_size: 22.0,
                 font_weight: FontWeight::Regular,
                 line_height: 28.0,
                 letter_spacing: 0.0,
             },
             title_medium: TypographyToken {
-                font_family: "Inter".to_string().into(),
+                font_family: "Inter".to_string(),
                 font_size: 16.0,
                 font_weight: FontWeight::Medium,
                 line_height: 24.0,
                 letter_spacing: 0.15,
             },
             title_small: TypographyToken {
-                font_family: "Inter".to_string().into(),
+                font_family: "Inter".to_string(),
                 font_size: 14.0,
                 font_weight: FontWeight::Medium,
                 line_height: 20.0,
@@ -606,21 +663,21 @@ impl Default for TypographyScale {
 
             // Label styles
             label_large: TypographyToken {
-                font_family: "Inter".to_string().into(),
+                font_family: "Inter".to_string(),
                 font_size: 14.0,
                 font_weight: FontWeight::Medium,
                 line_height: 20.0,
                 letter_spacing: 0.1,
             },
             label_medium: TypographyToken {
-                font_family: "Inter".to_string().into(),
+                font_family: "Inter".to_string(),
                 font_size: 12.0,
                 font_weight: FontWeight::Medium,
                 line_height: 16.0,
                 letter_spacing: 0.5,
             },
             label_small: TypographyToken {
-                font_family: "Inter".to_string().into(),
+                font_family: "Inter".to_string(),
                 font_size: 11.0,
                 font_weight: FontWeight::Medium,
                 line_height: 16.0,
@@ -629,21 +686,21 @@ impl Default for TypographyScale {
 
             // Body styles
             body_large: TypographyToken {
-                font_family: "Inter".to_string().into(),
+                font_family: "Inter".to_string(),
                 font_size: 16.0,
                 font_weight: FontWeight::Regular,
                 line_height: 24.0,
                 letter_spacing: 0.5,
             },
             body_medium: TypographyToken {
-                font_family: "Inter".to_string().into(),
+                font_family: "Inter".to_string(),
                 font_size: 14.0,
                 font_weight: FontWeight::Regular,
                 line_height: 20.0,
                 letter_spacing: 0.25,
             },
             body_small: TypographyToken {
-                font_family: "Inter".to_string().into(),
+                font_family: "Inter".to_string(),
                 font_size: 12.0,
                 font_weight: FontWeight::Regular,
                 line_height: 16.0,
@@ -652,21 +709,21 @@ impl Default for TypographyScale {
 
             // Code styles (monospace)
             code_large: TypographyToken {
-                font_family: "JetBrains Mono".to_string().into(),
+                font_family: "JetBrains Mono".to_string(),
                 font_size: 16.0,
                 font_weight: FontWeight::Regular,
                 line_height: 24.0,
                 letter_spacing: 0.0,
             },
             code_medium: TypographyToken {
-                font_family: "JetBrains Mono".to_string().into(),
+                font_family: "JetBrains Mono".to_string(),
                 font_size: 14.0,
                 font_weight: FontWeight::Regular,
                 line_height: 20.0,
                 letter_spacing: 0.0,
             },
             code_small: TypographyToken {
-                font_family: "JetBrains Mono".to_string().into(),
+                font_family: "JetBrains Mono".to_string(),
                 font_size: 12.0,
                 font_weight: FontWeight::Regular,
                 line_height: 16.0,
@@ -748,9 +805,9 @@ impl Default for MotionSystem {
             duration_medium2: 300,
             duration_long1: 400,
             duration_long2: 500,
-            easing_standard: "cubic-bezier(0.2, 0.0, 0, 1.0)".to_string().into(),
-            easing_deceleration: "cubic-bezier(0.0, 0.0, 0, 1.0)".to_string().into(),
-            easing_acceleration: "cubic-bezier(0.3, 0.0, 1.0, 1.0)".to_string().into(),
+            easing_standard: "cubic-bezier(0.2, 0.0, 0, 1.0)".to_string(),
+            easing_deceleration: "cubic-bezier(0.0, 0.0, 0, 1.0)".to_string(),
+            easing_acceleration: "cubic-bezier(0.3, 0.0, 1.0, 1.0)".to_string(),
         }
     }
 }

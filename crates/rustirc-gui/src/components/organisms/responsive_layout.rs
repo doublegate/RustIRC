@@ -1,22 +1,25 @@
 use iced::{
-    alignment::{Horizontal, Vertical},
     widget::{column, container, horizontal_space, pane_grid, row, scrollable},
-    Background, Border, Color, Element, Length, Renderer, Size, Theme,
+    Background, Border, Element, Length, Renderer, Size, Theme,
 };
-use pane_grid::{Axis, Configuration, Pane, PaneGrid, Split, State};
+use pane_grid::{Axis, PaneGrid, State};
 use std::collections::HashMap;
+use std::time::Instant;
 
-use crate::components::molecules::message_bubble::ChatMessage;
+use crate::components::molecules::message_bubble::{
+    ChatMessage, FormattedSpan, MessageContent, MessageSender, MessageType, RichTextContent,
+    UserStatus,
+};
 use crate::components::organisms::{
     // message_bubble::{MessageBubble, ChatMessage},
-    rich_text_editor::{RichTextEditor, RichTextMessage},
+    rich_text_editor::RichTextMessage,
     sidebar::{ModernSidebar, SidebarMessage},
 };
 use crate::components::MessageBubble;
-use crate::themes::material_design_3::{ElevationLevel, MaterialTheme};
+use crate::themes::material_design_3::MaterialTheme;
 
 // Responsive breakpoints based on Material Design
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Breakpoint {
     Compact,    // 0-599dp (mobile portrait)
     Medium,     // 600-839dp (tablet portrait, mobile landscape)
@@ -36,10 +39,13 @@ pub enum LayoutMode {
 }
 
 // Golden ratio proportions for layout
+#[allow(dead_code)]
 const GOLDEN_RATIO: f32 = 1.618;
 const SIDEBAR_MIN_WIDTH: f32 = 280.0;
 const SIDEBAR_COMPACT_WIDTH: f32 = 72.0;
+#[allow(dead_code)]
 const CONTENT_MIN_WIDTH: f32 = 400.0;
+#[allow(dead_code)]
 const DETAILS_MIN_WIDTH: f32 = 320.0;
 
 #[derive(Debug)]
@@ -77,6 +83,13 @@ pub enum LayoutMessage {
     ToggleOverlay,
     SwitchLayout(LayoutMode),
     AdaptToBreakpoint(Breakpoint),
+    MessageAction(crate::components::molecules::message_bubble::MessageAction),
+}
+
+impl From<crate::components::molecules::message_bubble::MessageAction> for LayoutMessage {
+    fn from(action: crate::components::molecules::message_bubble::MessageAction) -> Self {
+        LayoutMessage::MessageAction(action)
+    }
 }
 
 impl ResponsiveLayout {
@@ -160,9 +173,11 @@ impl ResponsiveLayout {
                 .width(Length::Fixed(SIDEBAR_MIN_WIDTH))
                 .height(Length::Fill)
                 .style(move |_theme: &Theme| container::Style {
-                    background: Some(Background::Color(self.theme.scheme.surface_container.into())),
+                    background: Some(Background::Color(iced::Color::from(
+                        self.theme.scheme.surface_container,
+                    ))),
                     border: Border {
-                        color: self.theme.scheme.outline_variant.into(),
+                        color: iced::Color::from(self.theme.scheme.outline_variant),
                         width: 1.0,
                         radius: 12.0.into(),
                     },
@@ -184,7 +199,7 @@ impl ResponsiveLayout {
 
     fn medium_view(&self) -> Element<'_, LayoutMessage, Theme, Renderer> {
         // Tablet: two pane layout
-        let sidebar_width = if self.sidebar_collapsed {
+        let _sidebar_width = if self.sidebar_collapsed {
             SIDEBAR_COMPACT_WIDTH
         } else {
             SIDEBAR_MIN_WIDTH
@@ -201,25 +216,10 @@ impl ResponsiveLayout {
     fn desktop_view(&self) -> Element<'_, LayoutMessage, Theme, Renderer> {
         // Desktop: use pane grid for flexible layout
         let pane_grid = PaneGrid::new(&self.pane_state, |_pane, content, _is_maximized| {
-            self.create_pane_content(content)
+            pane_grid::Content::new(self.create_pane_content(content))
         })
         .on_resize(10, LayoutMessage::PaneResized)
-        .spacing(self.adaptive_spacing())
-        .style(|theme: &Theme| pane_grid::Style {
-            hovered_region: pane_grid::Line {
-                color: self.theme.scheme.primary.into(),
-                width: 2.0,
-            },
-            picked_split: pane_grid::Line {
-                color: self.theme.scheme.primary.into(),
-                width: 2.0,
-            },
-            hovered_split: pane_grid::Line {
-                color: self.theme.scheme.primary.scale_alpha(0.5).into(),
-                width: 2.0,
-            },
-            ..Default::default()
-        });
+        .spacing(self.adaptive_spacing());
 
         container(pane_grid)
             .width(Length::Fill)
@@ -270,44 +270,74 @@ impl ResponsiveLayout {
         let demo_messages = vec![
             ChatMessage {
                 id: "1".to_string(),
-                user_id: "alice".to_string(),
-                username: "Alice".to_string(),
-                avatar_url: None,
-                content: "Hello everyone! 👋".to_string(),
-                timestamp: chrono::Utc::now(),
-                message_type: crate::components::molecules::message_bubble::MessageType::Normal,
-                reactions: vec![],
-                thread_count: 0,
-                is_edited: false,
-                reply_to: None,
-                attachments: vec![],
-                user_badges: vec![],
-                user_status: crate::components::organisms::sidebar::ConnectionStatus::Connected,
+                timestamp: Instant::now(),
+                sender: MessageSender {
+                    nickname: "Alice".to_string(),
+                    user_id: "alice".to_string(),
+                    avatar_url: None,
+                    status: UserStatus::Online,
+                    color: None,
+                    badges: Vec::new(),
+                },
+                content: MessageContent::Text(RichTextContent {
+                    spans: vec![FormattedSpan {
+                        text: "Hello everyone! 👋".to_string(),
+                        bold: false,
+                        italic: false,
+                        underline: false,
+                        strikethrough: false,
+                        monospace: false,
+                        color: None,
+                        background_color: None,
+                    }],
+                    mentions: vec![],
+                    links: vec![],
+                    emojis: vec![],
+                }),
+                reactions: HashMap::new(),
+                thread_count: Some(0),
+                edited: false,
+                message_type: MessageType::Normal,
             },
             ChatMessage {
                 id: "2".to_string(),
-                user_id: "bob".to_string(),
-                username: "Bob".to_string(),
-                avatar_url: None,
-                content: "Hey Alice! How's the new IRC client coming along?".to_string(),
-                timestamp: chrono::Utc::now(),
-                message_type: crate::components::molecules::message_bubble::MessageType::Normal,
-                reactions: vec![],
-                thread_count: 0,
-                is_edited: false,
-                reply_to: Some("1".to_string()),
-                attachments: vec![],
-                user_badges: vec![],
-                user_status: crate::components::organisms::sidebar::ConnectionStatus::Connected,
+                timestamp: Instant::now(),
+                sender: MessageSender {
+                    nickname: "Bob".to_string(),
+                    user_id: "bob".to_string(),
+                    avatar_url: None,
+                    status: UserStatus::Online,
+                    color: None,
+                    badges: Vec::new(),
+                },
+                content: MessageContent::Text(RichTextContent {
+                    spans: vec![FormattedSpan {
+                        text: "Hey Alice! How's the new IRC client coming along?".to_string(),
+                        bold: false,
+                        italic: false,
+                        underline: false,
+                        strikethrough: false,
+                        monospace: false,
+                        color: None,
+                        background_color: None,
+                    }],
+                    mentions: vec![],
+                    links: vec![],
+                    emojis: vec![],
+                }),
+                reactions: HashMap::new(),
+                thread_count: Some(0),
+                edited: false,
+                message_type: MessageType::Normal,
             },
         ];
 
         let mut messages_column = column![];
 
         for message in demo_messages {
-            let message_bubble = MessageBubble::new(message, self.theme.clone());
-            messages_column =
-                messages_column.push(container(message_bubble.view()).padding([4, 0]));
+            let message_bubble = MessageBubble::new(message).theme(self.theme.clone());
+            messages_column = messages_column
+                .push(container(message_bubble.build::<LayoutMessage>()).padding([4, 0]));
         }
 
         messages_column.spacing(self.adaptive_spacing()).into()
@@ -316,11 +346,14 @@ impl ResponsiveLayout {
     fn create_input_area(&self) -> Element<'_, LayoutMessage, Theme, Renderer> {
         // For now, use a simple text input instead of the rich text editor to avoid lifetime issues
         use iced::widget::text_input;
-        
-        container(
-            text_input("Type a message...", "")
-                .on_input(|text| LayoutMessage::RichTextEditor(crate::components::organisms::rich_text_editor::RichTextMessage::TextChanged(text)))
-        )
+
+        container(text_input("Type a message...", "").on_input(|text| {
+            LayoutMessage::RichTextEditor(
+                crate::components::organisms::rich_text_editor::RichTextMessage::ContentChanged(
+                    text,
+                ),
+            )
+        }))
         .width(Length::Fill)
         .into()
     }
@@ -331,7 +364,7 @@ impl ResponsiveLayout {
             container(
                 crate::components::atoms::typography::MaterialText::new("Channels")
                     .variant(crate::components::atoms::typography::TypographyVariant::HeadlineSmall)
-                    .color(self.theme.scheme.on_surface.into())
+                    .color(iced::Color::from(self.theme.scheme.on_surface))
                     .build()
             )
             .padding(16),
@@ -342,19 +375,19 @@ impl ResponsiveLayout {
                         .variant(
                             crate::components::atoms::typography::TypographyVariant::LabelLarge
                         )
-                        .color(self.theme.scheme.primary.into())
+                        .color(iced::Color::from(self.theme.scheme.primary))
                         .build(),
                     crate::components::atoms::typography::MaterialText::new("# programming")
                         .variant(
                             crate::components::atoms::typography::TypographyVariant::LabelLarge
                         )
-                        .color(self.theme.scheme.on_surface.into())
+                        .color(iced::Color::from(self.theme.scheme.on_surface))
                         .build(),
                     crate::components::atoms::typography::MaterialText::new("# linux")
                         .variant(
                             crate::components::atoms::typography::TypographyVariant::LabelLarge
                         )
-                        .color(self.theme.scheme.on_surface.into())
+                        .color(iced::Color::from(self.theme.scheme.on_surface))
                         .build(),
                 ]
                 .spacing(8)
@@ -362,9 +395,11 @@ impl ResponsiveLayout {
             .padding([0, 16])
         ])
         .style(move |_theme: &Theme| container::Style {
-            background: Some(Background::Color(self.theme.scheme.surface_container.into())),
+            background: Some(Background::Color(iced::Color::from(
+                self.theme.scheme.surface_container,
+            ))),
             border: Border {
-                color: self.theme.scheme.outline_variant.into(),
+                color: iced::Color::from(self.theme.scheme.outline_variant),
                 width: 1.0,
                 radius: 12.0.into(),
             },
@@ -378,7 +413,7 @@ impl ResponsiveLayout {
             container(
                 crate::components::atoms::typography::MaterialText::new("User Details")
                     .variant(crate::components::atoms::typography::TypographyVariant::HeadlineSmall)
-                    .color(self.theme.scheme.on_surface.into())
+                    .color(iced::Color::from(self.theme.scheme.on_surface))
                     .build()
             )
             .padding(16),
@@ -389,19 +424,19 @@ impl ResponsiveLayout {
                         .variant(
                             crate::components::atoms::typography::TypographyVariant::TitleMedium
                         )
-                        .color(self.theme.scheme.on_surface.into())
+                        .color(iced::Color::from(self.theme.scheme.on_surface))
                         .build(),
                     crate::components::atoms::typography::MaterialText::new("Online")
                         .variant(
                             crate::components::atoms::typography::TypographyVariant::LabelMedium
                         )
-                        .color(self.theme.scheme.primary.into())
+                        .color(iced::Color::from(self.theme.scheme.primary))
                         .build(),
                     crate::components::atoms::typography::MaterialText::new("Rust developer")
                         .variant(
                             crate::components::atoms::typography::TypographyVariant::BodyMedium
                         )
-                        .color(self.theme.scheme.on_surface_variant.into())
+                        .color(iced::Color::from(self.theme.scheme.on_surface_variant))
                         .build(),
                 ]
                 .spacing(4)
@@ -409,9 +444,11 @@ impl ResponsiveLayout {
             .padding([0, 16])
         ])
         .style(move |_theme: &Theme| container::Style {
-            background: Some(Background::Color(self.theme.scheme.surface_container.into())),
+            background: Some(Background::Color(iced::Color::from(
+                self.theme.scheme.surface_container,
+            ))),
             border: Border {
-                color: self.theme.scheme.outline_variant.into(),
+                color: iced::Color::from(self.theme.scheme.outline_variant),
                 width: 1.0,
                 radius: 12.0.into(),
             },
@@ -425,7 +462,7 @@ impl ResponsiveLayout {
             container(
                 crate::components::atoms::typography::MaterialText::new("Settings")
                     .variant(crate::components::atoms::typography::TypographyVariant::HeadlineSmall)
-                    .color(self.theme.scheme.on_surface.into())
+                    .color(iced::Color::from(self.theme.scheme.on_surface))
                     .build()
             )
             .padding(16),
@@ -436,19 +473,19 @@ impl ResponsiveLayout {
                         .variant(
                             crate::components::atoms::typography::TypographyVariant::LabelLarge
                         )
-                        .color(self.theme.scheme.on_surface.into())
+                        .color(iced::Color::from(self.theme.scheme.on_surface))
                         .build(),
                     crate::components::atoms::typography::MaterialText::new("Notifications")
                         .variant(
                             crate::components::atoms::typography::TypographyVariant::LabelLarge
                         )
-                        .color(self.theme.scheme.on_surface.into())
+                        .color(iced::Color::from(self.theme.scheme.on_surface))
                         .build(),
                     crate::components::atoms::typography::MaterialText::new("Privacy")
                         .variant(
                             crate::components::atoms::typography::TypographyVariant::LabelLarge
                         )
-                        .color(self.theme.scheme.on_surface.into())
+                        .color(iced::Color::from(self.theme.scheme.on_surface))
                         .build(),
                 ]
                 .spacing(8)
@@ -456,9 +493,11 @@ impl ResponsiveLayout {
             .padding([0, 16])
         ])
         .style(move |_theme: &Theme| container::Style {
-            background: Some(Background::Color(self.theme.scheme.surface_container.into())),
+            background: Some(Background::Color(iced::Color::from(
+                self.theme.scheme.surface_container,
+            ))),
             border: Border {
-                color: self.theme.scheme.outline_variant.into(),
+                color: iced::Color::from(self.theme.scheme.outline_variant),
                 width: 1.0,
                 radius: 12.0.into(),
             },
@@ -513,26 +552,49 @@ impl ResponsiveLayout {
         let (new_state, _) = match self.layout_mode {
             LayoutMode::SinglePane => State::new(PaneContent::ChatArea),
             LayoutMode::TwoPane => {
-                let (state, pane) = State::new(PaneContent::Sidebar);
-                let (state, _) = state.split(Axis::Vertical, &pane, PaneContent::ChatArea);
+                let (mut state, pane) = State::new(PaneContent::Sidebar);
+                if let Some((_new_pane, _split)) =
+                    state.split(Axis::Vertical, pane, PaneContent::ChatArea)
+                {
+                    // Split successful
+                }
                 (state, pane)
             }
             LayoutMode::ThreePane => {
-                let (state, pane) = State::new(PaneContent::Sidebar);
-                let (state, content_pane) =
-                    state.split(Axis::Vertical, &pane, PaneContent::ChatArea);
-                let (state, _) =
-                    state.split(Axis::Vertical, &content_pane, PaneContent::UserDetails);
+                let (mut state, pane) = State::new(PaneContent::Sidebar);
+                let mut content_pane = pane;
+                if let Some((new_pane, _split)) =
+                    state.split(Axis::Vertical, pane, PaneContent::ChatArea)
+                {
+                    content_pane = new_pane;
+                }
+                if let Some((_user_pane, _split)) =
+                    state.split(Axis::Vertical, content_pane, PaneContent::UserDetails)
+                {
+                    // Split successful
+                }
                 (state, pane)
             }
             LayoutMode::FourPane => {
-                let (state, pane) = State::new(PaneContent::Sidebar);
-                let (state, channel_pane) =
-                    state.split(Axis::Vertical, &pane, PaneContent::ChannelList);
-                let (state, content_pane) =
-                    state.split(Axis::Vertical, &channel_pane, PaneContent::ChatArea);
-                let (state, _) =
-                    state.split(Axis::Vertical, &content_pane, PaneContent::UserDetails);
+                let (mut state, pane) = State::new(PaneContent::Sidebar);
+                let mut channel_pane = pane;
+                let mut content_pane = pane;
+
+                if let Some((new_pane, _split)) =
+                    state.split(Axis::Vertical, pane, PaneContent::ChannelList)
+                {
+                    channel_pane = new_pane;
+                }
+                if let Some((new_pane, _split)) =
+                    state.split(Axis::Vertical, channel_pane, PaneContent::ChatArea)
+                {
+                    content_pane = new_pane;
+                }
+                if let Some((_user_pane, _split)) =
+                    state.split(Axis::Vertical, content_pane, PaneContent::UserDetails)
+                {
+                    // Split successful
+                }
                 (state, pane)
             }
             _ => State::new(PaneContent::ChatArea),
@@ -562,6 +624,7 @@ impl ResponsiveLayout {
     }
 
     // Calculate proportions using golden ratio
+    #[allow(dead_code)]
     fn calculate_golden_proportions(&self, total_width: f32) -> (f32, f32, f32) {
         if self.golden_ratio_layout {
             let content_width = total_width / (1.0 + GOLDEN_RATIO);

@@ -17,8 +17,8 @@ use crate::{
 use iced::{
     alignment::{Horizontal, Vertical},
     time::Instant,
-    widget::{button, column, container, mouse_area, row, scrollable, stack, text, tooltip},
-    Background, Border, Color, Element, Length, Point, Rectangle,
+    widget::{column, container, mouse_area, row, stack, text, tooltip},
+    Background, Border, Color, Element, Length,
 };
 use rustirc_protocol::Message as IrcMessage;
 use std::collections::HashMap;
@@ -256,7 +256,7 @@ impl MessageBubble {
 
         let background_color = self.get_background_color();
         let border_color = if self.selected {
-            self.theme.scheme.primary.into()
+            iced::Color::from(self.theme.scheme.primary)
         } else {
             Color::TRANSPARENT
         };
@@ -271,7 +271,7 @@ impl MessageBubble {
                     color: border_color,
                     radius: self.theme.shapes.corner_small.into(),
                 },
-                text_color: Some(self.theme.scheme.on_surface.into()),
+                text_color: Some(iced::Color::from(self.theme.scheme.on_surface)),
                 shadow: if self.message.message_type == MessageType::Highlight {
                     iced::Shadow {
                         color: Color::from_rgba(0.0, 0.0, 0.0, 0.12),
@@ -289,7 +289,7 @@ impl MessageBubble {
             .into()
     }
 
-    /// Build full message content (with avatar and metadata)
+    /// Build full message content (with avatar and metadata)  
     fn build_full_content<Message>(&self) -> Element<'static, Message>
     where
         Message: Clone + 'static,
@@ -297,15 +297,18 @@ impl MessageBubble {
     {
         let avatar_size = if self.compact_mode { 24.0 } else { 32.0 };
 
+        // Build avatar element
+        let avatar_element = if self.show_avatar {
+            self.build_avatar(avatar_size)
+        } else {
+            container(text(""))
+                .width(Length::Fixed(avatar_size + self.theme.spacing.sm))
+                .into()
+        };
+
         row![
             // Avatar column
-            if self.show_avatar {
-                self.build_avatar(avatar_size).into()
-            } else {
-                container(text(""))
-                    .width(Length::Fixed(avatar_size + self.theme.spacing.sm))
-                    .into()
-            },
+            avatar_element,
             // Content column
             column![
                 // Header (username, timestamp, badges)
@@ -369,21 +372,20 @@ impl MessageBubble {
             .color
             .unwrap_or_else(|| self.get_user_color(&self.message.sender.nickname));
 
+        let avatar_initial = self
+            .message
+            .sender
+            .nickname
+            .chars()
+            .next()
+            .unwrap_or('?')
+            .to_string();
         let avatar_content = container(
-            MaterialText::new(
-                &self
-                    .message
-                    .sender
-                    .nickname
-                    .chars()
-                    .next()
-                    .unwrap_or('?')
-                    .to_string(),
-            )
-            .variant(TypographyVariant::LabelLarge)
-            .color(Color::WHITE)
-            .theme(self.theme.clone())
-            .build(),
+            MaterialText::new(&avatar_initial)
+                .variant(TypographyVariant::LabelLarge)
+                .color(Color::WHITE)
+                .theme(self.theme.clone())
+                .build(),
         )
         .width(Length::Fixed(size))
         .height(Length::Fixed(size))
@@ -406,14 +408,16 @@ impl MessageBubble {
             UserStatus::Offline => self.theme.scheme.outline_variant,
         };
 
+        // Clone surface color before closure to avoid lifetime issues
+        let surface_color = iced::Color::from(self.theme.scheme.surface);
         let status_indicator = container(text(""))
             .width(Length::Fixed(8.0))
             .height(Length::Fixed(8.0))
             .style(move |_theme| container::Style {
-                background: Some(Background::Color(status_color)),
+                background: Some(Background::Color(status_color.into())),
                 border: Border {
                     width: 2.0,
-                    color: self.theme.scheme.surface.into(),
+                    color: surface_color,
                     radius: 4.0.into(),
                 },
                 ..Default::default()
@@ -428,8 +432,9 @@ impl MessageBubble {
         ];
 
         // Make avatar clickable for user card
+        let user_id = self.message.sender.user_id.clone();
         mouse_area(avatar_with_status)
-            .on_press(MessageAction::ShowUserCard(self.message.sender.user_id.clone()).into())
+            .on_press(MessageAction::ShowUserCard(user_id).into())
             .into()
     }
 
@@ -446,9 +451,10 @@ impl MessageBubble {
             .sender
             .color
             .unwrap_or_else(|| self.get_user_color(&self.message.sender.nickname));
+        let nickname = self.message.sender.nickname.clone();
 
         header_elements.push(
-            MaterialText::new(&self.message.sender.nickname)
+            MaterialText::new(&nickname)
                 .variant(TypographyVariant::LabelMedium)
                 .color(username_color)
                 .theme(self.theme.clone())
@@ -457,14 +463,16 @@ impl MessageBubble {
 
         // User badges (op, voice, etc.)
         for badge in &self.message.sender.badges {
+            let badge_icon = badge.icon.clone();
+            let badge_tooltip = badge.tooltip.clone();
             header_elements.push(
                 tooltip(
-                    MaterialText::new(&badge.icon)
+                    MaterialText::new(&badge_icon)
                         .variant(TypographyVariant::LabelSmall)
                         .color(badge.color)
                         .theme(self.theme.clone())
                         .build(),
-                    &badge.tooltip,
+                    text(badge_tooltip),
                     tooltip::Position::Top,
                 )
                 .into(),
@@ -477,7 +485,7 @@ impl MessageBubble {
             header_elements.push(
                 MaterialText::new(timestamp_text)
                     .variant(TypographyVariant::BodySmall)
-                    .color(self.theme.scheme.on_surface_variant.into())
+                    .color(iced::Color::from(self.theme.scheme.on_surface_variant))
                     .theme(self.theme.clone())
                     .build(),
             );
@@ -488,14 +496,15 @@ impl MessageBubble {
             header_elements.push(
                 MaterialText::new("(edited)")
                     .variant(TypographyVariant::BodySmall)
-                    .color(self.theme.scheme.on_surface_variant.into())
+                    .color(iced::Color::from(self.theme.scheme.on_surface_variant))
                     .theme(self.theme.clone())
                     .build(),
             );
         }
 
+        let spacing = self.theme.spacing.xs;
         row(header_elements)
-            .spacing(self.theme.spacing.xs)
+            .spacing(spacing)
             .align_y(Vertical::Center)
             .into()
     }
@@ -511,23 +520,23 @@ impl MessageBubble {
             MessageContent::Action(action) => {
                 MaterialText::new(format!("* {} {}", self.message.sender.nickname, action))
                     .variant(TypographyVariant::BodyMedium)
-                    .color(self.theme.scheme.on_surface_variant.into())
+                    .color(iced::Color::from(self.theme.scheme.on_surface_variant))
                     .theme(self.theme.clone())
                     .build()
             }
             MessageContent::System(system) => MaterialText::new(system)
                 .variant(TypographyVariant::BodySmall)
-                .color(self.theme.scheme.on_surface_variant)
+                .color(iced::Color::from(self.theme.scheme.on_surface_variant))
                 .theme(self.theme.clone())
                 .build(),
-            MessageContent::Notice(notice) => MaterialText::new(format!("Notice: {}", notice))
+            MessageContent::Notice(notice) => MaterialText::new(format!("Notice: {notice}"))
                 .variant(TypographyVariant::BodyMedium)
-                .color(self.theme.scheme.tertiary.into())
+                .color(iced::Color::from(self.theme.scheme.tertiary))
                 .theme(self.theme.clone())
                 .build(),
-            MessageContent::Ctcp(ctcp) => MaterialText::new(format!("[CTCP] {}", ctcp))
+            MessageContent::Ctcp(ctcp) => MaterialText::new(format!("[CTCP] {ctcp}"))
                 .variant(TypographyVariant::BodySmall)
-                .color(self.theme.scheme.on_surface_variant)
+                .color(iced::Color::from(self.theme.scheme.on_surface_variant))
                 .theme(self.theme.clone())
                 .build(),
         }
@@ -605,12 +614,12 @@ impl MessageBubble {
                             .build(),
                         MaterialText::new(&preview.description)
                             .variant(TypographyVariant::BodySmall)
-                            .color(self.theme.scheme.on_surface_variant.into())
+                            .color(iced::Color::from(self.theme.scheme.on_surface_variant))
                             .theme(self.theme.clone())
                             .build(),
                         MaterialText::new(&preview.site_name)
                             .variant(TypographyVariant::LabelSmall)
-                            .color(self.theme.scheme.primary.into())
+                            .color(iced::Color::from(self.theme.scheme.primary))
                             .theme(self.theme.clone())
                             .build()
                     ]
@@ -637,13 +646,13 @@ impl MessageBubble {
             .reactions
             .iter()
             .map(|(emoji, data)| {
-                let bg_color = if data.self_reacted {
+                let _bg_color = if data.self_reacted {
                     self.theme.scheme.primary_container
                 } else {
                     self.theme.scheme.surface_container
                 };
 
-                let text_color = if data.self_reacted {
+                let _text_color = if data.self_reacted {
                     self.theme.scheme.on_primary_container
                 } else {
                     self.theme.scheme.on_surface_variant
@@ -676,11 +685,13 @@ impl MessageBubble {
     /// Get background color based on message type and state
     fn get_background_color(&self) -> Color {
         match (self.highlight, self.selected, self.message.message_type) {
-            (true, _, _) => self.theme.scheme.tertiary_container,
-            (_, true, _) => self.theme.scheme.primary_container,
-            (_, _, MessageType::System) => self.theme.scheme.surface_container_low,
-            (_, _, MessageType::Error) => self.theme.scheme.error_container,
-            (_, _, MessageType::Notice) => self.theme.scheme.secondary_container,
+            (true, _, _) => iced::Color::from(self.theme.scheme.tertiary_container),
+            (_, true, _) => iced::Color::from(self.theme.scheme.primary_container),
+            (_, _, MessageType::System) => {
+                iced::Color::from(self.theme.scheme.surface_container_low)
+            }
+            (_, _, MessageType::Error) => iced::Color::from(self.theme.scheme.error_container),
+            (_, _, MessageType::Notice) => iced::Color::from(self.theme.scheme.secondary_container),
             _ => Color::TRANSPARENT,
         }
     }
@@ -692,7 +703,7 @@ impl MessageBubble {
             .bytes()
             .fold(0u32, |acc, b| acc.wrapping_add(b as u32)) as usize
             % colors.len();
-        colors[index]
+        colors[index].into()
     }
 }
 
@@ -708,7 +719,7 @@ fn format_timestamp(timestamp: Instant) -> String {
 }
 
 /// Convert IRC message to chat message
-pub fn irc_to_chat_message(irc_msg: &IrcMessage, theme: &MaterialTheme) -> Option<ChatMessage> {
+pub fn irc_to_chat_message(_irc_msg: &IrcMessage, _theme: &MaterialTheme) -> Option<ChatMessage> {
     // This would parse IRC message into structured chat message
     // Implementation depends on the IRC message format
     None // Placeholder

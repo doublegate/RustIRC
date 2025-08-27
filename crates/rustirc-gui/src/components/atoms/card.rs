@@ -1,9 +1,7 @@
 //! Material Design 3 Card component
 
 use iced::{
-    alignment::{Horizontal, Vertical},
-    mouse,
-    widget::{container, Container},
+    widget::container,
     Background, Border, Color, Element, Length, Renderer, Theme,
 };
 
@@ -11,7 +9,7 @@ use crate::themes::material_design_3::{ElevationLevel, MaterialTheme};
 
 /// Material Design 3 Card component
 #[derive()]
-pub struct MaterialCard<'a, Message, Theme = iced::Theme, Renderer = iced::Renderer> {
+pub struct MaterialCard<'a, Message> {
     content: Element<'a, Message, Theme, Renderer>,
     theme: MaterialTheme,
     elevation: ElevationLevel,
@@ -21,11 +19,9 @@ pub struct MaterialCard<'a, Message, Theme = iced::Theme, Renderer = iced::Rende
     on_press: Option<Message>,
 }
 
-impl<'a, Message, Theme, Renderer> MaterialCard<'a, Message, Theme, Renderer>
+impl<'a, Message> MaterialCard<'a, Message>
 where
-    Message: Clone,
-    Renderer: iced::advanced::Renderer,
-    Theme: iced::widget::container::Catalog + iced::widget::button::Catalog,
+    Message: Clone + 'a,
 {
     pub fn new(content: impl Into<Element<'a, Message, Theme, Renderer>>) -> Self {
         Self {
@@ -85,9 +81,9 @@ where
                 };
 
                 container::Style {
-                    background: Some(Background::Color(surface_color.into())),
+                    background: Some(Background::Color(iced::Color::from(surface_color))),
                     border: Border {
-                        color: self.theme.scheme.outline_variant.into(),
+                        color: iced::Color::from(self.theme.scheme.outline_variant),
                         width: 1.0,
                         radius: 12.0.into(),
                     },

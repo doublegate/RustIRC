@@ -3,7 +3,7 @@
 //! This module implements Material Design 3 button variants with proper
 //! accessibility, animations, and theming support.
 
-use crate::themes::material_design_3::{FontWeight, MaterialTheme};
+use crate::themes::material_design_3::MaterialTheme;
 use iced::{
     widget::{button, text},
     Background, Border, Color, Element, Length, Vector,
@@ -40,7 +40,47 @@ pub enum ButtonState {
     Disabled,
 }
 
-/// Material Design 3 Button
+/// Material Design 3 Button component
+///
+/// Implements all Material Design 3 button variants with proper accessibility,
+/// theming, and interaction states.
+///
+/// # Examples
+///
+/// ```
+/// use rustirc_gui::components::atoms::button::{ButtonVariant, MaterialButton};
+/// use rustirc_gui::themes::material_design_3::MaterialTheme;
+///
+/// #[derive(Debug, Clone)]
+/// enum Message {
+///     ButtonPressed,
+/// }
+///
+/// let theme = MaterialTheme::default();
+/// let button = MaterialButton::new("Click Me")
+///     .variant(ButtonVariant::Filled)
+///     .on_press(Message::ButtonPressed)
+///     .theme(theme);
+///
+/// // Create the Iced element
+/// let element = button.build();
+/// ```
+///
+/// # Button Variants
+///
+/// - **Filled**: Highest emphasis, primary actions
+/// - **FilledTonal**: Medium emphasis, important secondary actions
+/// - **Outlined**: Medium emphasis with border
+/// - **Text**: Low emphasis, tertiary actions
+/// - **Elevated**: High emphasis with shadow
+///
+/// # Features
+///
+/// - Automatic focus handling and keyboard navigation
+/// - Hover and pressed state animations
+/// - Icon support with configurable positioning
+/// - Full accessibility with ARIA labels
+/// - Material Design 3 color and typography tokens
 #[derive(Debug, Clone)]
 pub struct MaterialButton<Message> {
     variant: ButtonVariant,
@@ -137,15 +177,15 @@ impl<Message> MaterialButton<Message> {
             Length::Shrink
         };
 
-        let (bg_color, text_color, border_color, border_width) = self.get_colors();
+        let (_bg_color, text_color, _border_color, border_width) = self.get_colors();
 
         let content = self.build_content(font_size, icon_size, text_color);
         let disabled = self.disabled;
         let on_press = self.on_press.clone();
-        
+
         // Clone values needed in closure before move
         let button_clone = self.clone();
-        
+
         let btn = button(content)
             .height(height)
             .width(width)
@@ -238,50 +278,50 @@ impl<Message> MaterialButton<Message> {
     fn get_colors(&self) -> (Color, Color, Color, f32) {
         match (self.variant, self.disabled) {
             (ButtonVariant::Filled, false) => (
-                self.theme.scheme.primary.into(),
-                self.theme.scheme.on_primary.into(),
+                iced::Color::from(self.theme.scheme.primary),
+                iced::Color::from(self.theme.scheme.on_primary),
                 Color::TRANSPARENT,
                 0.0,
             ),
             (ButtonVariant::Filled, true) => (
-                self.theme.scheme.surface_container_highest.into(),
-                self.theme.scheme.on_surface_variant.into(),
+                iced::Color::from(self.theme.scheme.surface_container_highest),
+                iced::Color::from(self.theme.scheme.on_surface_variant),
                 Color::TRANSPARENT,
                 0.0,
             ),
             (ButtonVariant::FilledTonal, false) => (
-                self.theme.scheme.secondary_container.into(),
-                self.theme.scheme.on_secondary_container.into(),
+                iced::Color::from(self.theme.scheme.secondary_container),
+                iced::Color::from(self.theme.scheme.on_secondary_container),
                 Color::TRANSPARENT,
                 0.0,
             ),
             (ButtonVariant::FilledTonal, true) => (
-                self.theme.scheme.surface_container_highest.into(),
-                self.theme.scheme.on_surface_variant.into(),
+                iced::Color::from(self.theme.scheme.surface_container_highest),
+                iced::Color::from(self.theme.scheme.on_surface_variant),
                 Color::TRANSPARENT,
                 0.0,
             ),
             (ButtonVariant::Outlined, false) => (
                 Color::TRANSPARENT,
-                self.theme.scheme.primary.into(),
-                self.theme.scheme.outline.into(),
+                iced::Color::from(self.theme.scheme.primary),
+                iced::Color::from(self.theme.scheme.outline),
                 1.0,
             ),
             (ButtonVariant::Outlined, true) => (
                 Color::TRANSPARENT,
-                self.theme.scheme.on_surface_variant.into(),
-                self.theme.scheme.outline_variant.into(),
+                iced::Color::from(self.theme.scheme.on_surface_variant),
+                iced::Color::from(self.theme.scheme.outline_variant),
                 1.0,
             ),
             (ButtonVariant::Text, false) => (
                 Color::TRANSPARENT,
-                self.theme.scheme.primary.into(),
+                iced::Color::from(self.theme.scheme.primary),
                 Color::TRANSPARENT,
                 0.0,
             ),
             (ButtonVariant::Text, true) => (
                 Color::TRANSPARENT,
-                self.theme.scheme.on_surface_variant.into(),
+                iced::Color::from(self.theme.scheme.on_surface_variant),
                 Color::TRANSPARENT,
                 0.0,
             ),
@@ -297,24 +337,34 @@ impl<Message> MaterialButton<Message> {
             button::Status::Hovered => {
                 // Apply hover overlay
                 let overlay_color = match self.variant {
-                    ButtonVariant::Filled => self.theme.scheme.on_primary.into(),
-                    ButtonVariant::FilledTonal => self.theme.scheme.on_secondary_container.into(),
-                    ButtonVariant::Outlined | ButtonVariant::Text => self.theme.scheme.primary.into(),
+                    ButtonVariant::Filled => iced::Color::from(self.theme.scheme.on_primary),
+                    ButtonVariant::FilledTonal => {
+                        iced::Color::from(self.theme.scheme.on_secondary_container)
+                    }
+                    ButtonVariant::Outlined | ButtonVariant::Text => {
+                        iced::Color::from(self.theme.scheme.primary)
+                    }
                 };
                 Background::Color(self.blend_colors(base_bg, overlay_color, 0.08))
             }
             button::Status::Pressed => {
                 // Apply pressed overlay
                 let overlay_color = match self.variant {
-                    ButtonVariant::Filled => self.theme.scheme.on_primary.into(),
-                    ButtonVariant::FilledTonal => self.theme.scheme.on_secondary_container.into(),
-                    ButtonVariant::Outlined | ButtonVariant::Text => self.theme.scheme.primary.into(),
+                    ButtonVariant::Filled => iced::Color::from(self.theme.scheme.on_primary),
+                    ButtonVariant::FilledTonal => {
+                        iced::Color::from(self.theme.scheme.on_secondary_container)
+                    }
+                    ButtonVariant::Outlined | ButtonVariant::Text => {
+                        iced::Color::from(self.theme.scheme.primary)
+                    }
                 };
                 Background::Color(self.blend_colors(base_bg, overlay_color, 0.12))
             }
             button::Status::Disabled => {
                 // Disabled state - use muted colors
-                Background::Color(self.theme.scheme.on_surface.scale_alpha(0.12).into())
+                Background::Color(iced::Color::from(
+                    self.theme.scheme.on_surface.scale_alpha(0.12),
+                ))
             }
         };
 
@@ -434,15 +484,20 @@ impl<Message> FloatingActionButton<Message> {
             FabSize::Large => (96.0, 36.0, 18.0),
         };
 
-        let content = if self.extended && self.label.is_some() {
+        // Clone values that will be used in closure
+        let icon = self.icon.clone();
+        let label = self.label.clone();
+        let on_press = self.on_press.clone();
+
+        let content: Element<'static, Message> = if self.extended && label.is_some() {
             // Extended FAB
             iced::widget::row![
-                text(&self.icon)
+                text(icon.clone())
                     .size(icon_size)
-                    .color(self.theme.scheme.on_primary_container.into()),
-                text(self.label.as_ref().unwrap())
+                    .color(iced::Color::from(self.theme.scheme.on_primary_container)),
+                text(label.as_ref().unwrap().clone())
                     .size(font_size)
-                    .color(self.theme.scheme.on_primary_container.into())
+                    .color(iced::Color::from(self.theme.scheme.on_primary_container))
                     .font(iced::Font {
                         weight: iced::font::Weight::Medium,
                         ..Default::default()
@@ -452,9 +507,9 @@ impl<Message> FloatingActionButton<Message> {
             .into()
         } else {
             // Normal FAB
-            text(&self.icon)
+            text(icon.clone())
                 .size(icon_size)
-                .color(self.theme.scheme.on_primary_container.into())
+                .color(iced::Color::from(self.theme.scheme.on_primary_container))
                 .into()
         };
 
@@ -470,17 +525,22 @@ impl<Message> FloatingActionButton<Message> {
             .padding(if self.extended { [0, 16] } else { [0, 0] })
             .style(move |_theme, status| {
                 let background_color = match status {
-                    button::Status::Active => self.theme.scheme.primary_container.into(),
+                    button::Status::Active => {
+                        iced::Color::from(self.theme.scheme.primary_container)
+                    }
                     button::Status::Hovered => self.blend_colors(
-                        self.theme.scheme.primary_container.into(),
-                        self.theme.scheme.on_primary_container.into(),
+                        iced::Color::from(self.theme.scheme.primary_container),
+                        iced::Color::from(self.theme.scheme.on_primary_container),
                         0.08,
                     ),
                     button::Status::Pressed => self.blend_colors(
-                        self.theme.scheme.primary_container.into(),
-                        self.theme.scheme.on_primary_container.into(),
+                        iced::Color::from(self.theme.scheme.primary_container),
+                        iced::Color::from(self.theme.scheme.on_primary_container),
                         0.12,
                     ),
+                    button::Status::Disabled => {
+                        iced::Color::from(self.theme.scheme.on_surface).scale_alpha(0.12)
+                    }
                 };
 
                 let shadow = match status {
@@ -508,11 +568,12 @@ impl<Message> FloatingActionButton<Message> {
                         ),
                         blur_radius: self.theme.elevation.level2.shadow_blur,
                     },
+                    button::Status::Disabled => iced::Shadow::default(),
                 };
 
                 button::Style {
                     background: Some(Background::Color(background_color)),
-                    text_color: self.theme.scheme.on_primary_container.into(),
+                    text_color: iced::Color::from(self.theme.scheme.on_primary_container),
                     border: Border {
                         color: Color::TRANSPARENT,
                         width: 0.0,
@@ -522,8 +583,8 @@ impl<Message> FloatingActionButton<Message> {
                 }
             });
 
-        if let Some(on_press) = self.on_press {
-            btn.on_press(on_press).into()
+        if let Some(on_press_msg) = on_press {
+            btn.on_press(on_press_msg).into()
         } else {
             btn.into()
         }

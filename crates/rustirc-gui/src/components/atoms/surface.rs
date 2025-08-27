@@ -7,8 +7,8 @@ use crate::themes::material_design_3::{ElevationLevel, MaterialTheme};
 /// Material Design 3 Surface component
 /// Surfaces are foundational elements that affect how components are perceived
 #[derive()]
-pub struct MaterialSurface<'a, Message, T = iced::Theme, R = iced::Renderer> {
-    content: Element<'a, Message, T, R>,
+pub struct MaterialSurface<'a, Message> {
+    content: Element<'a, Message, Theme, Renderer>,
     theme: MaterialTheme,
     elevation: ElevationLevel,
     surface_type: SurfaceType,
@@ -36,12 +36,11 @@ pub enum SurfaceType {
     InverseSurface,
 }
 
-impl<'a, Message, T, R> MaterialSurface<'a, Message, T, R>
+impl<'a, Message> MaterialSurface<'a, Message>
 where
-    R: iced::advanced::Renderer,
-    T: iced::widget::container::Catalog,
+    Message: 'a,
 {
-    pub fn new(content: impl Into<Element<'a, Message, T, R>>) -> Self {
+    pub fn new(content: impl Into<Element<'a, Message, Theme, Renderer>>) -> Self {
         Self {
             content: content.into(),
             theme: MaterialTheme::default(),
@@ -83,14 +82,14 @@ where
         self
     }
 
-    pub fn view(self) -> Element<'a, Message, T, R> {
+    pub fn view(self) -> Element<'a, Message, Theme, Renderer> {
         let surface_color = self.get_surface_color();
 
         container(self.content)
             .width(self.width)
             .height(self.height)
             .padding(self.padding)
-            .style(move |_theme: &T| {
+            .style(move |_theme: &Theme| {
                 let shadow_offset = match self.elevation {
                     ElevationLevel::Level0 => 0.0,
                     ElevationLevel::Level1 => 1.0,
@@ -122,25 +121,27 @@ where
 
     fn get_surface_color(&self) -> Color {
         match self.surface_type {
-            SurfaceType::Surface => self.theme.scheme.surface.into(),
-            SurfaceType::SurfaceVariant => self.theme.scheme.surface_variant.into(),
-            SurfaceType::SurfaceContainer => self.theme.scheme.surface_container.into(),
-            SurfaceType::SurfaceContainerLow => self.theme.scheme.surface_container_low.into(),
-            SurfaceType::SurfaceContainerHigh => self.theme.scheme.surface_container_high.into(),
-            SurfaceType::SurfaceContainerHighest => self.theme.scheme.surface_container_highest.into(),
-            SurfaceType::InverseSurface => self.theme.scheme.inverse_surface.into(),
+            SurfaceType::Surface => iced::Color::from(self.theme.scheme.surface),
+            SurfaceType::SurfaceVariant => iced::Color::from(self.theme.scheme.surface_variant),
+            SurfaceType::SurfaceContainer => iced::Color::from(self.theme.scheme.surface_container),
+            SurfaceType::SurfaceContainerLow => {
+                iced::Color::from(self.theme.scheme.surface_container_low)
+            }
+            SurfaceType::SurfaceContainerHigh => {
+                iced::Color::from(self.theme.scheme.surface_container_high)
+            }
+            SurfaceType::SurfaceContainerHighest => {
+                iced::Color::from(self.theme.scheme.surface_container_highest)
+            }
+            SurfaceType::InverseSurface => iced::Color::from(self.theme.scheme.inverse_surface),
         }
     }
 }
 
 /// Helper functions for creating common surface configurations
-impl<'a, Message, T, R> MaterialSurface<'a, Message, T, R>
-where
-    R: iced::advanced::Renderer,
-    T: iced::widget::container::Catalog,
-{
+impl<'a, Message: 'a> MaterialSurface<'a, Message> {
     /// Creates a card surface with elevation
-    pub fn card(content: impl Into<Element<'a, Message, T, R>>) -> Self {
+    pub fn card(content: impl Into<Element<'a, Message, Theme, Renderer>>) -> Self {
         Self::new(content)
             .surface_type(SurfaceType::SurfaceContainer)
             .elevation(ElevationLevel::Level1)
@@ -148,7 +149,7 @@ where
     }
 
     /// Creates a dialog surface with high elevation
-    pub fn dialog(content: impl Into<Element<'a, Message, T, R>>) -> Self {
+    pub fn dialog(content: impl Into<Element<'a, Message, Theme, Renderer>>) -> Self {
         Self::new(content)
             .surface_type(SurfaceType::SurfaceContainerHigh)
             .elevation(ElevationLevel::Level3)
@@ -156,7 +157,7 @@ where
     }
 
     /// Creates a bottom sheet surface
-    pub fn bottom_sheet(content: impl Into<Element<'a, Message, T, R>>) -> Self {
+    pub fn bottom_sheet(content: impl Into<Element<'a, Message, Theme, Renderer>>) -> Self {
         Self::new(content)
             .surface_type(SurfaceType::SurfaceContainerLow)
             .elevation(ElevationLevel::Level1)
@@ -164,7 +165,7 @@ where
     }
 
     /// Creates a navbar surface
-    pub fn navbar(content: impl Into<Element<'a, Message, T, R>>) -> Self {
+    pub fn navbar(content: impl Into<Element<'a, Message, Theme, Renderer>>) -> Self {
         Self::new(content)
             .surface_type(SurfaceType::SurfaceContainer)
             .elevation(ElevationLevel::Level2)
