@@ -14,7 +14,7 @@ The project prioritizes full compatibility with IRC standards including IRCv3 ex
 
 ## Development Status
 
-**v0.3.8 Enhanced Iced Material Design GUI** (2025-08-26 09:19 PM EDT - 100% COMPLETE)
+**v0.3.8 Enhanced Iced Material Design GUI** (2025-08-26 10:48 PM EDT - Released with Material Demo Fix)
 
 - **Phase 1**: Research & Setup ✅ (Complete 2025-08-14)
 - **Phase 2**: Core IRC Engine ✅ (Complete 2025-08-17)

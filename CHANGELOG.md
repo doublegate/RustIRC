@@ -16,15 +16,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.8] - 2025-08-26 (Enhanced Iced Material Design GUI - impr_gui branch)
 
-### 100% COMPLETE (2025-08-26 10:30 PM EDT) 🎉
-- **Fixed**: Material Demo scrollable widget panic resolved - demo now fully functional
-- **Compilation Status**: 100% COMPLETE - ZERO compilation errors (424 → 119 → 40 → 0)
-- **Code Quality**: ZERO clippy warnings - Production-ready code quality achieved
-- **Testing**: 6 comprehensive doctests added and passing for all public APIs
-- **SerializableColor Architecture**: Complete with full bidirectional conversion support
-- **MaterialText Migration**: ALL instances migrated successfully
-- **Lifetime Management**: All complex borrowing issues resolved (E0373, E0515, E0382, E0310)
-- **Import Optimization**: Cleaned up unused imports from 20+ component files
+### Release Highlights (2025-08-26 10:40 PM EDT) 🎉
+- **Material Demo Fix**: Fixed Iced 0.13 scrollable widget panic - content must not fill vertical scrolling axis
+  - Solution: Wrapped scroll content in container with `height(Length::Shrink)` while keeping `width(Length::Fill)`
+  - Research via Context7 and Brave Search identified Iced GitHub issue #2863 with solution pattern
+  - Created separate `material_demo.rs` module preserving main `app.rs` unchanged per user request
+  - Added `--material-demo` CLI flag for running Material Design 3 component showcase
+  - Demo now fully functional displaying all MD3 components without runtime panics
+
+### Material Design 3 100% Complete (Previously achieved 2025-08-26 09:19 PM EDT)
+- **Compilation Status**: 100% COMPLETE - ZERO compilation errors achieved (424→0 errors eliminated)
+- **Code Quality**: ZERO clippy warnings - Production-ready code with proper format string inlining
+- **Testing**: 124 total tests (53 unit + 65 doctests + 6 new MD3 doctests) all passing
+- **SerializableColor Architecture**: Complete wrapper type with serde support for config persistence
+- **MaterialText Migration**: All instances properly using `.build()` API pattern
+- **Lifetime Management**: Complex borrowing issues resolved (E0373, E0515, E0382, E0310)
+- **Import Optimization**: Systematic cleanup of unused imports across all component files
 - **Achievement**: 100% functional Material Design 3 implementation - PRODUCTION READY
 
 ### Summary
@@ -55,6 +62,10 @@ Enhanced Iced Material Design GUI Implementation - This release introduces a com
 - Runtime theme switching with smooth transitions
 - Optimized rendering with efficient diffing algorithms
 - Lazy loading for improved performance
+- Fixed Iced scrollable widget constraints for Material Demo functionality
+  - Resolved panic: "scrollable content must not fill its vertical scrolling axis"
+  - Applied container wrapping pattern with explicit `Length::Shrink` for height
+  - Documented fix in `ref_docs/iced-scrollable-constraints-fix.md` for future reference
 
 ### Development Infrastructure
 - Three parallel GUI framework research branches maintained
