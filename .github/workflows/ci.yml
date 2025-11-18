@@ -268,7 +268,7 @@ jobs:
 
     - name: Download build artifacts (if available)
       if: inputs.cache_key != ''
-      uses: actions/download-artifact@v5
+      uses: actions/download-artifact@v6
       with:
         name: build-artifacts-${{ matrix.os }}
         path: target/
