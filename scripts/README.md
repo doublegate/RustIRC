@@ -73,7 +73,7 @@ local config = {
 function irc.on_message(event)
     if event.type == "message" then
         local channel = event.params[1]
-        local message = event.params[2]
+        local message = event.params[#event.params]
 
         -- Do something with the message
         if message:find("!hello") then
