@@ -395,7 +395,11 @@ function irc.on_message(event)
     end
 end
 
-irc.print("Auto-responder loaded with " .. #responses .. " triggers")
+local trigger_count = 0
+for _ in pairs(responses) do
+    trigger_count = trigger_count + 1
+end
+irc.print("Auto-responder loaded with " .. trigger_count .. " triggers")
 ```
 
 ### Example: Channel Logger
@@ -448,7 +452,7 @@ function irc.on_message(event)
         local message = event.params[#event.params]
 
         -- Match URLs (basic pattern)
-        for url in message:gmatch("https?://[%w-_%.%?%.:/%+=&]+") then
+        for url in message:gmatch("https?://[%w-_%.%?:/%+=&%%#~]+") then
             -- This would require http client API
             -- irc.http_get(url, function(response)
             --     local title = response:match("<title>(.-)</title>")
