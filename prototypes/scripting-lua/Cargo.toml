@@ -8,4 +8,4 @@ mlua = { version = "0.10", features = ["lua54", "vendored", "async", "send"] }
 tokio = { version = "1.41", features = ["full"] }
 anyhow = "1.0"
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
