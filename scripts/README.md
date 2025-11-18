@@ -378,7 +378,7 @@ Highlights messages containing specified keywords or from specific users.
 
 local responses = {
     ["!help"] = "Available commands: !help, !time, !version",
-    ["!version"] = "RustIRC v0.3.8 with Lua scripting",
+    ["!version"] = "RustIRC v0.4.0 with Lua scripting",
 }
 
 function irc.on_message(event)
