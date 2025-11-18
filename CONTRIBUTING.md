@@ -93,6 +93,16 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 - Add integration tests
 - Performance benchmarks
 
+### Lua Scripts
+
+- **Write useful scripts** - Create automation scripts that enhance IRC usage
+- **Share example scripts** - Contribute scripts to the `scripts/` directory
+- **Document scripts** - Include clear comments and usage instructions
+- **Follow security best practices** - Ensure scripts don't expose sensitive information
+- **Test thoroughly** - Verify scripts work correctly before submitting
+
+See [scripts/README.md](scripts/README.md) for the complete Lua scripting API reference.
+
 ## Development Process
 
 ### Project Structure
@@ -127,14 +137,17 @@ cargo watch -x run
 ### Testing
 
 ```bash
-# Run all tests
-cargo test
+# Run all tests (unit and bin tests, skipping doctests to avoid hangs in some environments)
+cargo test --workspace --lib --bins
 
 # Run tests with output
-cargo test -- --nocapture
+cargo test --workspace --lib --bins -- --nocapture
 
 # Run specific test
 cargo test test_name
+
+# Run tests for specific crate
+cargo test -p rustirc-scripting
 
 # Run benchmarks
 cargo bench
