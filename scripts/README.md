@@ -125,7 +125,7 @@ irc.action(target, action)
 -- Example: irc.action("#channel", "waves hello")
 
 -- Send CTCP command
-irc.ctcp(target, command)
+irc.ctcp(target, command, [args])
 -- Example: irc.ctcp("nickname", "VERSION")
 
 -- Send CTCP reply
