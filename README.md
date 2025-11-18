@@ -242,7 +242,7 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 
 - [API Reference](docs/api-reference.md) - Core API documentation
 - [Lua Scripting Guide](scripts/README.md) - Complete Lua scripting documentation with 50+ API functions
-- [Built-in Scripts](scripts/) - Example scripts (auto-away, auto-rejoin, highlight, url-logger)
+- [Built-in Scripts](scripts/) - Example scripts (auto-away, auto-rejoin, highlight, url_logger)
 - [Python Scripting Guide](docs/python-scripting-guide.md) - Python script development (planned)
 - [Testing Strategy](docs/testing-strategy.md) - Comprehensive testing approach
 
