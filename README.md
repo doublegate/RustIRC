@@ -84,7 +84,7 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 - 🎨 **Script Management**: Load, unload, enable, disable, reload scripts
 - 📊 **State Queries**: Access server, channel, and user information
 - 💬 **UI Integration**: Print messages, display notifications, update status
-- 🔍 **Complete Documentation**: 600+ line guide with API reference and tutorials
+- 🔍 **Complete Documentation**: 740+ line guide with API reference and tutorials
 - ✅ **Production Ready**: 11 comprehensive tests, all passing
 
 ## 🏗️ Current Development Status
@@ -212,7 +212,7 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
   - highlight.lua - Keyword highlighting with notifications
   - url_logger.lua - URL logging with search and filtering
 - ✅ **Script Management**: Load, unload, enable, disable, reload operations
-- ✅ **Comprehensive Documentation**: 600+ line [scripts/README.md](scripts/README.md) with complete API reference
+- ✅ **Comprehensive Documentation**: 740+ line [scripts/README.md](scripts/README.md) with complete API reference
 - ✅ **Production Quality**: 11 tests passing, zero errors, all functionality verified
 
 #### Pending Phase 4 Components

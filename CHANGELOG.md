@@ -161,7 +161,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Audio alerts (beep)
   - Custom commands: `/highlight`, `/unhighlight`, `/highlightuser`
 
-- **url_logger.lua** (218 lines):
+- **url_logger.lua** (217 lines):
   - URL detection and logging from chat messages
   - Timestamp and channel information storage
   - Search and filtering capabilities
@@ -169,7 +169,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Custom commands: `/urls [count|clear|search]`, `/urlconfig`
 
 #### Added - Comprehensive Documentation
-- **scripts/README.md** (600+ lines):
+- **scripts/README.md** (740+ lines):
   - Complete scripting system overview
   - Getting started tutorial
   - Full IRC API reference for all 50+ functions
