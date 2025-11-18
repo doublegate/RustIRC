@@ -28,7 +28,6 @@
 //! - Integrate with external services
 
 use rustirc_core::events::{Event, EventBus};
-use rustirc_protocol::{Command, Message};
 use std::sync::Arc;
 
 /// Main scripting API interface

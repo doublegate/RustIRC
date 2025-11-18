@@ -3703,6 +3703,7 @@ name = "rustirc-scripting"
 version = "0.3.8"
 dependencies = [
  "anyhow",
+ "async-trait",
  "mlua",
  "rustirc-core",
  "rustirc-protocol",
