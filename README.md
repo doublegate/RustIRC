@@ -9,6 +9,7 @@
 [![Rust Version](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE-MIT)
 [![Tests](https://img.shields.io/badge/tests-62%20passing-success.svg)](.github/workflows/ci.yml)
+<sub>Note: The test count badge now only reflects <code>--lib --bins</code> tests (excluding doctests). This change does not indicate a loss of test coverage.</sub>
 [![Documentation](https://img.shields.io/badge/docs-rustdoc-blue.svg)](docs/api-reference.md)
 [![API Coverage](https://img.shields.io/badge/API%20docs-100%25-brightgreen.svg)](docs/api-reference.md)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/doublegate/RustIRC)
