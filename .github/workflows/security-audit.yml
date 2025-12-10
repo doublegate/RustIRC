@@ -52,7 +52,7 @@ jobs:
       actions: read
     steps:
     - name: Checkout code
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         fetch-depth: 0
 
@@ -211,7 +211,7 @@ jobs:
         echo "count=$total" >> $GITHUB_OUTPUT
 
     - name: Upload audit results as artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       if: always()
       with:
         name: security-audit-results
@@ -245,7 +245,7 @@ jobs:
       pull-requests: write
     steps:
     - name: Checkout code
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
 
     - name: Dependency Review
       uses: actions/dependency-review-action@v4

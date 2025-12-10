@@ -59,7 +59,7 @@ jobs:
     if: ${{ !inputs.cache_key }}
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - uses: dtolnay/rust-toolchain@stable
       with:
         components: rustfmt
@@ -76,7 +76,7 @@ jobs:
     if: ${{ !inputs.cache_key }}
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - uses: dtolnay/rust-toolchain@stable
       with:
         components: clippy
@@ -103,7 +103,7 @@ jobs:
             rust: beta
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     
     # Setup cross-platform helper functions
     - name: Load helper functions
@@ -268,7 +268,7 @@ jobs:
 
     - name: Download build artifacts (if available)
       if: inputs.cache_key != ''
-      uses: actions/download-artifact@v5
+      uses: actions/download-artifact@v6
       with:
         name: build-artifacts-${{ matrix.os }}
         path: target/
@@ -526,7 +526,7 @@ jobs:
     name: Minimum Supported Rust Version
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     
     # Setup cross-platform helper functions
     - name: Load helper functions

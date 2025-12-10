@@ -16,7 +16,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [workspace.dependencies]
 # Async runtime
-tokio = { version = "1.41", features = ["full"] }
+tokio = { version = "1.48", features = ["full"] }
 tokio-rustls = "0.26"
 
 # TLS
@@ -38,7 +38,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Text processing
-regex = "1.11"
+regex = "1.12"
 async-trait = "0.1"
 
 # System integration
@@ -55,7 +55,7 @@ mlua = { version = "0.11", features = ["lua54", "vendored", "async", "send"] }
 
 # Testing
 mockall = "0.13"
-proptest = "1.6"
+proptest = "1.9"
 tokio-test = "0.4"
 pretty_assertions = "1.4"
 criterion = { version = "0.5", features = ["html_reports"] }
