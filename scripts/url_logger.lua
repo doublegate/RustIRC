@@ -34,7 +34,7 @@ local CONFIG = {
 local url_log = {}
 
 -- URL pattern (basic HTTP/HTTPS detection)
-local URL_PATTERN = "https?://[%w-_%.%?%.:/%+=&%%#~]+"
+local URL_PATTERN = "https?://[%w-_%.%?:/%+=&%%#~]+"
 
 ---Helper function to add URL to log
 ---@param url string The URL to log
@@ -100,9 +100,8 @@ function irc.on_message(event)
     -- Skip excluded channels
     if is_excluded(channel) then return end
 
-    -- Extract nickname from message prefix if available
-    local nick = "unknown"
-    -- In a real implementation, we'd parse this from the IRC message prefix
+    local nick = "unknown" -- TODO: Extract from IRC message prefix if available
+    -- Nickname extraction not currently implemented
 
     -- Find all URLs in message
     for url in message:gmatch(URL_PATTERN) do
