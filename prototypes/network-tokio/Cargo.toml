@@ -4,11 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-tokio = { version = "1.41", features = ["full"] }
+tokio = { version = "1.48", features = ["full"] }
 tokio-rustls = "0.26"
 rustls = "0.23"
 rustls-pemfile = "2.2"
 webpki-roots = "0.26"
 anyhow = "1.0"
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }

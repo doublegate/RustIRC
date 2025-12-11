@@ -52,7 +52,7 @@ jobs:
       actions: read
     steps:
     - name: Checkout code
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         fetch-depth: 0
 
@@ -211,7 +211,7 @@ jobs:
         echo "count=$total" >> $GITHUB_OUTPUT
 
     - name: Upload audit results as artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       if: always()
       with:
         name: security-audit-results
@@ -221,19 +221,24 @@ jobs:
         retention-days: 30
 
     - name: Comment audit summary on PR
-      if: github.event_name == 'pull_request'
+      if: github.event_name == 'pull_request' && github.event.pull_request
+      continue-on-error: true
       uses: actions/github-script@v8
       with:
         script: |
           const fs = require('fs');
           if (fs.existsSync('audit_summary.md')) {
             const summary = fs.readFileSync('audit_summary.md', 'utf8');
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `## 🛡️ Security Audit Results\n\n${summary}`
-            });
+            try {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `## 🛡️ Security Audit Results\n\n${summary}`
+              });
+            } catch (error) {
+              console.log('Unable to post comment (may be called from workflow_call):', error.message);
+            }
           }
 
   dependency-review:
@@ -245,7 +250,7 @@ jobs:
       pull-requests: write
     steps:
     - name: Checkout code
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
 
     - name: Dependency Review
       uses: actions/dependency-review-action@v4
