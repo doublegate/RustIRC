@@ -3,7 +3,7 @@
 -- @author: RustIRC Contributors
 -- @version: 1.0.0
 
----[[
+--[[
 URL Logger Script for RustIRC
 
 Features:
@@ -20,7 +20,7 @@ Usage:
 
 Configuration:
   Edit the CONFIG table below to customize behavior
-]]---
+]]--
 
 -- Configuration
 local CONFIG = {
