@@ -32,21 +32,18 @@ deny-licenses:
 # Allow specific packages even if they fail other checks
 allow-dependencies-licenses:
   # Core Rust ecosystem crates that are essential
-  - package-name: "serde"
-  - package-name: "serde_json"
-  - package-name: "tokio"
-  - package-name: "clap"
+  - serde
+  - serde_json
+  - tokio
+  - clap
 
 # Deny specific packages
 deny-packages:
   # Example of denying packages with known issues
-  - package-name: "openssl-sys"
-    reason: "Prefer rustls for pure Rust TLS implementation"
+  - openssl-sys
 
 # Allow vulnerabilities for specific advisories (temporary exceptions)
-allow-ghsas:
-  # Example: Allow specific GitHub Security Advisories temporarily
-  # - "GHSA-xxxx-xxxx-xxxx"
+allow-ghsas: []
 
 # Configuration for comment behavior
 comment-summary-in-pr: auto
