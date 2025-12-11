@@ -434,14 +434,23 @@ end
 irc.print("Channel logger active (/viewlog [lines])")
 ```
 
-### Example: URL Title Fetcher
+### Example: URL Title Fetcher (Future Feature Concept)
 
 ```lua
--- Note: Network access would require future API expansion
--- This shows the concept
 --[[
-url_titles.lua
+IMPORTANT: This is a CONCEPTUAL EXAMPLE demonstrating a planned future feature.
+The HTTP client API (irc.http_get) does not currently exist in the scripting engine.
+This code is provided to illustrate potential future capabilities and API design,
+not as working functionality. DO NOT attempt to use this code as-is.
+
+url_titles.lua (CONCEPT ONLY - NOT IMPLEMENTED)
 Fetches and displays titles for URLs posted in chat
+
+Future feature requirements:
+- HTTP client API integration (irc.http_get or similar)
+- Async HTTP request handling
+- HTML parsing capabilities
+- Rate limiting to prevent abuse
 
 function irc.on_message(event)
     if event.type == "message" then
@@ -449,7 +458,7 @@ function irc.on_message(event)
 
         -- Match URLs (basic pattern)
         for url in message:gmatch("https?://[%w-_%.%?%.:/%+=&]+") then
-            -- This would require http client API
+            -- FUTURE API: This would require http client API implementation
             -- irc.http_get(url, function(response)
             --     local title = response:match("<title>(.-)</title>")
             --     if title then

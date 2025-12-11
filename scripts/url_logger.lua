@@ -101,8 +101,9 @@ function irc.on_message(event)
     if is_excluded(channel) then return end
 
     -- Extract nickname from message prefix if available
-    local nick = "unknown"
-    -- In a real implementation, we'd parse this from the IRC message prefix
+    -- Note: In the actual IRC integration, the nickname would be parsed from
+    -- the message prefix. For this example script, we use a placeholder.
+    local nick = event.prefix and event.prefix:match("^([^!]+)") or "unknown"
 
     -- Find all URLs in message
     for url in message:gmatch(URL_PATTERN) do
