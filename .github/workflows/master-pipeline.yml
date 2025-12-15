@@ -217,7 +217,7 @@ jobs:
 
       # Upload build artifacts for other jobs to use
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: build-artifacts-${{ runner.os }}
           path: |
@@ -393,7 +393,7 @@ jobs:
           EOF
 
       - name: Upload documentation artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: documentation
           path: target/doc/
@@ -549,7 +549,7 @@ jobs:
           7z a ../../../${{ matrix.artifact_name }} rustirc.exe
         shell: pwsh
       - name: Upload build artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.artifact_name }}
           path: ${{ matrix.artifact_name }}
