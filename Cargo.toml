@@ -42,7 +42,7 @@ regex = "1.12"
 async-trait = "0.1"
 
 # System integration
-open = "5.0"
+open = "5.3"
 clipboard = "0.5"
 
 # UI
