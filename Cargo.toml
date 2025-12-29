@@ -47,7 +47,7 @@ clipboard = "0.5"
 
 # UI
 iced = { version = "0.13.1", features = ["tokio", "debug", "advanced"] }
-ratatui = "0.29"
+ratatui = "0.30"
 crossterm = "0.29"
 
 # Scripting
