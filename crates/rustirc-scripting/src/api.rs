@@ -50,12 +50,21 @@ use std::sync::Arc;
 /// // });
 /// ```
 pub struct ScriptApi {
-    /// Event bus for receiving and sending events
-    /// Reserved for future Phase 4+ features
+    /// Event bus for receiving and sending events.
+    ///
+    /// Reserved for Phase 4 implementation. Will be used to:
+    /// - Subscribe to IRC events (messages, joins, parts, etc.)
+    /// - Publish script-generated events to the client
+    /// - Enable bidirectional communication between scripts and the IRC engine
     #[allow(dead_code)]
     event_bus: Option<Arc<EventBus>>,
-    /// Connection ID for script context
-    /// Reserved for future Phase 4+ features
+
+    /// Connection ID for script context.
+    ///
+    /// Reserved for Phase 4 implementation. Will be used to:
+    /// - Associate scripts with specific server connections
+    /// - Route script commands to the correct IRC connection
+    /// - Enable per-connection script state and configuration
     #[allow(dead_code)]
     connection_id: Option<String>,
 }

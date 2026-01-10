@@ -31,16 +31,14 @@ mod tests {
 
     #[test]
     fn test_plugin_manager_creation() {
-        let manager = PluginManager::new();
-        // Manager should be created successfully
-        assert!(true); // Basic existence test
+        let _manager = PluginManager::new();
+        // Manager should be created successfully - if we reach here, the test passed
     }
 
     #[test]
     fn test_plugin_manager_default() {
-        let manager = PluginManager::default();
-        // Default implementation should work
-        assert!(true);
+        let _manager = PluginManager::default();
+        // Default implementation should work - if we reach here, the test passed
     }
 
     #[tokio::test]

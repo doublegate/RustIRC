@@ -73,9 +73,9 @@ mod tests {
 
     #[test]
     fn test_lua_initialization() {
-        let engine = ScriptEngine::new().unwrap();
+        let _engine = ScriptEngine::new().unwrap();
         // Test that Lua was initialized successfully by checking the engine exists
         // This is a basic smoke test for the Lua integration
-        assert!(true); // Engine creation succeeded, so Lua init worked
+        // If we reach here without unwrap panicking, Lua init worked
     }
 }
