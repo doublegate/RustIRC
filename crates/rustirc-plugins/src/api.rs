@@ -50,7 +50,7 @@ use std::error::Error;
 pub type PluginResult<T> = Result<T, Box<dyn Error + Send + Sync>>;
 
 /// Plugin capability flags
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct PluginCapabilities {
     /// Can handle IRC messages and events
     pub handles_events: bool,
@@ -62,18 +62,6 @@ pub struct PluginCapabilities {
     pub uses_storage: bool,
     /// Can access network resources
     pub network_access: bool,
-}
-
-impl Default for PluginCapabilities {
-    fn default() -> Self {
-        Self {
-            handles_events: false,
-            provides_commands: false,
-            provides_gui: false,
-            uses_storage: false,
-            network_access: false,
-        }
-    }
 }
 
 /// Plugin metadata and information

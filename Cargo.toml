@@ -109,8 +109,8 @@ strip = true
 opt-level = 3
 debug = false
 
-# Security fix for RUSTSEC-2026-0002: IterMut violates Stacked Borrows  
 # Patch vulnerable lru 0.12.5 by replacing iced_glyphon with patched version
 # The patched version updates lru from 0.12.1 to 0.16.3 which includes the security fix
+# See SECURITY-FIX-RUSTSEC-2026-0002.md for details
 [patch.crates-io]
 iced_glyphon = { path = "vendor/iced_glyphon" }
