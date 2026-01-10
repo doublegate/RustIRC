@@ -1,5 +1,7 @@
 # GitHub Copilot Instructions for RustIRC
 
+> **Purpose**: This file provides context and guidelines for GitHub Copilot when working on this repository. It helps Copilot understand project conventions, standards, and best practices that cannot be inferred from code alone.
+
 ## Project Overview
 
 RustIRC is a modern IRC client built in Rust that combines the best features from established IRC clients (mIRC, HexChat, WeeChat). The project prioritizes full IRC protocol compliance (RFC 1459/2812, IRCv3), cross-platform support (Windows, macOS, Linux), and provides multiple interface modes (GUI with Iced 0.13.1, TUI with ratatui, CLI).
@@ -177,3 +179,86 @@ When in doubt, prioritize:
 3. Cross-platform compatibility
 4. Protocol compliance
 5. Code quality and documentation
+
+## Working with Issues and Pull Requests
+
+### Issue Assignment Guidelines
+- When assigned an issue, read it completely along with all comments
+- Check for related issues or PRs that provide additional context
+- Ask clarifying questions if the requirements are ambiguous
+- Break down large tasks into smaller, manageable steps
+- Report progress regularly using commit messages and PR updates
+
+### Pull Request Guidelines
+- Create focused PRs that address a single issue or feature
+- Write clear commit messages following Conventional Commits format
+- Include tests for new functionality or bug fixes
+- Update documentation to reflect code changes
+- Request review when ready, highlighting areas needing particular attention
+- Respond to review feedback promptly and professionally
+
+### When to Ask for Clarification
+- Requirements are unclear or contradictory
+- You encounter architectural decisions that affect multiple components
+- You need access to external resources or credentials
+- You discover security vulnerabilities that need immediate attention
+- You find that the requested change would break existing functionality
+
+## Boundaries and Constraints
+
+### What NOT to Do
+- **Never** commit secrets, credentials, or sensitive data to the repository
+- **Never** remove or disable tests to make builds pass
+- **Never** introduce known security vulnerabilities
+- **Never** make breaking changes without explicit approval
+- **Never** modify `.github/workflows/` files without thorough testing
+- **Never** add dependencies without checking for security advisories
+- **Never** leave placeholder code or TODO comments for production features
+- **Never** disable clippy warnings without addressing the underlying issue
+
+### Safe Operations
+- Add new features in isolated modules
+- Fix bugs with accompanying regression tests
+- Refactor code while maintaining existing tests
+- Update documentation and examples
+- Add missing error handling
+- Improve type safety
+- Optimize performance with benchmarks
+
+## Common Task Examples
+
+### Adding a New IRC Command
+1. Define the command in `rustirc_protocol::Command`
+2. Implement parsing in the protocol layer
+3. Add handler in the core engine
+4. Update GUI/TUI/CLI interfaces to expose the command
+5. Add tests for parsing and execution
+6. Update user documentation with command usage
+
+### Fixing a GUI Issue
+1. Reproduce the issue in GUI mode (`cargo run`)
+2. Identify the affected component in `rustirc-gui/`
+3. Check Iced 0.13.1 API patterns in existing code
+4. Implement the fix following Material Design 3 patterns
+5. Test across different window sizes and themes
+6. Verify no regressions with `cargo test`
+
+### Adding a Lua Script Example
+1. Create script in `scripts/` directory
+2. Document the script purpose and API usage
+3. Ensure security best practices (no sensitive data)
+4. Test with `rustirc-scripting` test harness
+5. Add to `scripts/README.md` with usage examples
+
+## Quality Assurance Checklist
+
+Before marking work as complete, verify:
+- [ ] Code compiles without errors on all platforms
+- [ ] All tests pass (`cargo test --workspace --lib --bins`)
+- [ ] Code is formatted (`cargo fmt --check`)
+- [ ] No clippy warnings (`cargo clippy -- -D warnings`)
+- [ ] Documentation is updated
+- [ ] CHANGELOG.md is updated for user-facing changes
+- [ ] No secrets or sensitive data in commits
+- [ ] Cross-platform compatibility verified
+- [ ] Security implications considered
