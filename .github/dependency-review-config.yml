@@ -22,7 +22,6 @@ allow-licenses:
   - Unicode-3.0
   # Compression and utility licenses
   - Zlib
-  - zlib-acknowledgement
   # Mozilla and other OSS licenses
   - MPL-2.0
   - BSL-1.0
@@ -55,15 +54,24 @@ allow-dependencies-licenses:
   - pkg:cargo/unicode-bidi
   - pkg:cargo/unicode-width
   - pkg:cargo/unicode-segmentation
+  - pkg:cargo/unicode-properties
   # Cryptography crates with custom licenses
   - pkg:cargo/ring
   - pkg:cargo/webpki
   - pkg:cargo/rustls-webpki
+  - pkg:cargo/aws-lc-rs
+  - pkg:cargo/aws-lc-sys
+  - pkg:cargo/untrusted
   # OpenSSL bindings
   - pkg:cargo/openssl
   - pkg:cargo/openssl-sys
   # Low OpenSSF scorecard but essential crates
   - pkg:cargo/lab
+  # GUI framework crates (may have complex license expressions)
+  - pkg:cargo/iced
+  - pkg:cargo/iced_core
+  - pkg:cargo/iced_widget
+  - pkg:cargo/iced_runtime
 
 # Deny specific packages using purl format
 deny-packages: []
