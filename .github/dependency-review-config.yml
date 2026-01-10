@@ -37,8 +37,6 @@ allow-licenses:
   - CC-BY-4.0
   # Public domain equivalent
   - WTFPL
-  # ring crate license (ISC-style)
-  - Ring
   # Additional permissive licenses found in Rust ecosystem
   - MIT-0
   - NCSA
