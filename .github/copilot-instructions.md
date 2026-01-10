@@ -213,7 +213,6 @@ When in doubt, prioritize:
 - **Never** make breaking changes without explicit approval
 - **Never** modify `.github/workflows/` files without thorough testing
 - **Never** add dependencies without checking for security advisories
-- **Never** leave placeholder code or TODO comments for production features
 - **Never** disable clippy warnings without addressing the underlying issue
 
 ### Safe Operations
