@@ -28,7 +28,6 @@
 //! - Integrate with external services
 
 use rustirc_core::events::{Event, EventBus};
-use rustirc_protocol::{Command, Message};
 use std::sync::Arc;
 
 /// Main scripting API interface
@@ -52,8 +51,12 @@ use std::sync::Arc;
 /// ```
 pub struct ScriptApi {
     /// Event bus for receiving and sending events
+    /// Reserved for future Phase 4+ features
+    #[allow(dead_code)]
     event_bus: Option<Arc<EventBus>>,
     /// Connection ID for script context
+    /// Reserved for future Phase 4+ features
+    #[allow(dead_code)]
     connection_id: Option<String>,
 }
 
