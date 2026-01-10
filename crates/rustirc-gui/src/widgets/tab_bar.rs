@@ -245,10 +245,10 @@ impl TabBar {
         .height(Length::Fixed(30.0))
         .padding(0);
 
-        tab_row = tab_row.push(Space::with_width(Length::Fixed(4.0)));
+        tab_row = tab_row.push(Space::new().width(Length::Fixed(4.0)));
         tab_row = tab_row.push(new_tab_button);
         // Remove Length::Fill space to prevent horizontal scrollable issue
-        tab_row = tab_row.push(Space::with_width(Length::Fixed(10.0)));
+        tab_row = tab_row.push(Space::new().width(Length::Fixed(10.0)));
 
         let content: Element<TabBarMessage> = if self.scrollable {
             scrollable(tab_row)
@@ -297,7 +297,7 @@ impl TabBar {
         // Activity indicator with visual feedback
         if let Some(indicator_color) = activity_indicator {
             // Create activity indicator with proper color
-            let indicator = container(Space::with_width(Length::Fixed(4.0)))
+            let indicator = container(Space::new().width(Length::Fixed(4.0)))
                 .width(Length::Fixed(4.0))
                 .height(Length::Fixed(20.0))
                 .style(move |_theme| container::Style {
@@ -311,13 +311,13 @@ impl TabBar {
                 });
 
             tab_content = tab_content.push(indicator);
-            tab_content = tab_content.push(Space::with_width(Length::Fixed(4.0)));
+            tab_content = tab_content.push(Space::new().width(Length::Fixed(4.0)));
         }
 
         // Tab icon (if not compact)
         if !self.compact_mode && !icon.is_empty() {
             tab_content = tab_content.push(text(icon).size(12.0).color(text_color));
-            tab_content = tab_content.push(Space::with_width(Length::Fixed(4.0)));
+            tab_content = tab_content.push(Space::new().width(Length::Fixed(4.0)));
         }
 
         // Tab title
@@ -337,7 +337,7 @@ impl TabBar {
 
         // Close button
         if self.show_close_buttons && !matches!(tab.tab_type, TabType::Server) {
-            tab_content = tab_content.push(Space::with_width(Length::Fixed(4.0)));
+            tab_content = tab_content.push(Space::new().width(Length::Fixed(4.0)));
             tab_content = tab_content.push(
                 button(text("×").size(14.0).color(Color::from_rgb(0.8, 0.8, 0.8)))
                     .on_press(TabBarMessage::CloseTab(tab_id.to_string()))

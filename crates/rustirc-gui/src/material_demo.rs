@@ -35,7 +35,8 @@ enum Message {
 
 /// Run the Material Design 3 demo using Iced functional API
 pub fn run() -> iced::Result {
-    iced::application("RustIRC - Material Design 3 Demo", update, view)
+    iced::application(MaterialDemoState::default, update, view)
+        .title("RustIRC - Material Design 3 Demo")
         .theme(theme)
         .run()
 }
@@ -67,28 +68,28 @@ fn view(state: &MaterialDemoState) -> Element<'_, Message> {
         column![
             // Typography Section
             typography_section(&state.theme),
-            Space::with_height(20),
+            Space::new().height(20),
             // Buttons Section
             buttons_section(&state.theme),
-            Space::with_height(20),
+            Space::new().height(20),
             // Input Section
             input_section(&state.theme, &state.text_input_value),
-            Space::with_height(20),
+            Space::new().height(20),
             // Chips Section
             chips_section(&state.theme, state.selected_chip),
-            Space::with_height(20),
+            Space::new().height(20),
             // Cards Section
             cards_section(&state.theme),
-            Space::with_height(20),
+            Space::new().height(20),
             // Search Bar
             search_section(&state.theme, &state.search_value),
-            Space::with_height(20),
+            Space::new().height(20),
             // List Items
             list_items_section(&state.theme),
-            Space::with_height(20),
+            Space::new().height(20),
             // Message Bubbles
             message_bubbles_section(&state.theme),
-            Space::with_height(100), // Extra space for bottom navigation
+            Space::new().height(100), // Extra space for bottom navigation
         ]
         .padding(20)
         .spacing(10)

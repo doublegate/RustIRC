@@ -102,10 +102,10 @@ impl StatusBar {
                 .color(theme.get_text_color()),
         );
 
-        status_content = status_content.push(Space::with_width(Length::Fixed(8.0)));
+        status_content = status_content.push(Space::new().width(Length::Fixed(8.0)));
         status_content =
             status_content.push(text("|").size(11.0).color(Color::from_rgb(0.5, 0.5, 0.5)));
-        status_content = status_content.push(Space::with_width(Length::Fixed(8.0)));
+        status_content = status_content.push(Space::new().width(Length::Fixed(8.0)));
 
         // Tab-specific information
         if let Some(tab) = current_tab {
@@ -120,7 +120,7 @@ impl StatusBar {
             if let TabType::Channel { .. } = tab.tab_type {
                 if self.show_user_count {
                     let user_count = tab.users.len();
-                    status_content = status_content.push(Space::with_width(Length::Fixed(8.0)));
+                    status_content = status_content.push(Space::new().width(Length::Fixed(8.0)));
                     status_content = status_content.push(
                         text(format!("({user_count} users)"))
                             .size(11.0)
@@ -135,7 +135,7 @@ impl StatusBar {
                     if let Some(server_state) = app_state.servers.get(server_id) {
                         if !server_state.modes.is_empty() {
                             status_content =
-                                status_content.push(Space::with_width(Length::Fixed(8.0)));
+                                status_content.push(Space::new().width(Length::Fixed(8.0)));
                             status_content = status_content.push(
                                 text(format!("+{}", server_state.modes.join("")))
                                     .size(11.0)
@@ -148,7 +148,7 @@ impl StatusBar {
         }
 
         // Spacer
-        status_content = status_content.push(Space::with_width(Length::Fill));
+        status_content = status_content.push(Space::new().width(Length::Fill));
 
         // Lag information
         if self.show_lag {
@@ -159,7 +159,7 @@ impl StatusBar {
                         .size(11.0)
                         .color(Color::from_rgb(0.6, 0.6, 0.6)),
                 );
-                status_content = status_content.push(Space::with_width(Length::Fixed(8.0)));
+                status_content = status_content.push(Space::new().width(Length::Fixed(8.0)));
             }
         }
 
@@ -306,7 +306,7 @@ impl StatusBar {
                                         text("Topic:")
                                             .size(11.0)
                                             .color(Color::from_rgb(0.6, 0.6, 0.6)),
-                                        Space::with_width(Length::Fixed(8.0)),
+                                        Space::new().width(Length::Fixed(8.0)),
                                         text(topic_text)
                                             .size(11.0)
                                             .color(Color::from_rgb(0.8, 0.8, 0.8))

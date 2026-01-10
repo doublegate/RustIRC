@@ -144,7 +144,7 @@ impl<'a, Message: 'a + Clone> MaterialSearchBar<'a, Message> {
         }
 
         let styled_input = search_input.style(move |_theme: &Theme, status| {
-            let _is_focused = matches!(status, text_input::Status::Focused);
+            let _is_focused = matches!(status, text_input::Status::Focused { .. });
 
             text_input::Style {
                 background: Background::Color(Color::TRANSPARENT),

@@ -207,7 +207,7 @@ impl UserList {
                 ..iced::Font::default()
             }))
             .on_press(UserListMessage::SortByNick),
-            Space::with_width(Length::Fill),
+            Space::new().width(Length::Fill),
             text(format!("{}", users.len()))
                 .size(10.0)
                 .color(Color::from_rgb(0.6, 0.6, 0.6))
@@ -252,7 +252,7 @@ impl UserList {
             row![
                 text(privilege_symbol).size(10.0).color(privilege_color),
                 text(nick.to_string()).size(12.0).color(nick_color),
-                Space::with_width(Length::Fill),
+                Space::new().width(Length::Fill),
                 away_indicator
             ]
             .spacing(4)
@@ -302,7 +302,7 @@ impl UserList {
                     ..iced::Font::default()
                 })
                 .color(Color::from_rgb(0.7, 0.7, 0.7)),
-            Space::with_height(Length::Fixed(8.0)),
+            Space::new().height(Length::Fixed(8.0)),
             text(nick.to_string())
                 .size(14.0)
                 .color(Color::from_rgb(0.9, 0.9, 0.9)),
@@ -321,7 +321,7 @@ impl UserList {
                     ..iced::Font::default()
                 })
                 .color(Color::from_rgb(0.7, 0.7, 0.7)),
-            Space::with_height(Length::Fixed(8.0)),
+            Space::new().height(Length::Fixed(8.0)),
             text("No channel selected")
                 .size(11.0)
                 .color(Color::from_rgb(0.6, 0.6, 0.6)),

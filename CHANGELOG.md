@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed - 2026-01-10 (Iced 0.14.0 Migration)
+
+#### GUI Framework Upgrade: Iced 0.13.1 to 0.14.0
+- **Major Version Upgrade**: Complete migration from iced 0.13.1 to iced 0.14.0 with 82+ breaking API changes resolved
+- **Key Features**: Reactive rendering improvements, time-travel debugging, and enhanced API design
+
+#### Breaking API Changes Fixed
+- **Space Widget API**: Replaced deprecated `Space::with_width/with_height` with `Space::new().width/height()`
+- **Application API**: Migrated from `iced::application(title, update, view)` to `iced::application(boot_fn, update, view).title()`
+- **Horizontal/Vertical Space**: Removed deprecated helpers, now using `Space::new().width(Length::Fill)` pattern
+- **Rule Widget**: Changed `horizontal_rule(height)` to `rule::horizontal(height)`
+- **Checkbox API**: Updated from `checkbox(label, value)` to `checkbox(value).label(label)` builder pattern
+- **Scrollable IDs**: Migrated from `scrollable::Id` to `iced::widget::Id`
+- **Scrollable Operations**: Changed `scrollable::snap_to` to `operation::snap_to`
+- **Text Input Status**: Updated `text_input::Status::Focused` to struct variant with `is_hovered` field
+- **Style Structs**: Added required `snap: bool` field to `button::Style` and `container::Style`
+- **Pixels Type**: Updated return types from `u16` to `f32` for Pixels trait bounds
+
+#### Files Modified (19 total)
+- `Cargo.toml` - Version bump to iced 0.14.0
+- `crates/rustirc-gui/src/app.rs` - Application API and rule widget
+- `crates/rustirc-gui/src/dialogs.rs` - Space, checkbox, and max_width APIs
+- `crates/rustirc-gui/src/material_demo.rs` - Application boot function
+- `crates/rustirc-gui/src/widgets/message_view.rs` - Scrollable ID and operations
+- `crates/rustirc-gui/src/widgets/user_list.rs` - Space widget
+- `crates/rustirc-gui/src/widgets/tab_bar.rs` - Space widget
+- `crates/rustirc-gui/src/widgets/status_bar.rs` - Space widget
+- `crates/rustirc-gui/src/widgets/server_tree.rs` - Space widget
+- `crates/rustirc-gui/src/widgets/input_area.rs` - Space widget
+- `crates/rustirc-gui/src/components/atoms/button.rs` - button::Style snap field
+- `crates/rustirc-gui/src/components/atoms/input.rs` - text_input::Status pattern
+- `crates/rustirc-gui/src/components/molecules/message_bubble.rs` - container::Style snap field
+- `crates/rustirc-gui/src/components/molecules/search_bar.rs` - text_input::Status pattern
+- `crates/rustirc-gui/src/components/organisms/responsive_layout.rs` - Space widget and Pixels type
+- `crates/rustirc-gui/src/components/organisms/rich_text_editor.rs` - text_input::Status patterns
+
+#### Quality Assurance
+- **Build Status**: Zero compilation errors
+- **Clippy**: Zero warnings with -D warnings flag
+- **Tests**: All 131 tests passing (unit + doctests)
+- **Compatibility**: Full backward compatibility with existing GUI functionality
+
 ### Added - 2025-08-26 (Material Design 3 Integration + Dependency Updates)
 
 #### Material Design 3 Branch Integration Complete (2025-08-26 11:56 PM EDT)

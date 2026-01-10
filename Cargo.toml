@@ -46,9 +46,8 @@ open = "5.3.3"
 clipboard = "0.5"
 
 # UI
-# Note: iced remains at 0.13.1 - v0.14.0 has extensive breaking changes requiring major code refactoring
-# (see PR #45 - excluded from consolidation due to scope)
-iced = { version = "0.13.1", features = ["tokio", "debug", "advanced"] }
+# iced 0.14.0 - Major release with reactive rendering, time-travel debugging, and API improvements
+iced = { version = "0.14.0", features = ["tokio", "debug", "advanced"] }
 ratatui = "0.30.0"
 crossterm = "0.29"
 

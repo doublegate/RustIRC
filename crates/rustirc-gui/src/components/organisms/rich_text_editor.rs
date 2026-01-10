@@ -355,7 +355,7 @@ impl RichTextEditor {
                     text_input::Status::Hovered => {
                         iced::Color::from(self.theme.scheme.surface_container_highest)
                     }
-                    text_input::Status::Focused => {
+                    text_input::Status::Focused { .. } => {
                         iced::Color::from(self.theme.scheme.surface_container_highest)
                     }
                     text_input::Status::Disabled => {
@@ -367,12 +367,12 @@ impl RichTextEditor {
                     background: Background::Color(background_color),
                     border: Border {
                         color: match status {
-                            text_input::Status::Focused => {
+                            text_input::Status::Focused { .. } => {
                                 iced::Color::from(self.theme.scheme.primary)
                             }
                             _ => iced::Color::from(self.theme.scheme.outline),
                         },
-                        width: if matches!(status, text_input::Status::Focused) {
+                        width: if matches!(status, text_input::Status::Focused { .. }) {
                             2.0
                         } else {
                             1.0

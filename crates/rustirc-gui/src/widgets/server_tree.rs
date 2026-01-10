@@ -103,7 +103,10 @@ impl ServerTree {
             let server_indicator = self.get_connection_indicator(&server_state.connection_state);
             let server_name = text(server_id.clone()).size(14);
             let expand_button: Element<ServerTreeMessage> = if server_state.channels.is_empty() {
-                Space::new(Length::Fixed(16.0), Length::Fixed(16.0)).into()
+                Space::new()
+                    .width(Length::Fixed(16.0))
+                    .height(Length::Fixed(16.0))
+                    .into()
             } else if is_expanded {
                 button(text("▼").size(12))
                     .on_press(ServerTreeMessage::CollapseServer(server_id.clone()))
@@ -161,10 +164,12 @@ impl ServerTree {
 
                     let channel_row = button(
                         row![
-                            Space::new(Length::Fixed(24.0), Length::Fixed(16.0)),
+                            Space::new()
+                                .width(Length::Fixed(24.0))
+                                .height(Length::Fixed(16.0)),
                             text("#").size(12).color(Color::from_rgb(0.6, 0.6, 0.6)),
                             channel_name_style,
-                            Space::with_width(Length::Fill),
+                            Space::new().width(Length::Fill),
                             activity_indicator
                         ]
                         .spacing(4)
@@ -204,10 +209,12 @@ impl ServerTree {
 
                             let pm_row = button(
                                 row![
-                                    Space::new(Length::Fixed(24.0), Length::Fixed(16.0)),
+                                    Space::new()
+                                        .width(Length::Fixed(24.0))
+                                        .height(Length::Fixed(16.0)),
                                     text("@").size(12).color(Color::from_rgb(0.6, 0.6, 0.6)),
                                     nick_style,
-                                    Space::with_width(Length::Fill),
+                                    Space::new().width(Length::Fill),
                                     activity_indicator
                                 ]
                                 .spacing(4)
