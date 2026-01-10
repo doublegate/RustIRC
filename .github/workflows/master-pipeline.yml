@@ -409,6 +409,7 @@ jobs:
       pull-requests: write
       security-events: write
       actions: read
+      checks: write
     uses: ./.github/workflows/security-audit.yml
     with:
       ignore_advisories: 'RUSTSEC-2024-0384,RUSTSEC-2024-0436'

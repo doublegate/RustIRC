@@ -242,7 +242,7 @@ jobs:
       if: inputs.cache_key != ''
       uses: actions/download-artifact@v7
       with:
-        name: build-artifacts-${{ matrix.os }}
+        name: build-artifacts-${{ runner.os }}
         path: target/
       continue-on-error: true
     # Test each package individually with cross-platform commands
@@ -477,10 +477,12 @@ jobs:
     # Upload test results to Codecov for Test Analytics
     - name: Upload test results to Codecov
       if: ${{ !cancelled() }}
-      uses: codecov/test-results-action@v1
+      uses: codecov/codecov-action@v5
+      continue-on-error: true
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        file: target/nextest/ci/junit.xml
+        files: target/nextest/ci/junit.xml
+        report_type: test_results
         flags: unittests
         name: test-results-${{ matrix.os }}-${{ matrix.rust }}
 
