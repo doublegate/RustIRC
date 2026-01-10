@@ -489,13 +489,13 @@ impl<Message> FloatingActionButton<Message> {
         let label = self.label.clone();
         let on_press = self.on_press.clone();
 
-        let content: Element<'static, Message> = if self.extended && label.is_some() {
-            // Extended FAB
-            iced::widget::row![
+        let content: Element<'static, Message> = match (self.extended, &label) {
+            // Extended FAB with label
+            (true, Some(label_text)) => iced::widget::row![
                 text(icon.clone())
                     .size(icon_size)
                     .color(iced::Color::from(self.theme.scheme.on_primary_container)),
-                text(label.as_ref().unwrap().clone())
+                text(label_text.clone())
                     .size(font_size)
                     .color(iced::Color::from(self.theme.scheme.on_primary_container))
                     .font(iced::Font {
@@ -504,13 +504,12 @@ impl<Message> FloatingActionButton<Message> {
                     })
             ]
             .spacing(self.theme.spacing.sm)
-            .into()
-        } else {
-            // Normal FAB
-            text(icon.clone())
+            .into(),
+            // Normal FAB (not extended or no label)
+            _ => text(icon.clone())
                 .size(icon_size)
                 .color(iced::Color::from(self.theme.scheme.on_primary_container))
-                .into()
+                .into(),
         };
 
         let width = if self.extended {

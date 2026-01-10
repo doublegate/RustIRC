@@ -217,7 +217,7 @@ jobs:
 
       # Upload build artifacts for other jobs to use
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: build-artifacts-${{ runner.os }}
           path: |
@@ -393,7 +393,7 @@ jobs:
           EOF
 
       - name: Upload documentation artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: documentation
           path: target/doc/
@@ -438,7 +438,7 @@ jobs:
           shared-key: "master-pipeline"
 
       - name: Cache cargo tools
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/bin/cargo-tarpaulin
@@ -549,7 +549,7 @@ jobs:
           7z a ../../../${{ matrix.artifact_name }} rustirc.exe
         shell: pwsh
       - name: Upload build artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.artifact_name }}
           path: ${{ matrix.artifact_name }}
@@ -576,7 +576,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           path: artifacts
 

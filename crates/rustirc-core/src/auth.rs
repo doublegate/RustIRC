@@ -4,6 +4,8 @@
 //! implementing PLAIN, EXTERNAL, and SCRAM-SHA-256 mechanisms as specified
 //! in Phase 2 requirements.
 
+#![allow(unused_assignments)] // Zeroize derive generates field assignments for security
+
 use anyhow::Result;
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use std::collections::HashMap;

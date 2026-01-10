@@ -918,12 +918,19 @@ struct MockBackendRef {
 }
 
 impl Backend for MockBackendRef {
+    type Error = std::io::Error;
+
     fn size(&self) -> std::io::Result<ratatui::layout::Size> {
         Ok(ratatui::layout::Size::new(self.width, self.height))
     }
 
     fn clear(&mut self) -> std::io::Result<()> {
         // Mock implementation for capability testing
+        Ok(())
+    }
+
+    fn clear_region(&mut self, _clear_type: ratatui::backend::ClearType) -> std::io::Result<()> {
+        // Mock implementation for ratatui 0.30+ compatibility
         Ok(())
     }
 
