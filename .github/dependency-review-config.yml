@@ -4,7 +4,8 @@
 # Fail the action on critical and high severity vulnerabilities
 fail-on-severity: high
 
-# Allow specific licenses
+# Allow specific licenses (all other licenses will be flagged)
+# Note: Cannot specify both allow-licenses and deny-licenses
 allow-licenses:
   - MIT
   - Apache-2.0
@@ -15,32 +16,19 @@ allow-licenses:
   - Unlicense
   - 0BSD
 
-# Deny specific licenses that are incompatible with project goals
-deny-licenses:
-  - GPL-2.0
-  - GPL-3.0
-  - LGPL-2.0
-  - LGPL-2.1
-  - LGPL-3.0
-  - AGPL-3.0
-  - CC-BY-SA-4.0
-  - CDDL-1.0
-  - EPL-1.0
-  - EPL-2.0
-  - MPL-2.0
-
 # Allow specific packages even if they fail other checks
+# Uses Package URL (purl) format: pkg:cargo/package-name
 allow-dependencies-licenses:
   # Core Rust ecosystem crates that are essential
-  - serde
-  - serde_json
-  - tokio
-  - clap
+  - pkg:cargo/serde
+  - pkg:cargo/serde_json
+  - pkg:cargo/tokio
+  - pkg:cargo/clap
 
-# Deny specific packages
+# Deny specific packages using purl format
 deny-packages:
   # Example of denying packages with known issues
-  - openssl-sys
+  - pkg:cargo/openssl-sys
 
 # Allow vulnerabilities for specific advisories (temporary exceptions)
 allow-ghsas: []

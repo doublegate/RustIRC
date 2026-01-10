@@ -337,51 +337,53 @@ mod tests {
     fn test_secure_string_zeroization() {
         use std::mem::ManuallyDrop;
         use zeroize::Zeroize;
-        
+
         // Create a SecureString with sensitive data
         let sensitive_data = "password123".to_string();
         let mut secure_str = ManuallyDrop::new(SecureString::new(sensitive_data.clone()));
-        
+
         // Verify the data is present before zeroization
         assert_eq!(secure_str.as_str(), "password123");
-        
+
         // Manually call zeroize (this is what ZeroizeOnDrop does in Drop)
         secure_str.zeroize();
-        
+
         // After zeroization, the inner bytes should be zeroed
         assert!(
             secure_str.inner.iter().all(|&b| b == 0),
             "SecureString memory should be zeroed after calling zeroize()"
         );
-        
+
         // Clean up the ManuallyDrop wrapper
-        unsafe { ManuallyDrop::drop(&mut secure_str); }
+        unsafe {
+            ManuallyDrop::drop(&mut secure_str);
+        }
     }
 
     #[test]
     fn test_sasl_credentials_zeroization() {
         use std::mem::ManuallyDrop;
         use zeroize::Zeroize;
-        
+
         // Create SaslCredentials with sensitive data
         let username = "testuser".to_string();
         let password = SecureString::new("secretpass".to_string());
         let authzid = Some("admin".to_string());
-        
+
         let mut creds = ManuallyDrop::new(SaslCredentials {
             username: username.clone(),
             password: password.clone(),
             authzid: authzid.clone(),
         });
-        
+
         // Verify the data is present before zeroization
         assert_eq!(creds.username, "testuser");
         assert_eq!(creds.password.as_str(), "secretpass");
         assert_eq!(creds.authzid.as_deref(), Some("admin"));
-        
+
         // Manually call zeroize (this is what ZeroizeOnDrop does in Drop)
         creds.zeroize();
-        
+
         // After zeroization, all string fields should be zeroed
         assert!(
             creds.username.as_bytes().iter().all(|&b| b == 0),
@@ -397,9 +399,11 @@ mod tests {
                 "SaslCredentials authzid should be zeroed after calling zeroize()"
             );
         }
-        
+
         // Clean up the ManuallyDrop wrapper
-        unsafe { ManuallyDrop::drop(&mut creds); }
+        unsafe {
+            ManuallyDrop::drop(&mut creds);
+        }
     }
 
     #[test]
