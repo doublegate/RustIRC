@@ -26,7 +26,7 @@ webpki-roots = "1.0"
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+serde_json = "1.0.148"
 toml = "0.9"
 
 # Error handling
@@ -34,20 +34,22 @@ anyhow = "1.0"
 thiserror = "2.0"
 
 # Logging
-tracing = "0.1"
-tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 
 # Text processing
-regex = "1.12"
+regex = "1.12.1"
 async-trait = "0.1"
 
 # System integration
-open = "5.0"
+open = "5.3.3"
 clipboard = "0.5"
 
 # UI
+# Note: iced remains at 0.13.1 - v0.14.0 has extensive breaking changes requiring major code refactoring
+# (see PR #45 - excluded from consolidation due to scope)
 iced = { version = "0.13.1", features = ["tokio", "debug", "advanced"] }
-ratatui = "0.29"
+ratatui = "0.30.0"
 crossterm = "0.29"
 
 # Scripting
@@ -58,10 +60,10 @@ mockall = "0.13"
 proptest = "1.9"
 tokio-test = "0.4"
 pretty_assertions = "1.4"
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.8.1", features = ["html_reports"] }
 
 # CLI
-clap = { version = "4.5", features = ["derive"] }
+clap = { version = "4.5.53", features = ["derive"] }
 
 [package]
 name = "rustirc"

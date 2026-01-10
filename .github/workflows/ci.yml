@@ -210,40 +210,12 @@ jobs:
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
           target/
-    - name: Cache cargo tools
-      uses: actions/cache@v4
+    # Install cargo-nextest using pre-built binaries (much faster than compiling from source)
+    # This avoids the timeout issue on Windows where cargo-nextest takes >10 minutes to compile
+    - name: Install cargo-nextest (pre-built binary)
+      uses: taiki-e/install-action@v2
       with:
-        path: |
-          ~/.cargo/bin/cargo-nextest
-          ~/.cargo/.crates.toml
-          ~/.cargo/.crates2.json
-        key: cargo-tools-${{ matrix.os }}-nextest
-        restore-keys: |
-          cargo-tools-${{ matrix.os }}-
-
-    - name: Install cargo-nextest with enhanced sccache resilience
-      shell: bash
-      run: |
-        if ! command -v cargo-nextest > /dev/null 2>&1; then
-          echo "Installing cargo-nextest with GitHub cache service resilience..."
-          # Use sccache if available, with robust error handling
-          if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
-            echo "Attempting installation with sccache (local or GHA mode)..."
-            export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
-            if ! run_with_timeout 300s cargo install cargo-nextest --locked; then
-              echo "Installation failed with sccache, retrying with direct compilation..."
-              unset RUSTC_WRAPPER
-              export RUSTC_WRAPPER=""
-              run_with_timeout 300s cargo install cargo-nextest --locked
-            fi
-          else
-            echo "Installing with direct compilation (no sccache)..."
-            export RUSTC_WRAPPER=""
-            run_with_timeout 300s cargo install cargo-nextest --locked
-          fi
-        else
-          echo "cargo-nextest already installed"
-        fi
+        tool: cargo-nextest
 
     - name: Build (if not cached) with sccache fallback
       # Cross-platform build detection
@@ -268,7 +240,7 @@ jobs:
 
     - name: Download build artifacts (if available)
       if: inputs.cache_key != ''
-      uses: actions/download-artifact@v6
+      uses: actions/download-artifact@v7
       with:
         name: build-artifacts-${{ matrix.os }}
         path: target/
