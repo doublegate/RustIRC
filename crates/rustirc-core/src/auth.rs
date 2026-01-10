@@ -4,8 +4,6 @@
 //! implementing PLAIN, EXTERNAL, and SCRAM-SHA-256 mechanisms as specified
 //! in Phase 2 requirements.
 
-#![allow(unused_assignments)] // Zeroize derive generates field assignments for security
-
 use anyhow::Result;
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use std::collections::HashMap;
@@ -28,16 +26,18 @@ pub enum AuthState {
 /// SASL credentials with secure password storage
 #[derive(Debug, Clone, Zeroize, ZeroizeOnDrop)]
 pub struct SaslCredentials {
+    #[allow(unused_assignments)] // Zeroize derive generates field assignments for security
     pub username: String,
-    #[zeroize(skip)]
+    #[allow(unused_assignments)] // Zeroize derive generates field assignments for security
     pub password: SecureString,
+    #[allow(unused_assignments)] // Zeroize derive generates field assignments for security
     pub authzid: Option<String>,
 }
 
 /// Secure string that automatically zeroes memory on drop
 #[derive(Clone, Zeroize, ZeroizeOnDrop)]
 pub struct SecureString {
-    #[zeroize(skip)]
+    #[allow(unused_assignments)] // Zeroize derive generates field assignments for security
     inner: Vec<u8>,
 }
 
