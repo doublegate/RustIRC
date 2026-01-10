@@ -1,5 +1,5 @@
 use iced::{
-    widget::{column, container, horizontal_space, pane_grid, row, scrollable},
+    widget::{column, container, pane_grid, row, scrollable, Space},
     Background, Border, Element, Length, Renderer, Size, Theme,
 };
 use pane_grid::{Axis, PaneGrid, State};
@@ -187,7 +187,7 @@ impl ResponsiveLayout {
             // Overlay layout
             container(row![
                 sidebar_overlay,
-                horizontal_space().width(Length::FillPortion(1))
+                Space::new().width(Length::FillPortion(1))
             ])
             .width(Length::Fill)
             .height(Length::Fill)
@@ -603,23 +603,23 @@ impl ResponsiveLayout {
         self.pane_state = new_state;
     }
 
-    fn adaptive_spacing(&self) -> u16 {
+    fn adaptive_spacing(&self) -> f32 {
         if self.adaptive_spacing {
             match self.current_breakpoint {
-                Breakpoint::Compact => 8,
-                Breakpoint::Medium => 12,
-                _ => 16,
+                Breakpoint::Compact => 8.0,
+                Breakpoint::Medium => 12.0,
+                _ => 16.0,
             }
         } else {
-            16
+            16.0
         }
     }
 
-    fn adaptive_padding(&self) -> u16 {
+    fn adaptive_padding(&self) -> f32 {
         match self.current_breakpoint {
-            Breakpoint::Compact => 8,
-            Breakpoint::Medium => 12,
-            _ => 16,
+            Breakpoint::Compact => 8.0,
+            Breakpoint::Medium => 12.0,
+            _ => 16.0,
         }
     }
 

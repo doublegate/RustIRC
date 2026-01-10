@@ -6,8 +6,8 @@
 use crate::state::AppState;
 use crate::theme::Theme;
 use iced::widget::{
-    button, checkbox, column, container, horizontal_space, pick_list, row, scrollable, slider,
-    text, text_input, vertical_space, Space,
+    button, checkbox, column, container, pick_list, row, scrollable, slider, text, text_input,
+    Space,
 };
 use iced::{Element, Length, Size, Task};
 use rustirc_core::connection::ConnectionConfig;
@@ -414,7 +414,7 @@ impl ConnectionDialog {
 
         let content = column![
             text("Connect to IRC Server").size(20),
-            vertical_space().height(10),
+            Space::new().height(10),
             row![
                 text("Server:").width(80),
                 text_input("irc.libera.chat", &self.server)
@@ -458,19 +458,22 @@ impl ConnectionDialog {
                     .width(200),
             ]
             .spacing(10),
-            checkbox("Use TLS/SSL", self.use_tls).on_toggle(DialogMessage::ConnectionUseTlsToggled),
-            checkbox("Auto-connect on startup", self.auto_connect)
+            checkbox(self.use_tls)
+                .label("Use TLS/SSL")
+                .on_toggle(DialogMessage::ConnectionUseTlsToggled),
+            checkbox(self.auto_connect)
+                .label("Auto-connect on startup")
                 .on_toggle(DialogMessage::ConnectionAutoConnectToggled),
-            vertical_space().height(20),
+            Space::new().height(20),
             row![
                 button(text("Connect")).on_press(DialogMessage::ConnectionConnect),
-                horizontal_space().width(10),
+                Space::new().width(10),
                 button(text("Cancel")).on_press(DialogMessage::ConnectionCancel),
             ],
         ]
         .spacing(10)
         .padding(20)
-        .max_width(max_size.width as u16); // Use Size for maximum constraints
+        .max_width(max_size.width); // Use Size for maximum constraints
 
         // Apply theme styling to the container
         let theme_style = Theme::from_type(crate::theme::ThemeType::default());
@@ -517,7 +520,7 @@ impl JoinChannelDialog {
     pub fn build(&self) -> Element<'_, DialogMessage> {
         let content = column![
             text("Join Channel").size(20),
-            vertical_space().height(10),
+            Space::new().height(10),
             row![
                 text("Channel:").width(80),
                 text_input("#channel", &self.channel)
@@ -532,10 +535,10 @@ impl JoinChannelDialog {
                     .width(200),
             ]
             .spacing(10),
-            vertical_space().height(20),
+            Space::new().height(20),
             row![
                 button(text("Join")).on_press(DialogMessage::JoinChannel),
-                horizontal_space().width(10),
+                Space::new().width(10),
                 button(text("Cancel")).on_press(DialogMessage::JoinCancel),
             ],
         ]
@@ -635,7 +638,7 @@ impl PreferencesDialog {
 
         let content = column![
             text("Preferences").size(20),
-            vertical_space().height(10),
+            Space::new().height(10),
             text("Appearance").size(16),
             row![
                 text("Theme:").width(120),
@@ -654,24 +657,29 @@ impl PreferencesDialog {
                     .width(100),
             ]
             .spacing(10),
-            vertical_space().height(10),
+            Space::new().height(10),
             text("Notifications").size(16),
-            checkbox("Sound notifications", self.notification_sound)
+            checkbox(self.notification_sound)
+                .label("Sound notifications")
                 .on_toggle(DialogMessage::PreferencesNotificationSoundToggled),
-            checkbox("Popup notifications", self.notification_popup)
+            checkbox(self.notification_popup)
+                .label("Popup notifications")
                 .on_toggle(DialogMessage::PreferencesNotificationPopupToggled),
-            vertical_space().height(10),
+            Space::new().height(10),
             text("Display").size(16),
-            checkbox("Show timestamps", self.show_timestamps)
+            checkbox(self.show_timestamps)
+                .label("Show timestamps")
                 .on_toggle(DialogMessage::PreferencesShowTimestampsToggled),
-            checkbox("Colored nicknames", self.nick_colors)
+            checkbox(self.nick_colors)
+                .label("Colored nicknames")
                 .on_toggle(DialogMessage::PreferencesNickColorsToggled),
-            checkbox("Compact mode", self.compact_mode)
+            checkbox(self.compact_mode)
+                .label("Compact mode")
                 .on_toggle(DialogMessage::PreferencesCompactModeToggled),
-            vertical_space().height(20),
+            Space::new().height(20),
             row![
                 button(text("Apply")).on_press(DialogMessage::PreferencesApply),
-                horizontal_space().width(10),
+                Space::new().width(10),
                 button(text("Cancel")).on_press(DialogMessage::PreferencesCancel),
             ],
         ]
@@ -727,35 +735,39 @@ impl PreferencesDialog {
             DialogMessage::PreferencesFontSizeChanged(size.to_string())
         });
 
-        let notification_checkbox = checkbox("Enable notifications", settings.notification_sound)
+        let notification_checkbox = checkbox(settings.notification_sound)
+            .label("Enable notifications")
             .on_toggle(DialogMessage::PreferencesNotificationSoundToggled);
 
-        let compact_checkbox = checkbox("Compact mode", settings.compact_mode)
+        let compact_checkbox = checkbox(settings.compact_mode)
+            .label("Compact mode")
             .on_toggle(DialogMessage::PreferencesCompactModeToggled);
 
-        let timestamps_checkbox = checkbox("Show timestamps", settings.show_timestamps)
+        let timestamps_checkbox = checkbox(settings.show_timestamps)
+            .label("Show timestamps")
             .on_toggle(DialogMessage::PreferencesShowTimestampsToggled);
 
-        let nick_colors_checkbox = checkbox("Nick colors", settings.nick_colors)
+        let nick_colors_checkbox = checkbox(settings.nick_colors)
+            .label("Nick colors")
             .on_toggle(DialogMessage::PreferencesNickColorsToggled);
 
         let content = column![
             text("Preferences").size(20),
-            Space::with_height(10),
+            Space::new().height(10),
             text("Theme:"),
             theme_picker,
-            Space::with_height(10),
+            Space::new().height(10),
             text(format!("Font Size: {:.0}", settings.font_size)),
             font_size_slider,
-            Space::with_height(10),
+            Space::new().height(10),
             notification_checkbox,
             compact_checkbox,
             timestamps_checkbox,
             nick_colors_checkbox,
-            Space::with_height(20),
+            Space::new().height(20),
             row![
                 button("Apply").on_press(DialogMessage::PreferencesApply),
-                Space::with_width(10),
+                Space::new().width(10),
                 button("Cancel").on_press(DialogMessage::PreferencesCancel),
             ]
             .spacing(10)
@@ -792,15 +804,15 @@ impl AboutDialog {
         let content = column![
             text("RustIRC").size(24),
             text("Modern IRC Client").size(16),
-            vertical_space().height(10),
+            Space::new().height(10),
             text("Version 1.0.0"),
             text("Built with Rust and Iced"),
-            vertical_space().height(10),
+            Space::new().height(10),
             text("A modern IRC client combining the best features"),
             text("of mIRC, HexChat, and WeeChat."),
-            vertical_space().height(20),
+            Space::new().height(20),
             text("© 2025 RustIRC Project"),
-            vertical_space().height(20),
+            Space::new().height(20),
             button(text("OK")).on_press(DialogMessage::AboutOk),
         ]
         .spacing(5)
@@ -842,7 +854,7 @@ impl FindDialog {
     pub fn build(&self) -> Element<'_, DialogMessage> {
         let content = column![
             text("Find").size(20),
-            vertical_space().height(10),
+            Space::new().height(10),
             row![
                 text("Find:").width(60),
                 text_input("Search text", &self.query)
@@ -850,15 +862,18 @@ impl FindDialog {
                     .width(250),
             ]
             .spacing(10),
-            checkbox("Case sensitive", self.case_sensitive)
+            checkbox(self.case_sensitive)
+                .label("Case sensitive")
                 .on_toggle(DialogMessage::FindCaseSensitiveToggled),
-            checkbox("Regular expression", self.regex).on_toggle(DialogMessage::FindRegexToggled),
-            vertical_space().height(20),
+            checkbox(self.regex)
+                .label("Regular expression")
+                .on_toggle(DialogMessage::FindRegexToggled),
+            Space::new().height(20),
             row![
                 button(text("Find Next")).on_press(DialogMessage::FindNext),
-                horizontal_space().width(10),
+                Space::new().width(10),
                 button(text("Find Previous")).on_press(DialogMessage::FindPrevious),
-                horizontal_space().width(10),
+                Space::new().width(10),
                 button(text("Close")).on_press(DialogMessage::FindClose),
             ],
         ]
@@ -933,17 +948,17 @@ impl NetworkListDialog {
 
         let content = column![
             text("Network List").size(20),
-            vertical_space().height(10),
+            Space::new().height(10),
             row![
                 text("Network").width(150),
                 text("Servers").width(200),
                 text("Actions"),
             ],
             network_list.height(300),
-            vertical_space().height(10),
+            Space::new().height(10),
             row![
                 button(text("Add Network")).on_press(DialogMessage::NetworkListAdd),
-                horizontal_space().width(Length::Fill),
+                Space::new().width(Length::Fill),
                 button(text("Close")).on_press(DialogMessage::NetworkListClose),
             ],
         ]

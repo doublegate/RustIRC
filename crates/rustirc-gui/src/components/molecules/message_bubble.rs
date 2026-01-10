@@ -281,6 +281,7 @@ impl MessageBubble {
                 } else {
                     Default::default()
                 },
+                snap: true,
             });
 
         // Add hover and click interactions

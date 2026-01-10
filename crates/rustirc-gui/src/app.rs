@@ -2,7 +2,7 @@
 //!
 //! This module implements the complete Iced GUI application for RustIRC.
 //! Features:
-//! - Multi-server IRC client interface using Iced 0.13.1 functional API
+//! - Multi-server IRC client interface using Iced 0.14.0 functional API
 //! - Resizable panels with server tree, message view, and user lists
 //! - Comprehensive tab system for channels and private messages
 //! - Full IRC message formatting with colors and styles
@@ -22,8 +22,8 @@ use crate::widgets::{
 };
 use iced::{
     widget::{
-        button, column, container, horizontal_rule, mouse_area, pane_grid, row, scrollable, stack,
-        text, text_input,
+        button, column, container, mouse_area, pane_grid, row, rule, scrollable, stack, text,
+        text_input,
     },
     Background, Color, Element, Length, Task,
 };
@@ -2337,7 +2337,7 @@ impl RustIrcGui {
             let dialog = container(
                 column![
                     text("Preferences").size(18).color(Color::WHITE),
-                    horizontal_rule(1),
+                    rule::horizontal(1),
                     text("Theme Settings")
                         .size(14)
                         .color(Color::from_rgb(0.8, 0.8, 0.8)),
@@ -2350,7 +2350,7 @@ impl RustIrcGui {
                     text("• Auto-connect: Disabled")
                         .size(12)
                         .color(Color::from_rgb(0.7, 0.7, 0.7)),
-                    horizontal_rule(1),
+                    rule::horizontal(1),
                     text("IRC Settings")
                         .size(14)
                         .color(Color::from_rgb(0.8, 0.8, 0.8)),
@@ -2363,7 +2363,7 @@ impl RustIrcGui {
                     text("• SASL Authentication: Enabled")
                         .size(12)
                         .color(Color::from_rgb(0.7, 0.7, 0.7)),
-                    horizontal_rule(1),
+                    rule::horizontal(1),
                     button("Close")
                         .on_press(Message::HidePreferencesDialog)
                         .padding([8, 16])
@@ -2401,21 +2401,21 @@ impl RustIrcGui {
             let dialog = container(
                 column![
                     text("About RustIRC").size(18).color(Color::WHITE),
-                    horizontal_rule(1),
+                    rule::horizontal(1),
                     text("RustIRC v0.1.0")
                         .size(16)
                         .color(Color::from_rgb(0.9, 0.9, 0.9)),
                     text("Modern IRC Client")
                         .size(14)
                         .color(Color::from_rgb(0.8, 0.8, 0.8)),
-                    horizontal_rule(1),
+                    rule::horizontal(1),
                     text("Built with Rust and Iced")
                         .size(12)
                         .color(Color::from_rgb(0.7, 0.7, 0.7)),
                     text("© 2025 RustIRC Project")
                         .size(12)
                         .color(Color::from_rgb(0.7, 0.7, 0.7)),
-                    horizontal_rule(1),
+                    rule::horizontal(1),
                     text("Features:")
                         .size(14)
                         .color(Color::from_rgb(0.8, 0.8, 0.8)),
@@ -2434,7 +2434,7 @@ impl RustIrcGui {
                     text("• Modern Theming")
                         .size(12)
                         .color(Color::from_rgb(0.7, 0.7, 0.7)),
-                    horizontal_rule(1),
+                    rule::horizontal(1),
                     button("Close")
                         .on_press(Message::HideAboutDialog)
                         .padding([8, 16])
@@ -2506,15 +2506,16 @@ impl RustIrcGui {
         })
     }
 
-    /// Run the GUI application using Iced 0.13.1 Application trait
+    /// Run the GUI application using Iced 0.14.0 Application trait
     pub fn run() -> iced::Result {
-        iced::application("RustIRC - Modern IRC Client", Self::update, Self::view)
+        iced::application(Self::new, Self::update, Self::view)
+            .title("RustIRC - Modern IRC Client")
             .subscription(Self::subscription)
             .theme(Self::theme)
             .run()
     }
 
-    /// Theme function for Iced 0.13.1
+    /// Theme function for Iced 0.14.0
     fn theme(&self) -> iced::Theme {
         match self.current_theme.theme_type {
             ThemeType::Dark => iced::Theme::Dark,
@@ -2606,7 +2607,7 @@ impl RustIrcGui {
                         .on_press(Message::MenuFileDisconnect)
                         .width(Length::Fixed(120.0))
                         .padding([4, 8]),
-                    horizontal_rule(1),
+                    rule::horizontal(1),
                     button(text("Exit").size(12))
                         .on_press(Message::MenuFileExit)
                         .width(Length::Fixed(120.0))
@@ -2744,6 +2745,7 @@ impl RustIrcGui {
                 background: None,
                 text_color: None,
                 shadow: iced::Shadow::default(),
+                snap: true,
             })
             .width(Length::Fill)
             .height(Length::Fill);

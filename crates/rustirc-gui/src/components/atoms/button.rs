@@ -201,6 +201,7 @@ impl<Message> MaterialButton<Message> {
                         radius: button_clone.theme.shapes.corner_large.into(),
                     },
                     shadow: button_clone.get_shadow_for_status(status),
+                    snap: true,
                 }
             });
 
@@ -579,6 +580,7 @@ impl<Message> FloatingActionButton<Message> {
                         radius: self.theme.shapes.corner_large.into(),
                     },
                     shadow,
+                    snap: true,
                 }
             });
 

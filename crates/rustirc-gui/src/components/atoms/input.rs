@@ -156,7 +156,7 @@ impl<'a, Message: 'a + Clone> MaterialInput<'a, Message> {
         let theme_clone = theme.clone();
 
         let styled_input = input.style(move |_theme: &Theme, status| {
-            let is_focused = matches!(status, text_input::Status::Focused);
+            let is_focused = matches!(status, text_input::Status::Focused { .. });
 
             let (background_color, border_color, border_width) =
                 match (&variant, is_focused, has_error, is_enabled) {

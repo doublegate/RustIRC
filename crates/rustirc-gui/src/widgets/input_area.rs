@@ -221,7 +221,7 @@ impl InputArea {
         // Main input row
         let input_row = row![
             input_field,
-            Space::with_width(Length::Fixed(8.0)),
+            Space::new().width(Length::Fixed(8.0)),
             send_button
         ]
         .align_y(Alignment::Center);
@@ -229,7 +229,7 @@ impl InputArea {
         // Info row (format and completion hints)
         let info_row = row![
             format_info,
-            Space::with_width(Length::Fill),
+            Space::new().width(Length::Fill),
             completion_hint
         ]
         .align_y(Alignment::Center);
@@ -258,11 +258,11 @@ impl InputArea {
                 row![send_button, toggle_button,]
                     .spacing(5)
                     .align_y(Alignment::Center),
-                Space::with_height(Length::Fixed(4.0)),
+                Space::new().height(Length::Fixed(4.0)),
                 info_row
             ]
         } else {
-            column![input_row, Space::with_height(Length::Fixed(4.0)), info_row]
+            column![input_row, Space::new().height(Length::Fixed(4.0)), info_row]
         };
 
         container(content).padding(8).width(Length::Fill).into()

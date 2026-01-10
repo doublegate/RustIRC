@@ -8,7 +8,7 @@ use crate::state::{AppState, DisplayMessage, MessageType};
 use crate::theme::Theme;
 use iced::{
     font::{Style as FontStyle, Weight},
-    widget::{button, column, container, row, scrollable, text, Space},
+    widget::{button, column, container, operation, row, scrollable, text, Id, Space},
     Alignment, Background, Color, Element, Length, Task,
 };
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -42,7 +42,7 @@ pub struct MessageView {
     show_user_lists: bool,
     show_motd: bool,
     compact_mode: bool,
-    scroll_id: scrollable::Id,
+    scroll_id: Id,
 }
 
 impl MessageView {
@@ -59,7 +59,7 @@ impl MessageView {
             show_user_lists: false,      // Hide user list spam by default
             show_motd: true,
             compact_mode: false,
-            scroll_id: scrollable::Id::unique(),
+            scroll_id: Id::unique(),
         }
     }
 
@@ -73,13 +73,13 @@ impl MessageView {
             MessageViewMessage::ScrollToBottom => {
                 self.auto_scroll = true;
                 self.scroll_position = 1.0;
-                scrollable::snap_to(self.scroll_id.clone(), scrollable::RelativeOffset::END)
+                operation::snap_to(self.scroll_id.clone(), scrollable::RelativeOffset::END)
                     .map(|_: ()| MessageViewMessage::NoOp)
             }
             MessageViewMessage::ScrollToTop => {
                 self.auto_scroll = false;
                 self.scroll_position = 0.0;
-                scrollable::snap_to(self.scroll_id.clone(), scrollable::RelativeOffset::START)
+                operation::snap_to(self.scroll_id.clone(), scrollable::RelativeOffset::START)
                     .map(|_: ()| MessageViewMessage::NoOp)
             }
             MessageViewMessage::MessageClicked(index) => {
@@ -209,7 +209,7 @@ impl MessageView {
                         text("Welcome to RustIRC")
                             .size(24)
                             .color(theme.get_primary_color()),
-                        Space::with_height(Length::Fixed(16.0)),
+                        Space::new().height(Length::Fixed(16.0)),
                         text("Connect to a server to start chatting")
                             .size(14)
                             .color(theme.get_text_color()),
@@ -281,7 +281,7 @@ impl MessageView {
                 .color(Color::from_rgb(0.5, 0.5, 0.5))
                 .into()
         } else {
-            Space::with_width(Length::Fixed(0.0)).into()
+            Space::new().width(Length::Fixed(0.0)).into()
         };
 
         // Build sender
@@ -321,7 +321,7 @@ impl MessageView {
                 .color(sender_color)
                 .into()
         } else {
-            Space::with_width(Length::Fixed(0.0)).into()
+            Space::new().width(Length::Fixed(0.0)).into()
         };
 
         // Build message content
@@ -334,12 +334,12 @@ impl MessageView {
                 .align_y(Alignment::Center)
         } else {
             row![
-                column![timestamp_element, Space::with_height(Length::Fixed(2.0))]
+                column![timestamp_element, Space::new().height(Length::Fixed(2.0))]
                     .width(Length::Fixed(80.0))
                     .align_x(Alignment::End),
-                column![sender_element, Space::with_height(Length::Fixed(2.0))]
+                column![sender_element, Space::new().height(Length::Fixed(2.0))]
                     .width(Length::Fixed(120.0)),
-                column![content_element, Space::with_height(Length::Fixed(2.0))]
+                column![content_element, Space::new().height(Length::Fixed(2.0))]
                     .width(Length::Fill)
             ]
             .spacing(8)
@@ -475,7 +475,7 @@ impl MessageView {
     /// Create a task to scroll to bottom
     pub fn create_scroll_to_bottom_task(&self) -> Task<MessageViewMessage> {
         if self.auto_scroll {
-            scrollable::snap_to(self.scroll_id.clone(), scrollable::RelativeOffset::END)
+            operation::snap_to(self.scroll_id.clone(), scrollable::RelativeOffset::END)
                 .map(|_: ()| MessageViewMessage::NoOp)
         } else {
             Task::none()
