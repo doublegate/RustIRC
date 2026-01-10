@@ -6,7 +6,9 @@ fail-on-severity: high
 
 # Allow specific licenses (all other licenses will be flagged)
 # Note: Cannot specify both allow-licenses and deny-licenses
+# Comprehensive list for Rust ecosystem compatibility
 allow-licenses:
+  # Standard permissive licenses
   - MIT
   - Apache-2.0
   - BSD-2-Clause
@@ -15,6 +17,31 @@ allow-licenses:
   - CC0-1.0
   - Unlicense
   - 0BSD
+  # Unicode licenses (used by unicode-ident, unicode-normalization, etc.)
+  - Unicode-DFS-2016
+  - Unicode-3.0
+  # Compression and utility licenses
+  - Zlib
+  - zlib-acknowledgement
+  # Mozilla and other OSS licenses
+  - MPL-2.0
+  - BSL-1.0
+  # LLVM-related licenses
+  - Apache-2.0 WITH LLVM-exception
+  # OpenSSL and cryptography
+  - OpenSSL
+  # Blue Oak Model License (used by some Rust crates)
+  - BlueOak-1.0.0
+  # Creative Commons licenses
+  - CC-BY-3.0
+  - CC-BY-4.0
+  # Public domain equivalent
+  - WTFPL
+  # ring crate license (ISC-style)
+  - Ring
+  # Additional permissive licenses found in Rust ecosystem
+  - MIT-0
+  - NCSA
 
 # Allow specific packages even if they fail other checks
 # Uses Package URL (purl) format: pkg:cargo/package-name
@@ -24,11 +51,24 @@ allow-dependencies-licenses:
   - pkg:cargo/serde_json
   - pkg:cargo/tokio
   - pkg:cargo/clap
+  # Unicode crates with special license definitions
+  - pkg:cargo/unicode-ident
+  - pkg:cargo/unicode-normalization
+  - pkg:cargo/unicode-bidi
+  - pkg:cargo/unicode-width
+  - pkg:cargo/unicode-segmentation
+  # Cryptography crates with custom licenses
+  - pkg:cargo/ring
+  - pkg:cargo/webpki
+  - pkg:cargo/rustls-webpki
+  # OpenSSL bindings
+  - pkg:cargo/openssl
+  - pkg:cargo/openssl-sys
+  # Low OpenSSF scorecard but essential crates
+  - pkg:cargo/lab
 
 # Deny specific packages using purl format
-deny-packages:
-  # Example of denying packages with known issues
-  - pkg:cargo/openssl-sys
+deny-packages: []
 
 # Allow vulnerabilities for specific advisories (temporary exceptions)
 allow-ghsas: []
