@@ -14,7 +14,7 @@ The project prioritizes full compatibility with IRC standards including IRCv3 ex
 
 ## Development Status
 
-**v0.3.8 Enhanced Iced Material Design GUI** (2025-08-26 10:48 PM EDT - Released with Material Demo Fix)
+**v0.3.9 iced 0.14.0 Migration & CI Improvements** (2026-01-10)
 
 - **Phase 1**: Research & Setup ✅ (Complete 2025-08-14)
 - **Phase 2**: Core IRC Engine ✅ (Complete 2025-08-17)
@@ -24,12 +24,13 @@ The project prioritizes full compatibility with IRC standards including IRCv3 ex
 - **Advanced Interface Features**: Tab completion, key handling, command routing ✅ (Complete 2025-08-21 9:18 PM EDT)
 - **100% Full Implementation**: All code complete with no stubs or placeholders ✅ (Complete 2025-08-21 10:55 PM EDT)
 - **v0.3.5 GitHub Actions Resilience**: Comprehensive sccache HTTP 400 fallback, cross-platform timeout compatibility ✅ (Complete 2025-08-24 1:35 AM EDT)
-- **v0.3.8 Material Design 3 GUI**: Enhanced Iced implementation on impr_gui branch ✅ (100% COMPLETE - ZERO ERRORS!)
-- **GUI Framework**: Material Design 3 with complete serialization architecture
+- **v0.3.8 Material Design 3 GUI**: Enhanced Iced implementation merged to main ✅ (100% COMPLETE - ZERO ERRORS!)
+- **v0.3.9 iced 0.14.0 Migration**: Complete GUI framework upgrade with 82+ breaking API changes resolved ✅
+- **GUI Framework**: Material Design 3 with iced 0.14.0 - reactive rendering, time-travel debugging
 - **Working Features**: typography, input, chip, plus major fixes in 7+ other components (0 errors)
-- **Implementation Complete**: SerializableColor wrapper, Iced 0.13.1 API migration, lifetime management, ALL components fully functional
-- **Current Status**: 100% functional MD3 implementation achieved with production-ready code quality - ZERO errors, ZERO warnings
-- **Interface Status**: Main branch stable, impr_gui branch COMPLETE with 100% functional Material Design 3
+- **Implementation Complete**: SerializableColor wrapper, iced 0.14.0 API migration, lifetime management, ALL components fully functional
+- **Current Status**: 100% functional MD3 implementation with iced 0.14.0 - ZERO errors, ZERO warnings
+- **Interface Status**: Main branch stable with iced 0.14.0 and Material Design 3 integration
 
 The repository now contains:
 
@@ -54,7 +55,7 @@ The repository now contains:
 
 - **Language**: Rust
 - **Async Runtime**: Tokio for network I/O
-- **GUI Framework**: Iced 0.13.1 (functional API implementation)
+- **GUI Framework**: Iced 0.14.0 (functional API implementation)
 - **TUI Framework**: ratatui
 - **TLS**: rustls
 - **Scripting**: mlua for Lua integration
@@ -75,7 +76,7 @@ cargo test
 cargo test -- --nocapture  # Show println! output
 
 # Run the client (multiple modes available)
-cargo run                    # GUI mode (simplified Iced 0.13.1 interface)
+cargo run                    # GUI mode (Iced 0.14.0 interface)
 cargo run -- --cli          # CLI prototype mode for testing
 cargo run -- --tui          # TUI mode with ratatui
 cargo run -- --config path/to/config.toml  # With custom config
@@ -232,7 +233,7 @@ RustIRC/
 When addressing GUI issues in RustIRC:
 
 1. **IRC Protocol Verification**: Always check field names against protocol definitions (e.g., WHOIS uses `targets` not `target/nickmasks`)
-2. **Iced 0.13.1 Styling**: Use proper border syntax with `0.0.into()` for radius, container styling for pane dividers
+2. **Iced 0.14.0 Styling**: Use proper border syntax with `0.0.into()` for radius, container styling for pane dividers
 3. **Case-Sensitive Filtering**: Handle both "System" and "system" message senders in filtering logic
 4. **State Synchronization**: Use getter methods like `get_filter_state()` to sync UI checkmarks with actual filter states
 

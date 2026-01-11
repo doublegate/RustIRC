@@ -1,6 +1,6 @@
 [package]
 name = "rustirc-plugins"
-version = "0.3.8"
+version = "0.3.9"
 edition = "2021"
 authors = ["RustIRC Contributors"]
 description = "Plugin system for RustIRC"

@@ -5,7 +5,7 @@
 
 ![RustIRC Logo](images/RustIRC_Logo.png)
 
-[![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.9-blue.svg)](CHANGELOG.md)
 [![Rust Version](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE-MIT)
 [![Tests](https://img.shields.io/badge/tests-62%20passing-success.svg)](.github/workflows/ci.yml)
@@ -15,12 +15,12 @@
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/doublegate/RustIRC)
 [![IRC Protocol](https://img.shields.io/badge/IRC-RFC1459%2F2812-green.svg)](docs/specs/irc-protocol.md)
 [![IRCv3](https://img.shields.io/badge/IRCv3-Full%20Support-brightgreen.svg)](docs/specs/ircv3-extensions.md)
-[![GUI Framework](https://img.shields.io/badge/GUI-Enhanced%20Iced%200.13.1-purple.svg)](docs/architecture-guide.md)
+[![GUI Framework](https://img.shields.io/badge/GUI-Enhanced%20Iced%200.14.0-purple.svg)](docs/architecture-guide.md)
 [![Scripting](https://img.shields.io/badge/scripting-Lua%205.4-blueviolet.svg)](scripts/README.md)
 
 A powerful, modern IRC client built in Rust with an enhanced Material Design 3 interface and comprehensive Lua scripting
 
-**Last Updated**: 2025-11-18 | **Branch**: main - v0.4.0 Phase 4 Scripting Complete
+**Last Updated**: 2026-01-10 | **Branch**: main - v0.3.9 iced 0.14.0 Migration & CI Improvements
 
 [Features](#-features) • [Documentation](#-documentation) • [Development Plan](#-development-plan) • [Architecture](#️-architecture) • [Contributing](#-contributing)
 
@@ -63,10 +63,10 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 
 ## 📦 Latest Release
 
-[![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.4.0)
-[![Release Date](https://img.shields.io/badge/released-November%2018%2C%202025-green.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.4.0)
+[![Version](https://img.shields.io/badge/version-0.3.9-blue.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.3.9)
+[![Release Date](https://img.shields.io/badge/released-January%2010%2C%202026-green.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.3.9)
 
-**Version 0.4.0** - Phase 4 Scripting & Automation Complete
+**Version 0.3.9** - iced 0.14.0 Migration & CI Improvements
 
 ### 📜 Lua Scripting System Highlights
 
@@ -107,7 +107,7 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 
 ## 🏗️ Current Development Status
 
-**Last Updated**: November 18, 2025 - v0.4.0 Phase 4 Scripting Complete
+**Last Updated**: January 10, 2026 - v0.3.9 iced 0.14.0 Migration
 
 ### ✅ **Phase 1: Research & Setup** - **COMPLETE** (100%)
 
@@ -269,7 +269,7 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 │  │  └─ Feedback (Ripples, Progress, Toasts)                ││
 │  └─────────────────────────────────────────────────────────┘│
 │  ┌─────────────────────────────────────────────────────────┐│
-│  │  Iced 0.13.1 Enhanced Runtime                           ││
+│  │  Iced 0.14.0 Enhanced Runtime                           ││
 │  │  ├─ WGPU GPU Acceleration                               ││
 │  │  ├─ Custom Shader Pipeline                              ││
 │  │  ├─ Animation Engine (Spring Physics)                   ││
@@ -317,7 +317,7 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 
 - **Language**: Rust (Edition 2021, MSRV 1.75.0)
 - **Async Runtime**: Tokio (multi-threaded, work-stealing)
-- **GUI Framework**: Enhanced Iced 0.13.1 with Material Design 3
+- **GUI Framework**: Enhanced Iced 0.14.0 with Material Design 3
   - WGPU backend for GPU acceleration
   - Custom shader support
   - Spring-based animation system
@@ -347,7 +347,7 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 
 ## 🚦 Current Status
 
-**Version**: 0.4.0 - Phase 4 Scripting Complete
+**Version**: 0.3.9 - iced 0.14.0 Migration & CI Improvements
 **Phase**: Phases 1-4 Complete ✅ | Lua Scripting Production Ready 📜
 **Build Status**: All 6 crates compile successfully, 62 tests passing
 **Total Tasks**: 249+ across 7 phases | Phase 4 Lua Scripting 100% complete
@@ -359,7 +359,20 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 - ✅ **Phase 3: User Interface Enhanced** - Iced Material Design 3, TUI (ratatui), CLI prototype, advanced features
 - ✅ **Phase 4: Lua Scripting** - Complete Lua 5.4 engine with 50+ API functions, event hooks, built-in scripts
 
-### 🆕 v0.3.8 Enhanced Iced Material Design Features (August 25, 2025 10:23 PM EDT)
+### 🆕 v0.3.9 iced 0.14.0 Migration & CI Improvements (January 10, 2026)
+
+#### GUI Framework Upgrade
+- **iced 0.14.0**: Complete migration from iced 0.13.1 with 82+ breaking API changes resolved
+- **Key Features**: Reactive rendering improvements, time-travel debugging, enhanced API design
+- **Breaking Changes Fixed**: Space widget API, Application API, checkbox builder pattern, scrollable IDs/operations, text input status, button/container style structs
+
+#### CI/CD Improvements
+- **Security Audit Permissions**: Added `checks: write` for proper security-audit workflow
+- **Artifact Naming**: Fixed matrix.os to runner.os for consistent artifact naming
+- **Codecov Migration**: Updated from deprecated codecov/test-results-action@v1 to codecov/codecov-action@v5
+- **Tech Debt**: Fixed criterion::black_box deprecation, tokio 1.48 to 1.49, clippy fixes
+
+### Previous v0.3.8 Enhanced Iced Material Design Features (August 25, 2025 10:23 PM EDT)
 
 #### Material Design 3 Components Implemented
 
@@ -513,7 +526,7 @@ RustIRC maintains three active development branches exploring different GUI para
 
 #### 🏠 **main Branch** - Stable Iced Implementation
 
-- Iced 0.13.1 functional API
+- Iced 0.14.0 functional API
 - Production-ready GUI
 - Proven stability
 - Full IRC functionality

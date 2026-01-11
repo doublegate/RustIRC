@@ -256,6 +256,12 @@ CLAUDE.local.md
 !docs/
 !to-dos/
 
+# Claude Code memory bank files (auto-generated context files)
+.github/CLAUDE.md
+.github/workflows/CLAUDE.md
+crates/*/CLAUDE.md
+crates/*/src/CLAUDE.md
+
 # CI/CD artifacts
 .github/workflows/*.local.yml
 artifacts/

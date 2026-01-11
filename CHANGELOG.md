@@ -5,11 +5,14 @@ All notable changes to RustIRC will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.9] - 2026-01-10 (iced 0.14.0 Migration & CI Improvements)
 
-### Changed - 2026-01-10 (Iced 0.14.0 Migration)
+### Summary
+Complete GUI framework upgrade from iced 0.13.1 to iced 0.14.0 with 82+ breaking API changes resolved, along with CI/CD improvements and tech debt remediation. This release modernizes the GUI framework while maintaining full backward compatibility with existing functionality.
 
-#### GUI Framework Upgrade: Iced 0.13.1 to 0.14.0
+### Changed
+
+#### GUI Framework Upgrade: iced 0.13.1 to 0.14.0
 - **Major Version Upgrade**: Complete migration from iced 0.13.1 to iced 0.14.0 with 82+ breaking API changes resolved
 - **Key Features**: Reactive rendering improvements, time-travel debugging, and enhanced API design
 
@@ -25,7 +28,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Style Structs**: Added required `snap: bool` field to `button::Style` and `container::Style`
 - **Pixels Type**: Updated return types from `u16` to `f32` for Pixels trait bounds
 
-#### Files Modified (19 total)
+### Fixed
+
+#### CI/CD Improvements
+- **Security Audit Permissions**: Added `checks: write` permission for proper security-audit workflow execution
+- **Artifact Naming**: Fixed matrix.os to runner.os for consistent artifact naming across platforms
+- **Codecov Migration**: Updated from deprecated codecov/test-results-action@v1 to codecov/codecov-action@v5
+
+#### Tech Debt Remediation
+- **Benchmark Deprecation**: Fixed criterion::black_box to std::hint::black_box (7 occurrences)
+- **Tokio Update**: Updated tokio from 1.48 to 1.49
+- **Clippy Fixes**: Applied clippy recommendations (unused imports, derive Default)
+- **Benchmark Rewrites**: Updated benchmarks for async StateManager API
+
+### Dependencies
+- iced: 0.13.1 -> 0.14.0 (major version with breaking changes)
+- tokio: 1.48 -> 1.49
+
+### Repository Cleanup
+- Closed superseded PRs (#27, #32)
+- Dropped obsolete stashes
+- Pruned 20+ stale remote branches
+
+### Files Modified (19 GUI files)
 - `Cargo.toml` - Version bump to iced 0.14.0
 - `crates/rustirc-gui/src/app.rs` - Application API and rule widget
 - `crates/rustirc-gui/src/dialogs.rs` - Space, checkbox, and max_width APIs
@@ -43,22 +68,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `crates/rustirc-gui/src/components/organisms/responsive_layout.rs` - Space widget and Pixels type
 - `crates/rustirc-gui/src/components/organisms/rich_text_editor.rs` - text_input::Status patterns
 
-#### Quality Assurance
+### Quality Assurance
 - **Build Status**: Zero compilation errors
 - **Clippy**: Zero warnings with -D warnings flag
-- **Tests**: All 131 tests passing (unit + doctests)
+- **Tests**: All 62 tests passing (unit tests)
 - **Compatibility**: Full backward compatibility with existing GUI functionality
 
-### Added - 2025-08-26 (Material Design 3 Integration + Dependency Updates)
+## [Unreleased]
 
-#### Material Design 3 Branch Integration Complete (2025-08-26 11:56 PM EDT)
+### Planned for Next Release (Phase 5: Advanced Features)
+- DCC support for file transfers and direct chats
+- Enhanced IRCv3 features (message-tags, server-time, batch)
+- Proxy support (SOCKS5, HTTP)
+- Native desktop notifications
+- Advanced channel management features
+
+## [0.3.8] - 2025-08-26 (Material Design 3 Integration + Dependency Updates)
+
+### Added
+
+#### Material Design 3 Branch Integration (2025-08-26)
 - **Branch Merge Success**: Successfully merged `impr_gui` → `main` with comprehensive technical documentation
 - **51 Files Integrated**: 8,475 insertions of Material Design 3 implementation with zero conflicts
 - **Production Deployment**: Complete Material Design 3 implementation now available in main branch
 - **Branch Cleanup**: Removed `impr_gui` branch both locally and remotely after successful integration
 - **Version Tag Update**: v0.3.8 tag updated with comprehensive release notes and technical achievements
 
-#### Comprehensive Dependency Security Updates (2025-08-26 11:52 PM EDT)
+#### Comprehensive Dependency Security Updates
 - **actions/checkout@v5**: Upgraded from v4 with Node.js 24 runtime and enhanced security posture
   - Research via Context7 confirmed zero API breaking changes
   - GitHub-hosted runners fully compatible with minimum runner version v2.327.1
@@ -74,11 +110,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Research Methodology**: Each PR analyzed via Context7 + Brave Search for comprehensive security verification
 - **Zero Breaking Changes**: All updates confirmed safe with detailed workflow compatibility analysis
 
-### Previous Additions - 2025-08-25 (GUI Framework Explorations)
+#### GUI Framework Explorations (2025-08-25)
 
-#### New Feature Branches
+##### New Feature Branches
 - **impr_gui branch**: Material Design 3 components for Iced v0.13.1
-  - Comprehensive atomic design architecture (atoms → molecules → organisms)
+  - Comprehensive atomic design architecture (atoms -> molecules -> organisms)
   - Material Design 3 theme with full color system and typography scale
   - Advanced components: RichTextEditor with IRC formatting, ResponsiveLayout, MaterialSidebar
   - Fixed Unicode escape sequences for IRC control characters
@@ -93,13 +129,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Infrastructure
 - Installed system libraries for Dioxus support (webkit2gtk4.1-devel, libsoup3-devel, atk-devel, gtk3-devel)
-
-### Planned for Next Release (Phase 5: Advanced Features)
-- DCC support for file transfers and direct chats
-- Enhanced IRCv3 features (message-tags, server-time, batch)
-- Proxy support (SOCKS5, HTTP)
-- Native desktop notifications
-- Advanced channel management features
 
 ## [0.4.0] - 2025-11-18 (Phase 4 Scripting & Plugins - COMPLETE)
 
