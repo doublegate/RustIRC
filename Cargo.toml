@@ -62,7 +62,7 @@ pretty_assertions = "1.4"
 criterion = { version = "0.8.1", features = ["html_reports"] }
 
 # CLI
-clap = { version = "4.5.53", features = ["derive"] }
+clap = { version = "4.5.57", features = ["derive"] }
 
 [package]
 name = "rustirc"
