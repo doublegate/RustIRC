@@ -93,13 +93,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest]  # DISABLED: macOS builds removed
         rust: [stable, beta]
         exclude:
-          # Reduce matrix size by skipping beta on Windows/macOS for faster CI
+          # Reduce matrix size by skipping beta on Windows for faster CI
           - os: windows-latest
-            rust: beta
-          - os: macos-latest
             rust: beta
     runs-on: ${{ matrix.os }}
     steps:

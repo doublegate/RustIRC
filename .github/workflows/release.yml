@@ -57,16 +57,17 @@ jobs:
             artifact_name: rustirc.exe
             asset_name: rustirc-windows-amd64.exe
             compress: zip
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            artifact_name: rustirc
-            asset_name: rustirc-macos-amd64
-            compress: tar.gz
-          - os: macos-latest
-            target: aarch64-apple-darwin
-            artifact_name: rustirc
-            asset_name: rustirc-macos-arm64
-            compress: tar.gz
+          # DISABLED: macOS builds removed
+          # - os: macos-latest
+          #   target: x86_64-apple-darwin
+          #   artifact_name: rustirc
+          #   asset_name: rustirc-macos-amd64
+          #   compress: tar.gz
+          # - os: macos-latest
+          #   target: aarch64-apple-darwin
+          #   artifact_name: rustirc
+          #   asset_name: rustirc-macos-arm64
+          #   compress: tar.gz
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
@@ -181,9 +182,7 @@ jobs:
         Choose the appropriate binary for your platform:
         
         - **Linux x86_64**: `rustirc-linux-amd64.tar.gz`
-        - **Linux ARM64**: `rustirc-linux-arm64.tar.gz` 
-        - **macOS x86_64**: `rustirc-macos-amd64.tar.gz`
-        - **macOS ARM64**: `rustirc-macos-arm64.tar.gz`
+        - **Linux ARM64**: `rustirc-linux-arm64.tar.gz`
         - **Windows x86_64**: `rustirc-windows-amd64.exe.zip`
         
         ### Verification

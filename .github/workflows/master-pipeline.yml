@@ -493,12 +493,13 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             artifact_name: rustirc-windows-amd64.exe.zip
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            artifact_name: rustirc-macos-amd64.tar.gz
-          - os: macos-latest
-            target: aarch64-apple-darwin
-            artifact_name: rustirc-macos-arm64.tar.gz
+          # DISABLED: macOS builds removed
+          # - os: macos-latest
+          #   target: x86_64-apple-darwin
+          #   artifact_name: rustirc-macos-amd64.tar.gz
+          # - os: macos-latest
+          #   target: aarch64-apple-darwin
+          #   artifact_name: rustirc-macos-arm64.tar.gz
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v6
@@ -660,8 +661,6 @@ jobs:
           - **Linux x86_64**: \`rustirc-linux-amd64.tar.gz\`
           - **Linux ARM64**: \`rustirc-linux-arm64.tar.gz\`
           - **Windows x86_64**: \`rustirc-windows-amd64.exe.zip\`
-          - **macOS x86_64**: \`rustirc-macos-amd64.tar.gz\`
-          - **macOS ARM64 (M1/M2/M3)**: \`rustirc-macos-arm64.tar.gz\`
 
           ### Verification
 
