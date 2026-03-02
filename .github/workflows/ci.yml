@@ -240,7 +240,7 @@ jobs:
 
     - name: Download build artifacts (if available)
       if: inputs.cache_key != ''
-      uses: actions/download-artifact@v7
+      uses: actions/download-artifact@v8
       with:
         name: build-artifacts-${{ runner.os }}
         path: target/
