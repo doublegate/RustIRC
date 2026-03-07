@@ -202,6 +202,42 @@ impl Message {
         self.tags = Some(tags);
         self
     }
+
+    /// Get a tag value by key (unescaped)
+    pub fn get_tag(&self, key: &str) -> Option<String> {
+        self.tags.as_ref().and_then(|tags| {
+            tags.iter()
+                .find(|t| t.key == key)
+                .and_then(|t| t.unescaped_value())
+        })
+    }
+
+    /// Check if a tag exists
+    pub fn has_tag(&self, key: &str) -> bool {
+        self.tags
+            .as_ref()
+            .is_some_and(|tags| tags.iter().any(|t| t.key == key))
+    }
+
+    /// Get the server-time tag value
+    pub fn get_time(&self) -> Option<String> {
+        self.get_tag("time")
+    }
+
+    /// Get the msgid tag value
+    pub fn get_msgid(&self) -> Option<String> {
+        self.get_tag("msgid")
+    }
+
+    /// Get the batch reference tag
+    pub fn get_batch(&self) -> Option<String> {
+        self.get_tag("batch")
+    }
+
+    /// Get the label tag (for labeled-response)
+    pub fn get_label(&self) -> Option<String> {
+        self.get_tag("label")
+    }
 }
 
 impl fmt::Display for Message {

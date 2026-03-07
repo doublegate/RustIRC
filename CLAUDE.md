@@ -14,23 +14,22 @@ The project prioritizes full compatibility with IRC standards including IRCv3 ex
 
 ## Development Status
 
-**v0.3.9 iced 0.14.0 Migration & CI Improvements** (2026-01-10)
+**v0.4.0 Scripting, Plugins, DCC & IRCv3** (2026-03-07)
 
 - **Phase 1**: Research & Setup ✅ (Complete 2025-08-14)
 - **Phase 2**: Core IRC Engine ✅ (Complete 2025-08-17)
 - **Phase 3**: User Interface ✅ (Complete 2025-08-17)
-- **GUI Fixes**: Comprehensive issue resolution ✅ (Complete 2025-08-21 12:34 AM EDT)
-- **CLI Enhancement**: Multi-server architecture with full GUI parity ✅ (Complete 2025-08-21 1:34 AM EDT)
-- **Advanced Interface Features**: Tab completion, key handling, command routing ✅ (Complete 2025-08-21 9:18 PM EDT)
-- **100% Full Implementation**: All code complete with no stubs or placeholders ✅ (Complete 2025-08-21 10:55 PM EDT)
-- **v0.3.5 GitHub Actions Resilience**: Comprehensive sccache HTTP 400 fallback, cross-platform timeout compatibility ✅ (Complete 2025-08-24 1:35 AM EDT)
-- **v0.3.8 Material Design 3 GUI**: Enhanced Iced implementation merged to main ✅ (100% COMPLETE - ZERO ERRORS!)
+- **Phase 4**: Scripting, Plugins & Config ✅ (Complete 2026-03-07)
+- **Phase 5**: Advanced Features (DCC, IRCv3, Proxy, Notifications) ✅ (Complete 2026-03-07)
+- **Phase 6**: Testing & Integration ✅ (Complete 2026-03-07)
 - **v0.3.9 iced 0.14.0 Migration**: Complete GUI framework upgrade with 82+ breaking API changes resolved ✅
+- **v0.4.0 Major Feature Release**: Lua scripting engine, plugin system, DCC protocol, IRCv3 extensions, flood protection, proxy support, 266 tests ✅
 - **GUI Framework**: Material Design 3 with iced 0.14.0 - reactive rendering, time-travel debugging
 - **Working Features**: typography, input, chip, plus major fixes in 7+ other components (0 errors)
 - **Implementation Complete**: SerializableColor wrapper, iced 0.14.0 API migration, lifetime management, ALL components fully functional
-- **Current Status**: 100% functional MD3 implementation with iced 0.14.0 - ZERO errors, ZERO warnings
+- **Current Status**: 266 tests passing, ZERO errors, ZERO clippy warnings
 - **Interface Status**: Main branch stable with iced 0.14.0 and Material Design 3 integration
+- **Test Status**: 266 tests (233 unit + 33 integration) across all workspace crates
 
 The repository now contains:
 

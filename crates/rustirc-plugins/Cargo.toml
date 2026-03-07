@@ -1,6 +1,6 @@
 [package]
 name = "rustirc-plugins"
-version = "0.3.9"
+version = "0.4.0"
 edition = "2021"
 authors = ["RustIRC Contributors"]
 description = "Plugin system for RustIRC"
@@ -12,5 +12,8 @@ tracing = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true }
 
+dirs = { workspace = true }
+
 rustirc-core = { path = "../rustirc-core" }
+
 rustirc-protocol = { path = "../rustirc-protocol" }

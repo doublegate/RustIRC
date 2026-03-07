@@ -494,7 +494,8 @@ impl UserInfo {
 }
 
 /// Application settings
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
 pub struct AppSettings {
     pub theme: String,
     pub font_size: f32,
@@ -526,6 +527,42 @@ impl Default for AppSettings {
             notification_popup: true,
             compact_mode: false,
         }
+    }
+}
+
+impl AppSettings {
+    /// Get the default settings file path
+    pub fn settings_path() -> std::path::PathBuf {
+        dirs::config_dir()
+            .unwrap_or_else(|| std::path::PathBuf::from("."))
+            .join("rustirc")
+            .join("settings.toml")
+    }
+
+    /// Save settings to the default path
+    pub fn save(&self) -> anyhow::Result<()> {
+        let path = Self::settings_path();
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        let content = toml::to_string_pretty(self)?;
+        std::fs::write(path, content)?;
+        Ok(())
+    }
+
+    /// Load settings from the default path, falling back to defaults
+    pub fn load() -> Self {
+        let path = Self::settings_path();
+        if path.exists() {
+            match std::fs::read_to_string(&path) {
+                Ok(content) => match toml::from_str(&content) {
+                    Ok(settings) => return settings,
+                    Err(e) => tracing::warn!("Failed to parse settings: {}", e),
+                },
+                Err(e) => tracing::warn!("Failed to read settings: {}", e),
+            }
+        }
+        Self::default()
     }
 }
 

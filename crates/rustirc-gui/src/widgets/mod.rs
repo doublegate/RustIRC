@@ -13,6 +13,7 @@ pub mod message_view;
 pub mod server_tree;
 pub mod status_bar;
 pub mod tab_bar;
+pub mod url_preview;
 pub mod user_list;
 
 pub use input_area::{InputArea, InputAreaMessage};

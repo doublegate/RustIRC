@@ -5,6 +5,175 @@ All notable changes to RustIRC will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-03-07 (Scripting, Plugins, DCC & IRCv3)
+
+### Summary
+Major feature release implementing Phases 4-6 of the RustIRC development plan. This release transforms the project from a GUI-focused IRC client into a fully extensible platform with production-ready Lua scripting, a plugin system with built-in plugins, DCC protocol support, IRCv3 batch/chathistory extensions, flood protection, proxy support (SOCKS5/HTTP CONNECT), and comprehensive integration tests. Test count increased from 144 to 266.
+
+### Added
+
+#### Phase 4: Scripting, Plugins & Configuration
+
+##### Config File I/O (`crates/rustirc-core/src/config.rs`)
+- **TOML Persistence**: `Config::from_file()`, `Config::save()` with pretty TOML serialization and automatic parent directory creation
+- **XDG Compliance**: `Config::default_path()` using `dirs::config_dir()/rustirc/config.toml`
+- **First-Run Experience**: `Config::generate_default_config()` creates commented default config with example Libera Chat server
+- **Forward Compatibility**: All config structs annotated with `#[serde(default)]` for graceful handling of missing fields
+- **New Config Sections**: `DccConfig`, `FloodConfig`, `ProxyConfig`, `NotificationConfig`, `QuietHours` structs
+
+##### Lua Scripting Engine (`crates/rustirc-scripting/`)
+- **Complete Engine Rewrite**: `ScriptEngine` with `load_script()`, `unload_script()`, `trigger_event()`, `execute_command()`, `auto_load_scripts()`, `list_scripts()` -- all sync methods using `std::sync::RwLock` to avoid async runtime conflicts
+- **ScriptMessage UserData** (`script_message.rs`): Lua-accessible IRC message type with `get_nick()`, `get_channel()`, `get_text()`, `get_command()`, `get_params()`, `get_prefix()` methods
+- **Sandbox Security** (`sandbox.rs`): Memory limits, CPU timeout via Lua instruction count hooks (returns `mlua::VmState::Continue`), blocks `io`/`debug`/`loadfile`/`dofile`/`require`, restricts `os` to safe subset (`clock`/`date`/`difftime`/`time`)
+- **IRC API Table**: `irc.print()`, `irc.send_message()`, `irc.join()`, `irc.part()`, `irc.register_handler()`, `irc.command()`, `irc.get_var()`, `irc.set_var()` registered in Lua global scope
+- **Priority System**: Scripts sorted by priority (highest first) for deterministic event handler execution order
+- **Config Integration**: `ScriptEngine::from_config(&ScriptingConfig)` with configurable memory limits, timeout, scripts path
+
+##### Plugin System (`crates/rustirc-plugins/`)
+- **Plugin Manager Rewrite** (`manager.rs`): `PluginManager` with `HashMap<String, LoadedPlugin>`, full lifecycle management (`register_plugin()`, `unload_plugin()`, `enable_plugin()`, `disable_plugin()`, `shutdown_all()`), auto-initialization on registration via `PluginContext`
+- **Built-in Logger Plugin** (`builtin/logger.rs`): `LoggerPlugin` that creates log directories and manages file-based IRC message logging
+- **Built-in Highlight Plugin** (`builtin/highlight.rs`): `HighlightPlugin` with case-insensitive keyword matching (`check_message()`), dynamic word management (`add_word()`, `remove_word()`)
+- **Plugin Loader** (`loader.rs`): `PluginLoader` with search path discovery and `default_plugin_dir()` using `dirs::data_dir()/rustirc/plugins`
+
+##### Integration Wiring (`src/main.rs`)
+- **Real Config Loading**: Replaced no-op `load_config()` with `Config::from_file()` / `Config::load_or_default()`
+- **Script Engine Init**: `init_scripting()` creates `ScriptEngine` from config and calls `auto_load_scripts()`
+- **Plugin Manager Init**: `init_plugins()` creates `PluginManager` and registers built-in `LoggerPlugin` and `HighlightPlugin`
+
+#### Phase 5: Advanced Features
+
+##### DCC Protocol (`crates/rustirc-core/src/dcc/`)
+- **DCC Manager** (`mod.rs`): Central session tracker with async session lifecycle, event channel (`DccEvent`), auto-incrementing session IDs
+- **DCC Request Parsing**: `parse_dcc_request(peer_nick, ctcp_data)` supporting CHAT, SEND, RESUME, ACCEPT with IP long-format conversion
+- **DCC Chat** (`chat.rs`): Direct client-to-client messaging over TCP
+- **DCC Transfer** (`transfer.rs`): File send/receive with `TransferProgress` tracking (bytes_transferred, speed_bps, percentage), cancel support
+- **Session Types**: `DccSession::Chat`, `DccSession::Send`, `DccSession::Receive` with direction tracking (Incoming/Outgoing)
+- **Security**: File size limits via `DccConfig::max_file_size`, disabled-by-config check on all operations
+- **IP Conversion**: `ip_to_long(&IpAddr) -> u64` and `parse_ip_long(&str) -> DccResult<IpAddr>` for DCC protocol encoding
+
+##### IRCv3 Extensions
+
+###### Batch Message Handler (`crates/rustirc-core/src/batch.rs`)
+- **BatchManager**: Tracks open/completed batches with `handle_batch_start()`, `handle_batch_end()`, `add_message()`
+- **Nested Batches**: Parent reference tracking via batch tags on BATCH commands
+- **Batch Types**: `Netjoin`, `Netsplit`, `ChatHistory`, `LabeledResponse`, `Custom(String)` with `parse()` and `as_str()` methods
+- **Message Routing**: `message_is_batched()` checks if a message belongs to any open batch
+
+###### CHATHISTORY Support (`crates/rustirc-core/src/chathistory.rs`)
+- **ChatHistoryManager**: Request queue with FIFO correlation, builds protocol messages for BEFORE, AFTER, BETWEEN, AROUND, LATEST commands
+- **MessageReference**: `MsgId(String)` and `Timestamp(String)` variants with `parse()` and `to_param()` methods
+- **Request Lifecycle**: `request_history()` returns `(u64, Message)` for correlation, `handle_response()` pops FIFO queue
+
+###### Message Tag Helpers (`crates/rustirc-protocol/src/message.rs`)
+- **Tag Access Methods**: `get_tag()`, `has_tag()`, `get_time()`, `get_msgid()`, `get_batch()`, `get_label()` on `Message`
+
+##### Flood Protection (`crates/rustirc-core/src/flood.rs`)
+- **Token Bucket Algorithm**: `FloodProtector` with configurable `max_tokens` (burst capacity), `refill_rate` (tokens/sec), bounded message queue
+- **API**: `try_send()` (consume token), `enqueue()` (queue message), `drain_ready()` (send queued messages), `next_send_time()` (calculate wait)
+- **Config Integration**: `FloodProtector::from_config(&FloodConfig)` with enable/disable toggle
+
+##### Proxy Support (`crates/rustirc-core/src/proxy/`)
+- **SOCKS5 Proxy** (`socks5.rs`): Via `tokio-socks` crate with optional username/password authentication
+- **HTTP CONNECT Proxy** (`http.rs`): Manual implementation with basic authentication header support
+- **ProxyConnector Trait**: `async fn connect()` trait with `from_config()` factory dispatching to Socks5 or HttpConnect
+- **ProxyConfig**: `proxy_type` (None/Socks5/HttpConnect), `address`, `port`, `username`, `password` fields
+
+##### GUI Enhancements
+
+###### Notification Rules Engine (`crates/rustirc-gui/src/notifications.rs`)
+- **NotificationRules**: Configurable highlight words, nick mention detection, channel/user filters
+- **QuietHours**: Time-based notification suppression with weekend override
+- **Notification History**: Timestamped `NotificationEntry` log with `NotificationType` classification
+
+###### Search Engine (`crates/rustirc-gui/src/search.rs`)
+- **SearchEngine**: Full-text message search with `SearchQuery` (text, channel filter, user filter, date range, case sensitivity)
+- **SearchState**: UI state management for search panel integration
+
+###### URL Preview (`crates/rustirc-gui/src/widgets/url_preview.rs`)
+- **URL Detection**: Regex-based URL extraction from messages using `OnceLock<Regex>` (MSRV 1.75 compatible)
+- **URL Info**: Extracted URL metadata with display text and original URL
+
+###### Settings Persistence (`crates/rustirc-gui/src/state.rs`)
+- **AppSettings Serialization**: Added `serde::Serialize`/`Deserialize` derives with `#[serde(default)]`
+- **Persistence Methods**: `AppSettings::settings_path()`, `save()`, `load()` for XDG-compliant settings storage
+
+#### Phase 6: Testing & Integration
+
+##### Integration Test Suite (`tests/`)
+- **`tests/config_test.rs`** (6 tests): Config save/load roundtrip, parent directory creation, forward compatibility, default path validation, default config generation, all-sections persistence
+- **`tests/scripting_test.rs`** (7 tests): Engine creation from config, event handler firing, command execution, sandbox blocking dangerous operations, variable persistence across scripts, priority ordering, ScriptMessage method access
+- **`tests/plugin_test.rs`** (7 tests): Plugin registration and listing, enable/disable toggle, unload lifecycle, built-in highlight plugin word matching, built-in logger plugin initialization, shutdown_all cleanup, plugin info retrieval
+- **`tests/ircv3_test.rs`** (6 tests): Batch lifecycle (start/add/end), message tag helpers, CHATHISTORY request building, MessageReference parsing, flood protection burst limiting, flood protection queue management
+- **`tests/dcc_test.rs`** (7 tests): DCC manager creation, SEND request parsing, CHAT request parsing, RESUME request parsing, IP long-format conversion, disabled config behavior, invalid request handling
+
+### Changed
+- **Config structs**: All config structs now derive `Default` and use `#[serde(default)]` for forward compatibility
+- **ScriptEngine**: Switched from `tokio::sync::RwLock` to `std::sync::RwLock` to prevent "Cannot start runtime from within runtime" panics
+- **BatchType**: Renamed `from_str()` to `parse()` to avoid confusion with `FromStr` trait (clippy lint)
+- **Root Cargo.toml**: Added `rustirc-protocol` to binary dependencies for integration test access
+
+### Dependencies
+- Added `dirs = "6.0"` (XDG-compliant config/data paths)
+- Added `notify-rust = "4"` (Linux D-Bus notifications)
+- Added `tokio-socks = "0.5"` (SOCKS5 proxy support)
+- Added `chrono = "0.4"` (notification quiet hours)
+
+### Quality
+- **Test Count**: 144 -> 266 (84% increase)
+- **Unit Tests**: 233 across all workspace crates
+- **Integration Tests**: 33 across 5 test files
+- **Clippy**: Zero warnings with `-D warnings`
+- **Build**: Zero compilation errors
+
+### New Files (27)
+| File | Purpose |
+|------|---------|
+| `crates/rustirc-scripting/src/script_message.rs` | ScriptMessage UserData for Lua |
+| `crates/rustirc-plugins/src/builtin/mod.rs` | Built-in plugin module |
+| `crates/rustirc-plugins/src/builtin/logger.rs` | Logger plugin |
+| `crates/rustirc-plugins/src/builtin/highlight.rs` | Highlight plugin |
+| `crates/rustirc-core/src/dcc/mod.rs` | DCC manager and protocol |
+| `crates/rustirc-core/src/dcc/chat.rs` | DCC chat sessions |
+| `crates/rustirc-core/src/dcc/transfer.rs` | DCC file transfers |
+| `crates/rustirc-core/src/batch.rs` | IRCv3 batch handler |
+| `crates/rustirc-core/src/chathistory.rs` | IRCv3 CHATHISTORY |
+| `crates/rustirc-core/src/flood.rs` | Flood protection |
+| `crates/rustirc-core/src/proxy/mod.rs` | Proxy connector trait |
+| `crates/rustirc-core/src/proxy/socks5.rs` | SOCKS5 proxy |
+| `crates/rustirc-core/src/proxy/http.rs` | HTTP CONNECT proxy |
+| `crates/rustirc-gui/src/notifications.rs` | Notification rules engine |
+| `crates/rustirc-gui/src/search.rs` | Full-text search engine |
+| `crates/rustirc-gui/src/widgets/url_preview.rs` | URL detection/preview |
+| `tests/config_test.rs` | Config integration tests |
+| `tests/scripting_test.rs` | Scripting integration tests |
+| `tests/plugin_test.rs` | Plugin integration tests |
+| `tests/ircv3_test.rs` | IRCv3 integration tests |
+| `tests/dcc_test.rs` | DCC integration tests |
+
+### Modified Files (19)
+| File | Changes |
+|------|---------|
+| `Cargo.toml` | Version bump, added deps (dirs, notify-rust, tokio-socks), added rustirc-protocol dep |
+| `crates/rustirc-core/Cargo.toml` | Added dirs, tokio-socks deps |
+| `crates/rustirc-gui/Cargo.toml` | Added toml, dirs, notify-rust, chrono deps |
+| `crates/rustirc-plugins/Cargo.toml` | Added dirs, tracing deps |
+| `crates/rustirc-core/src/config.rs` | Config I/O methods, new config structs, serde(default) |
+| `crates/rustirc-core/src/lib.rs` | Added batch, chathistory, dcc, flood, proxy modules |
+| `crates/rustirc-gui/src/lib.rs` | Added notifications, search modules |
+| `crates/rustirc-gui/src/state.rs` | AppSettings Serialize/Deserialize, persistence methods |
+| `crates/rustirc-gui/src/widgets/mod.rs` | Added url_preview module |
+| `crates/rustirc-plugins/src/lib.rs` | Added builtin module |
+| `crates/rustirc-plugins/src/loader.rs` | Real plugin discovery implementation |
+| `crates/rustirc-plugins/src/manager.rs` | Full lifecycle management rewrite |
+| `crates/rustirc-protocol/src/message.rs` | Tag helper methods (get_tag, has_tag, etc.) |
+| `crates/rustirc-scripting/src/api.rs` | Real ScriptApi implementations |
+| `crates/rustirc-scripting/src/engine.rs` | Full ScriptEngine rewrite |
+| `crates/rustirc-scripting/src/lib.rs` | Added script_message module |
+| `crates/rustirc-scripting/src/sandbox.rs` | Full sandbox implementation |
+| `src/main.rs` | Real config loading, scripting/plugin initialization |
+
+---
+
 ## [0.3.9] - 2026-01-10 (iced 0.14.0 Migration & CI Improvements)
 
 ### Summary
@@ -76,12 +245,12 @@ Complete GUI framework upgrade from iced 0.13.1 to iced 0.14.0 with 82+ breaking
 
 ## [Unreleased]
 
-### Planned for Next Release (Phase 5: Advanced Features)
-- DCC support for file transfers and direct chats
-- Enhanced IRCv3 features (message-tags, server-time, batch)
-- Proxy support (SOCKS5, HTTP)
-- Native desktop notifications
-- Advanced channel management features
+### Planned for Next Release
+- Python scripting engine (PyO3)
+- Dynamic plugin loading (libloading)
+- Performance optimization (async script execution, ring buffers)
+- Fuzzing tests for protocol parser
+- First-run welcome experience in GUI/TUI
 
 ## [0.3.8] - 2025-08-26 (Material Design 3 Integration + Dependency Updates)
 

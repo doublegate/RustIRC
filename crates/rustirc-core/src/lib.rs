@@ -11,13 +11,18 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 pub mod auth;
+pub mod batch;
+pub mod chathistory;
 pub mod cli;
 pub mod client;
 pub mod config;
 pub mod connection;
+pub mod dcc;
 pub mod error;
 pub mod events;
+pub mod flood;
 pub mod mock_server;
+pub mod proxy;
 pub mod recovery;
 pub mod router;
 pub mod state;

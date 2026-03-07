@@ -52,14 +52,17 @@ fn main() -> Result<()> {
 
     info!("Starting RustIRC v{}", env!("CARGO_PKG_VERSION"));
 
+    // Load configuration
+    let config = load_config(args.config.as_deref())?;
+
     if args.material_demo {
         run_material_demo()?;
     } else if args.cli {
-        run_cli(args)?;
+        run_cli(config)?;
     } else if args.tui {
-        run_tui(args)?;
+        run_tui(args, config)?;
     } else {
-        run_gui(args)?;
+        run_gui(config)?;
     }
 
     Ok(())
@@ -89,17 +92,13 @@ fn run_material_demo() -> Result<()> {
     Ok(())
 }
 
-fn run_gui(args: Args) -> Result<()> {
+fn run_gui(config: rustirc_core::Config) -> Result<()> {
     info!("Starting full-featured GUI mode with Iced (widgets, themes, resizable panes)");
 
-    // Use configuration from args if provided
-    if let Some(config_path) = args.config {
-        info!("Loading configuration from: {}", config_path);
-        // In the future, load and apply configuration from the specified file
-        // For now, we log it to show it's being used
-    }
+    // Initialize scripting and plugins
+    let _script_engine = init_scripting(&config);
+    let _plugin_manager = init_plugins(&config);
 
-    // Use full-featured GUI as the only GUI option - complete with all widgets and themes
     use rustirc_gui::RustIrcGui;
 
     // Run the full-featured GUI application with all advanced features
@@ -108,23 +107,18 @@ fn run_gui(args: Args) -> Result<()> {
     Ok(())
 }
 
-fn run_tui(args: Args) -> Result<()> {
+fn run_tui(args: Args, config: rustirc_core::Config) -> Result<()> {
     info!("Starting TUI mode with Ratatui");
 
-    // Initialize TUI application
     use rustirc_tui::TuiApp;
 
-    // Load configuration from args for TUI
-    let config = load_config(args.config.as_deref())?;
     info!(
         "TUI configuration loaded from: {:?}",
         args.config.as_deref().unwrap_or("default")
     );
 
-    // Create TUI app with configuration and run it
     let mut app = TuiApp::new()?;
 
-    // Apply config settings to TUI app when TuiApp supports configuration
     if let Some(first_server) = config.servers.first() {
         info!(
             "TUI using config: server={}:{}, tls={}",
@@ -134,20 +128,16 @@ fn run_tui(args: Args) -> Result<()> {
         info!("TUI using config: no servers configured, using default settings");
     }
 
-    // Apply configuration settings to TUI app
     if let Some(server) = &args.server {
         info!("TUI will connect to server: {}", server);
-        // Note: Server connection configuration for TUI
     }
 
     if args.debug {
         info!("Debug mode enabled for TUI");
-        // Note: Debug logging configuration already handled in main()
     }
 
     if args.tls {
         info!("TLS connection enabled for TUI");
-        // Note: TLS configuration for TUI
     }
 
     info!("TUI connecting to port: {}", args.port);
@@ -158,13 +148,10 @@ fn run_tui(args: Args) -> Result<()> {
     Ok(())
 }
 
-fn run_cli(args: Args) -> Result<()> {
+fn run_cli(config: rustirc_core::Config) -> Result<()> {
     info!("Starting CLI mode for testing");
 
-    // Initialize CLI application
     use rustirc_core::run_cli_prototype;
-
-    let config = load_config(args.config.as_deref())?;
 
     // Run CLI prototype (blocking)
     tokio::runtime::Runtime::new()?.block_on(async { run_cli_prototype(config).await })?;
@@ -177,10 +164,50 @@ fn load_config(config_path: Option<&str>) -> Result<rustirc_core::Config> {
 
     if let Some(path) = config_path {
         info!("Loading config from: {}", path);
-        // Load from file when implemented
-        Ok(Config::default())
+        Config::from_file(path).map_err(|e| anyhow::anyhow!("Failed to load config: {}", e))
     } else {
-        info!("Using default configuration");
-        Ok(Config::default())
+        Ok(Config::load_or_default())
     }
+}
+
+fn init_scripting(config: &rustirc_core::Config) -> Option<rustirc_scripting::ScriptEngine> {
+    if !config.scripting.enable {
+        info!("Scripting disabled in configuration");
+        return None;
+    }
+
+    match rustirc_scripting::ScriptEngine::from_config(&config.scripting) {
+        Ok(engine) => {
+            // Auto-load scripts from configured path
+            let scripts_loaded = engine.auto_load_scripts();
+            info!(
+                "Script engine initialized, loaded {} scripts",
+                scripts_loaded
+            );
+            Some(engine)
+        }
+        Err(e) => {
+            tracing::warn!("Failed to initialize script engine: {}", e);
+            None
+        }
+    }
+}
+
+fn init_plugins(config: &rustirc_core::Config) -> rustirc_plugins::PluginManager {
+    let mut manager = rustirc_plugins::PluginManager::new();
+
+    // Register built-in plugins
+    use rustirc_plugins::builtin::{HighlightPlugin, LoggerPlugin};
+
+    let log_path = config.logging.path.clone();
+    let _ = manager.register_plugin(Box::new(LoggerPlugin::new(log_path)));
+    let _ = manager.register_plugin(Box::new(HighlightPlugin::new(
+        config.notifications.highlight_words.clone(),
+    )));
+
+    info!(
+        "Plugin manager initialized with {} plugins",
+        manager.list_plugins().len()
+    );
+    manager
 }

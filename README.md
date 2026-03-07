@@ -5,11 +5,10 @@
 
 ![RustIRC Logo](images/RustIRC_Logo.png)
 
-[![Version](https://img.shields.io/badge/version-0.3.9-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](CHANGELOG.md)
 [![Rust Version](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE-MIT)
-[![Tests](https://img.shields.io/badge/tests-62%20passing-success.svg)](.github/workflows/ci.yml)
-<sub>Note: The test count badge now only reflects <code>--lib --bins</code> tests (excluding doctests). This change does not indicate a loss of test coverage.</sub>
+[![Tests](https://img.shields.io/badge/tests-266%20passing-success.svg)](.github/workflows/ci.yml)
 [![Documentation](https://img.shields.io/badge/docs-rustdoc-blue.svg)](docs/api-reference.md)
 [![API Coverage](https://img.shields.io/badge/API%20docs-100%25-brightgreen.svg)](docs/api-reference.md)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/doublegate/RustIRC)
@@ -20,7 +19,7 @@
 
 A powerful, modern IRC client built in Rust with an enhanced Material Design 3 interface and comprehensive Lua scripting
 
-**Last Updated**: 2026-01-10 | **Branch**: main - v0.3.9 iced 0.14.0 Migration & CI Improvements
+**Last Updated**: 2026-03-07 | **Branch**: main - v0.4.0 Scripting, Plugins, DCC & IRCv3
 
 [Features](#-features) • [Documentation](#-documentation) • [Development Plan](#-development-plan) • [Architecture](#️-architecture) • [Contributing](#-contributing)
 
@@ -44,10 +43,12 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 - 🔌 **Multi-Server Support** - Connect to multiple IRC networks simultaneously
 - 🔒 **Modern Security** - TLS/SSL by default, SASL authentication, secure credential storage
 - 🎨 **Dual Interface** - Beautiful GUI (Iced) and efficient TUI (ratatui) modes
-- 📜 **Lua Scripting** ✅ - Complete Lua 5.4 scripting with 50+ IRC API functions and event hooks
-- 🔧 **Plugin System** - Python scripting and binary plugins (planned)
-- 📡 **Full Protocol Support** - RFC 1459/2812 compliance with complete IRCv3 extensions
-- 💾 **DCC Support** - File transfers and direct chats (planned)
+- 📜 **Lua Scripting** ✅ - Complete Lua 5.4 scripting with sandboxed execution, event hooks, and custom commands
+- 🔧 **Plugin System** ✅ - Trait-based plugin architecture with built-in Logger and Highlight plugins
+- 📡 **Full Protocol Support** - RFC 1459/2812 compliance with IRCv3 batch, CHATHISTORY, labeled-response
+- 💾 **DCC Support** ✅ - File transfers (SEND/RESUME) and direct chats with progress tracking
+- 🛡️ **Flood Protection** ✅ - Token bucket rate limiting with configurable burst and queue
+- 🌐 **Proxy Support** ✅ - SOCKS5 and HTTP CONNECT proxy with authentication
 - 🌍 **Cross-Platform** - Native support for Windows, macOS, and Linux
 
 ### Advanced Features
@@ -63,10 +64,10 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 
 ## 📦 Latest Release
 
-[![Version](https://img.shields.io/badge/version-0.3.9-blue.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.3.9)
-[![Release Date](https://img.shields.io/badge/released-January%2010%2C%202026-green.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.3.9)
+[![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.4.0)
+[![Release Date](https://img.shields.io/badge/released-March%207%2C%202026-green.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.4.0)
 
-**Version 0.3.9** - iced 0.14.0 Migration & CI Improvements
+**Version 0.4.0** - Scripting, Plugins, DCC & IRCv3
 
 ### 📜 Lua Scripting System Highlights
 
@@ -107,7 +108,7 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 
 ## 🏗️ Current Development Status
 
-**Last Updated**: January 10, 2026 - v0.3.9 iced 0.14.0 Migration
+**Last Updated**: March 7, 2026 - v0.4.0 Scripting, Plugins, DCC & IRCv3
 
 ### ✅ **Phase 1: Research & Setup** - **COMPLETE** (100%)
 
@@ -157,13 +158,34 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 - ✅ **Comprehensive Documentation**: 600+ line [scripts/README.md](scripts/README.md) with complete API reference
 - ✅ **Production Quality**: 11 tests passing, zero errors, all functionality verified
 
-#### Pending Phase 4 Components
+#### Phase 4 Plugin System (NEW in v0.4.0)
 
+- ✅ **Plugin Manager**: Full lifecycle management with trait-based `PluginApi`
+- ✅ **Built-in Logger Plugin**: IRC message logging to files
+- ✅ **Built-in Highlight Plugin**: Keyword notification matching
+- ✅ **Config File I/O**: TOML persistence with XDG-compliant paths
 - 📋 Python scripting engine (PyO3) - Planned
-- 📋 Binary plugin system - Planned
-- 📋 Plugin manager UI - Planned
+- 📋 Dynamic plugin loading - Planned
 
-**Status**: Lua scripting system fully functional and production-ready. All 6 crates compile successfully. 62 tests passing.
+### ✅ **Phase 5: Advanced Features** - **COMPLETE** (100%)
+
+- ✅ **DCC Protocol**: File transfers (SEND/RESUME), direct chats, progress tracking
+- ✅ **IRCv3 Batch**: Message grouping with nested batch support
+- ✅ **IRCv3 CHATHISTORY**: BEFORE, AFTER, BETWEEN, AROUND, LATEST commands
+- ✅ **Flood Protection**: Token bucket rate limiting with configurable burst
+- ✅ **Proxy Support**: SOCKS5 and HTTP CONNECT with authentication
+- ✅ **Notification Rules**: Configurable highlight words, quiet hours
+- ✅ **Search Engine**: Full-text message search with filters
+- ✅ **URL Preview**: Regex-based URL detection in messages
+- ✅ **Message Tag Helpers**: get_tag, has_tag, get_time, get_msgid, get_batch
+
+### ✅ **Phase 6: Testing & Integration** - **COMPLETE** (100%)
+
+- ✅ **Integration Test Suite**: 33 integration tests across 5 test files
+- ✅ **266 Total Tests**: 233 unit + 33 integration, all passing
+- ✅ **Zero Clippy Warnings**: Clean lint pass with `-D warnings`
+
+**Status**: Phases 1-6 complete. All 6 crates compile successfully. 266 tests passing.
 
 ## 📚 Documentation
 
@@ -347,30 +369,35 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 
 ## 🚦 Current Status
 
-**Version**: 0.3.9 - iced 0.14.0 Migration & CI Improvements
-**Phase**: Phases 1-4 Complete ✅ | Lua Scripting Production Ready 📜
-**Build Status**: All 6 crates compile successfully, 62 tests passing
-**Total Tasks**: 249+ across 7 phases | Phase 4 Lua Scripting 100% complete
+**Version**: 0.4.0 - Scripting, Plugins, DCC & IRCv3
+**Phase**: Phases 1-6 Complete ✅ | Major Feature Release
+**Build Status**: All 6 crates compile successfully, 266 tests passing
+**Total Tasks**: 249+ across 7 phases | Phases 1-6 100% complete
 
-### 🎉 Phase 1-4: COMPLETE ✅
+### 🎉 Phase 1-6: COMPLETE ✅
 
 - ✅ **Phase 1: Research & Setup** - Project infrastructure, technology validation, architecture foundation
 - ✅ **Phase 2: Core IRC Engine** - Async networking, protocol parser, multi-server management, event system
 - ✅ **Phase 3: User Interface Enhanced** - Iced Material Design 3, TUI (ratatui), CLI prototype, advanced features
-- ✅ **Phase 4: Lua Scripting** - Complete Lua 5.4 engine with 50+ API functions, event hooks, built-in scripts
+- ✅ **Phase 4: Scripting & Plugins** - Lua scripting engine, plugin system, config I/O, built-in plugins
+- ✅ **Phase 5: Advanced Features** - DCC protocol, IRCv3 batch/chathistory, flood protection, proxy, search, notifications
+- ✅ **Phase 6: Testing & Integration** - 266 tests (233 unit + 33 integration), zero clippy warnings
 
-### 🆕 v0.3.9 iced 0.14.0 Migration & CI Improvements (January 10, 2026)
+### 🆕 v0.4.0 Scripting, Plugins, DCC & IRCv3 (March 7, 2026)
 
-#### GUI Framework Upgrade
-- **iced 0.14.0**: Complete migration from iced 0.13.1 with 82+ breaking API changes resolved
-- **Key Features**: Reactive rendering improvements, time-travel debugging, enhanced API design
-- **Breaking Changes Fixed**: Space widget API, Application API, checkbox builder pattern, scrollable IDs/operations, text input status, button/container style structs
-
-#### CI/CD Improvements
-- **Security Audit Permissions**: Added `checks: write` for proper security-audit workflow
-- **Artifact Naming**: Fixed matrix.os to runner.os for consistent artifact naming
-- **Codecov Migration**: Updated from deprecated codecov/test-results-action@v1 to codecov/codecov-action@v5
-- **Tech Debt**: Fixed criterion::black_box deprecation, tokio 1.48 to 1.49, clippy fixes
+#### Major New Features
+- **Lua Scripting Engine**: Production-ready with sandbox, event handlers, custom commands, variable persistence
+- **Plugin System**: Trait-based `PluginApi` with built-in Logger and Highlight plugins
+- **DCC Protocol**: CHAT, SEND, RESUME, ACCEPT with session management and progress tracking
+- **IRCv3 Batch**: Nested batch support with ChatHistory, LabeledResponse, Netjoin, Netsplit types
+- **IRCv3 CHATHISTORY**: BEFORE, AFTER, BETWEEN, AROUND, LATEST with message reference correlation
+- **Flood Protection**: Token bucket algorithm with configurable burst, refill rate, and message queue
+- **Proxy Support**: SOCKS5 (tokio-socks) and HTTP CONNECT with authentication
+- **Config Persistence**: TOML file I/O with XDG-compliant paths and forward compatibility
+- **Notification Rules**: Highlight words, quiet hours, notification history
+- **Search Engine**: Full-text message search with channel, user, and date filters
+- **URL Preview**: Regex-based URL detection in messages
+- **Settings Persistence**: GUI AppSettings save/load with XDG paths
 
 ### Previous v0.3.8 Enhanced Iced Material Design Features (August 25, 2025 10:23 PM EDT)
 
@@ -487,18 +514,14 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 
 ```bash
 ✅ cargo build              # Successful compilation (zero errors)
-✅ cargo test --workspace --lib --bins  # 62 tests pass (all unit tests including 11 scripting tests)
+✅ cargo test --workspace   # 266 tests pass (233 unit + 33 integration)
 ✅ cargo run                # Full-featured GUI with LIVE IRC connectivity
 ✅ cargo run -- --material-demo  # Material Design 3 component showcase
 ✅ cargo run -- --cli       # CLI prototype with multi-server support
 ✅ cargo run -- --tui       # TUI mode with ratatui interface
 ✅ cargo run -- --help      # Command-line help and options
-✅ cargo clippy             # Zero warnings achieved (100% clean)
+✅ cargo clippy -- -D warnings  # Zero warnings (100% clean)
 ✅ cargo doc --open         # Complete API documentation with examples
-
-# Lua Scripting (NEW in v0.4.0)
-✅ Scripts in scripts/      # auto_away.lua, auto_rejoin.lua, highlight.lua, url_logger.lua
-✅ Complete API docs        # See scripts/README.md for 50+ function reference
 ```
 
 ### GUI Framework Research Branches
@@ -550,13 +573,13 @@ RustIRC maintains three active development branches exploring different GUI para
 - **Comprehensive Protocol Support**: All standard IRC response codes and message types
 - **Script Management**: Load, unload, enable, disable, and reload Lua scripts at runtime
 
-### Next Steps (Phase 5)
+### Next Steps (Phase 7)
 
-1. DCC file transfers and direct chats
-2. Enhanced IRCv3 features (message-tags, server-time, batch)
-3. Proxy support (SOCKS5, HTTP)
-4. Native desktop notification integration
-5. Advanced channel management features
+1. Python scripting engine (PyO3)
+2. Dynamic plugin loading (libloading)
+3. Performance optimization (async script execution, ring buffers)
+4. Security hardening (fuzzing, sandbox escape testing)
+5. Platform packaging and distribution
 
 ## 🤝 Contributing
 
