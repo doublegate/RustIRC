@@ -4,12 +4,9 @@
 //! - mIRC color codes (^C)
 //! - Text formatting (bold, italic, underline, strikethrough)
 //! - URL detection and linking
-//! - Emoji and emoticon support
+//!
+//! Output: HTML-compatible styled spans for Dioxus RSX rendering.
 
-use iced::{
-    widget::{button, text},
-    Color, Element,
-};
 use regex::Regex;
 use std::sync::OnceLock;
 
@@ -25,12 +22,32 @@ pub mod codes {
     pub const RESET: char = '\x0F';
 }
 
+/// IRC color palette (mIRC colors 0-15) as CSS color strings
+pub const IRC_COLORS: [&str; 16] = [
+    "#ffffff", // 0: white
+    "#000000", // 1: black
+    "#00007f", // 2: blue
+    "#009300", // 3: green
+    "#ff0000", // 4: red
+    "#7f0000", // 5: brown
+    "#9c009c", // 6: purple
+    "#fc7f00", // 7: orange
+    "#ffff00", // 8: yellow
+    "#00fc00", // 9: light green
+    "#009393", // 10: cyan
+    "#00ffff", // 11: light cyan
+    "#0000fc", // 12: light blue
+    "#ff00ff", // 13: pink
+    "#7f7f7f", // 14: grey
+    "#d2d2d2", // 15: light grey
+];
+
 /// Formatted text span with styling information
 #[derive(Debug, Clone, Default)]
 pub struct TextSpan {
     pub text: String,
-    pub foreground: Option<Color>,
-    pub background: Option<Color>,
+    pub foreground: Option<String>,
+    pub background: Option<String>,
     pub bold: bool,
     pub italic: bool,
     pub underline: bool,
@@ -41,25 +58,66 @@ pub struct TextSpan {
     pub url_target: Option<String>,
 }
 
-/// IRC color palette (mIRC colors 0-15)
-pub const IRC_COLORS: [Color; 16] = [
-    Color::from_rgb(1.0, 1.0, 1.0), // 0: white
-    Color::from_rgb(0.0, 0.0, 0.0), // 1: black
-    Color::from_rgb(0.0, 0.0, 0.5), // 2: blue
-    Color::from_rgb(0.0, 0.5, 0.0), // 3: green
-    Color::from_rgb(1.0, 0.0, 0.0), // 4: red
-    Color::from_rgb(0.5, 0.0, 0.0), // 5: brown
-    Color::from_rgb(0.5, 0.0, 0.5), // 6: purple
-    Color::from_rgb(1.0, 0.5, 0.0), // 7: orange
-    Color::from_rgb(1.0, 1.0, 0.0), // 8: yellow
-    Color::from_rgb(0.0, 1.0, 0.0), // 9: light green
-    Color::from_rgb(0.0, 0.5, 0.5), // 10: cyan
-    Color::from_rgb(0.0, 1.0, 1.0), // 11: light cyan
-    Color::from_rgb(0.0, 0.0, 1.0), // 12: light blue
-    Color::from_rgb(1.0, 0.0, 1.0), // 13: pink
-    Color::from_rgb(0.5, 0.5, 0.5), // 14: grey
-    Color::from_rgb(0.7, 0.7, 0.7), // 15: light grey
-];
+impl TextSpan {
+    /// Generate inline CSS style string for this span
+    pub fn to_css_style(&self) -> String {
+        let mut styles = Vec::new();
+
+        if let Some(ref fg) = self.foreground {
+            styles.push(format!("color:{fg}"));
+        }
+        if let Some(ref bg) = self.background {
+            styles.push(format!("background-color:{bg}"));
+        }
+        if self.bold {
+            styles.push("font-weight:bold".to_string());
+        }
+        if self.italic {
+            styles.push("font-style:italic".to_string());
+        }
+
+        let mut decorations = Vec::new();
+        if self.underline {
+            decorations.push("underline");
+        }
+        if self.strikethrough {
+            decorations.push("line-through");
+        }
+        if !decorations.is_empty() {
+            styles.push(format!("text-decoration:{}", decorations.join(" ")));
+        }
+
+        if self.monospace {
+            styles.push("font-family:monospace".to_string());
+        }
+
+        styles.join(";")
+    }
+
+    /// Generate CSS class names for this span
+    pub fn to_css_classes(&self) -> String {
+        let mut classes = Vec::new();
+        if self.bold {
+            classes.push("font-bold");
+        }
+        if self.italic {
+            classes.push("italic");
+        }
+        if self.underline {
+            classes.push("underline");
+        }
+        if self.strikethrough {
+            classes.push("line-through");
+        }
+        if self.monospace {
+            classes.push("font-mono");
+        }
+        if self.is_url {
+            classes.push("cursor-pointer hover:opacity-80");
+        }
+        classes.join(" ")
+    }
+}
 
 /// URL detection regex
 static URL_REGEX: OnceLock<Regex> = OnceLock::new();
@@ -125,15 +183,12 @@ pub fn parse_irc_text(text: &str) -> Vec<TextSpan> {
                     current_span.text.clear();
                 }
 
-                // Parse color codes
                 let (fg, bg) = parse_color_codes(&mut chars);
-                if let Some(fg_color) = fg {
-                    current_span.foreground =
-                        Some(IRC_COLORS.get(fg_color).copied().unwrap_or(Color::WHITE));
+                if let Some(fg_idx) = fg {
+                    current_span.foreground = IRC_COLORS.get(fg_idx).map(|c| c.to_string());
                 }
-                if let Some(bg_color) = bg {
-                    current_span.background =
-                        Some(IRC_COLORS.get(bg_color).copied().unwrap_or(Color::BLACK));
+                if let Some(bg_idx) = bg {
+                    current_span.background = IRC_COLORS.get(bg_idx).map(|c| c.to_string());
                 }
             }
             codes::RESET => {
@@ -152,7 +207,6 @@ pub fn parse_irc_text(text: &str) -> Vec<TextSpan> {
         spans.push(current_span);
     }
 
-    // Post-process for URL detection
     detect_urls(&mut spans);
 
     spans
@@ -166,7 +220,6 @@ fn parse_color_codes(
     let mut bg_str = String::new();
     let mut parsing_bg = false;
 
-    // Parse foreground color (up to 2 digits)
     for _ in 0..2 {
         if let Some(&ch) = chars.peek() {
             if ch.is_ascii_digit() {
@@ -179,12 +232,10 @@ fn parse_color_codes(
         }
     }
 
-    // Check for comma (background color separator)
     if let Some(&',') = chars.peek() {
-        chars.next(); // consume comma
+        chars.next();
         parsing_bg = true;
 
-        // Parse background color (up to 2 digits) - now utilizing parsing_bg state
         if parsing_bg {
             for _ in 0..2 {
                 if let Some(&ch) = chars.peek() {
@@ -203,13 +254,13 @@ fn parse_color_codes(
     let fg = if fg_str.is_empty() {
         None
     } else {
-        fg_str.parse().ok().filter(|&n| n < 16)
+        fg_str.parse().ok().filter(|&n: &usize| n < 16)
     };
 
     let bg = if bg_str.is_empty() || !parsing_bg {
         None
     } else {
-        bg_str.parse().ok().filter(|&n| n < 16)
+        bg_str.parse().ok().filter(|&n: &usize| n < 16)
     };
 
     (fg, bg)
@@ -234,14 +285,12 @@ fn detect_urls(spans: &mut Vec<TextSpan>) {
             let end = url_match.end();
             let url = url_match.as_str();
 
-            // Add text before URL
             if start > last_end {
                 let mut before_span = span.clone();
                 before_span.text = text[last_end..start].to_string();
                 new_spans.push(before_span);
             }
 
-            // Add URL span
             let mut url_span = span.clone();
             url_span.text = url.to_string();
             url_span.is_url = true;
@@ -250,82 +299,23 @@ fn detect_urls(spans: &mut Vec<TextSpan>) {
             } else {
                 format!("http://{url}")
             });
-            url_span.foreground = Some(Color::from_rgb(0.0, 0.5, 1.0)); // Blue for links
+            url_span.foreground = Some("#0088ff".to_string());
             url_span.underline = true;
             new_spans.push(url_span);
 
             last_end = end;
         }
 
-        // Add remaining text after last URL
         if last_end < text.len() {
             let mut after_span = span.clone();
             after_span.text = text[last_end..].to_string();
             new_spans.push(after_span);
         } else if regex.find(text).is_none() {
-            // No URLs found, keep original span
             new_spans.push(span);
         }
     }
 
     *spans = new_spans;
-}
-
-/// Convert formatted spans to Iced elements
-pub fn spans_to_elements<'a, Message: Clone + 'a>(
-    spans: &'a [TextSpan],
-    on_url_click: impl Fn(String) -> Message + 'a + Clone,
-) -> Vec<Element<'a, Message>> {
-    spans
-        .iter()
-        .map(|span| {
-            let mut text_widget = text(&span.text);
-
-            // Apply colors
-            if let Some(color) = span.foreground {
-                text_widget = text_widget.color(color);
-            }
-
-            // Apply text size based on formatting
-            let font_size = if span.monospace { 12.0 } else { 13.0 };
-            text_widget = text_widget.size(font_size);
-
-            // Apply font weight and style
-            if span.bold {
-                text_widget = text_widget.font(iced::font::Font {
-                    weight: iced::font::Weight::Bold,
-                    ..Default::default()
-                });
-            }
-
-            if span.italic {
-                text_widget = text_widget.font(iced::font::Font {
-                    style: iced::font::Style::Italic,
-                    ..Default::default()
-                });
-            }
-
-            if span.monospace {
-                text_widget = text_widget.font(iced::font::Font {
-                    family: iced::font::Family::Monospace,
-                    ..Default::default()
-                });
-            }
-
-            // Handle URLs as clickable buttons
-            if span.is_url {
-                if let Some(url) = &span.url_target {
-                    let url_clone = url.clone();
-                    let on_click = on_url_click.clone();
-                    button(text_widget).on_press(on_click(url_clone)).into()
-                } else {
-                    text_widget.into()
-                }
-            } else {
-                text_widget.into()
-            }
-        })
-        .collect()
 }
 
 /// Strip all IRC formatting from text
@@ -336,7 +326,6 @@ pub fn strip_formatting(text: &str) -> String {
     while let Some(ch) = chars.next() {
         match ch {
             codes::COLOR => {
-                // Skip color codes
                 parse_color_codes(&mut chars);
             }
             codes::BOLD
@@ -345,9 +334,7 @@ pub fn strip_formatting(text: &str) -> String {
             | codes::STRIKETHROUGH
             | codes::MONOSPACE
             | codes::REVERSE
-            | codes::RESET => {
-                // Skip formatting codes
-            }
+            | codes::RESET => {}
             _ => {
                 result.push(ch);
             }
@@ -359,26 +346,7 @@ pub fn strip_formatting(text: &str) -> String {
 
 /// Get plain text from formatted spans
 pub fn spans_to_plain_text(spans: &[TextSpan]) -> String {
-    spans
-        .iter()
-        .map(|span| span.text.as_str())
-        .collect::<Vec<_>>()
-        .join("")
-}
-
-/// Emoji replacement map for common emoticons
-pub fn replace_emoticons(text: &str) -> String {
-    text.replace(":)", "😊")
-        .replace(":(", "😢")
-        .replace(":D", "😃")
-        .replace(":P", "😛")
-        .replace(";)", "😉")
-        .replace(":o", "😮")
-        .replace(":|", "😐")
-        .replace("<3", "❤️")
-        .replace("</3", "💔")
-        .replace(":thumbsup:", "👍")
-        .replace(":thumbsdown:", "👎")
+    spans.iter().map(|span| span.text.as_str()).collect()
 }
 
 #[cfg(test)]
@@ -402,7 +370,7 @@ mod tests {
         let spans = parse_irc_text("Hello \x0304red\x03 world");
         assert_eq!(spans.len(), 3);
         assert_eq!(spans[1].text, "red");
-        assert_eq!(spans[1].foreground, Some(IRC_COLORS[4])); // Red
+        assert_eq!(spans[1].foreground, Some(IRC_COLORS[4].to_string()));
     }
 
     #[test]
@@ -417,5 +385,20 @@ mod tests {
     fn test_strip_formatting() {
         let text = "Hello \x02bold\x0304red\x03 world";
         assert_eq!(strip_formatting(text), "Hello boldred world");
+    }
+
+    #[test]
+    fn test_span_css_style() {
+        let span = TextSpan {
+            text: "test".to_string(),
+            bold: true,
+            foreground: Some("#ff0000".to_string()),
+            underline: true,
+            ..Default::default()
+        };
+        let style = span.to_css_style();
+        assert!(style.contains("color:#ff0000"));
+        assert!(style.contains("font-weight:bold"));
+        assert!(style.contains("text-decoration:underline"));
     }
 }

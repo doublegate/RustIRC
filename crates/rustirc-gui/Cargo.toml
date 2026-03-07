@@ -7,7 +7,7 @@ description = "GUI implementation for RustIRC"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-iced = { workspace = true }
+dioxus = { workspace = true }
 tokio = { workspace = true }
 serde = { workspace = true }
 tracing = { workspace = true }
@@ -19,11 +19,13 @@ open = "5.3"
 chrono = { version = "0.4", features = ["serde"] }
 toml = { workspace = true }
 dirs = { workspace = true }
-notify-rust = { workspace = true }
 
 rustirc-core = { path = "../rustirc-core" }
 rustirc-protocol = { path = "../rustirc-protocol" }
 
 [features]
-default = []
+default = ["desktop"]
+desktop = ["dioxus/desktop"]
+server = ["dioxus/server"]
+web = ["dioxus/web"]
 integration-tests = []

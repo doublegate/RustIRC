@@ -1,0 +1,10 @@
+[application]
+name = "RustIRC"
+asset_dir = "assets"
+
+[web.app]
+title = "RustIRC - Modern IRC Client"
+
+[web.watcher]
+reload_html = true
+watch_path = ["src", "crates/rustirc-gui/src"]

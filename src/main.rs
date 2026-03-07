@@ -38,10 +38,6 @@ struct Args {
     /// Run in CLI mode for testing
     #[arg(long)]
     cli: bool,
-
-    /// Run Material Design 3 demo showcase
-    #[arg(long)]
-    material_demo: bool,
 }
 
 fn main() -> Result<()> {
@@ -55,9 +51,7 @@ fn main() -> Result<()> {
     // Load configuration
     let config = load_config(args.config.as_deref())?;
 
-    if args.material_demo {
-        run_material_demo()?;
-    } else if args.cli {
+    if args.cli {
         run_cli(config)?;
     } else if args.tui {
         run_tui(args, config)?;
@@ -81,28 +75,15 @@ fn init_logging(debug: bool) -> Result<()> {
     Ok(())
 }
 
-fn run_material_demo() -> Result<()> {
-    info!("Starting Material Design 3 Components Demo");
-
-    use rustirc_gui::material_demo;
-
-    // Run the Material Design 3 demo showcase
-    material_demo::run().map_err(|e| anyhow::anyhow!("Material demo error: {}", e))?;
-
-    Ok(())
-}
-
 fn run_gui(config: rustirc_core::Config) -> Result<()> {
-    info!("Starting full-featured GUI mode with Iced (widgets, themes, resizable panes)");
+    info!("Starting GUI mode with Dioxus");
 
     // Initialize scripting and plugins
     let _script_engine = init_scripting(&config);
     let _plugin_manager = init_plugins(&config);
 
-    use rustirc_gui::RustIrcGui;
-
-    // Run the full-featured GUI application with all advanced features
-    RustIrcGui::run().map_err(|e| anyhow::anyhow!("GUI error: {}", e))?;
+    // Launch the Dioxus desktop GUI
+    rustirc_gui::run_gui().map_err(|e| anyhow::anyhow!("GUI error: {}", e))?;
 
     Ok(())
 }

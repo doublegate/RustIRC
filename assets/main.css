@@ -1,0 +1,68 @@
+/* RustIRC - Base CSS with theme variables */
+@import url("themes/base.css");
+
+/* Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+  font-size: 14px;
+  background-color: var(--bg-color, #1a1a1a);
+  color: var(--text-color, #e0e0e0);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-color, #1a1a1a);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb, #444);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover, #555);
+}
+
+/* Selection */
+::selection {
+  background: var(--selection-bg, #37373d);
+  color: var(--selection-color, #e0e0e0);
+}
+
+/* Focus styles */
+*:focus-visible {
+  outline: 1px solid var(--accent-color, #4ecdc4);
+  outline-offset: -1px;
+}
+
+/* IRC color classes */
+.irc-color-0 { color: #ffffff; }
+.irc-color-1 { color: #000000; }
+.irc-color-2 { color: #00007f; }
+.irc-color-3 { color: #009300; }
+.irc-color-4 { color: #ff0000; }
+.irc-color-5 { color: #7f0000; }
+.irc-color-6 { color: #9c009c; }
+.irc-color-7 { color: #fc7f00; }
+.irc-color-8 { color: #ffff00; }
+.irc-color-9 { color: #00fc00; }
+.irc-color-10 { color: #009393; }
+.irc-color-11 { color: #00ffff; }
+.irc-color-12 { color: #0000fc; }
+.irc-color-13 { color: #ff00ff; }
+.irc-color-14 { color: #7f7f7f; }
+.irc-color-15 { color: #d2d2d2; }

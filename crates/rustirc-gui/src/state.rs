@@ -2,12 +2,13 @@
 //!
 //! Manages the overall application state including servers, channels,
 //! private messages, tabs, and user interface state.
+//! Designed for use with Dioxus Signal-based reactivity.
 
 use rustirc_core::connection::ConnectionState as CoreConnectionState;
 use std::collections::{HashMap, VecDeque};
 use std::time::SystemTime;
 
-/// Application-wide state
+/// Application-wide state (wrapped in Signal<AppState> at the provider level)
 #[derive(Debug, Clone)]
 pub struct AppState {
     /// Connected servers
@@ -44,11 +45,15 @@ impl AppState {
 
     /// Get the current tab
     pub fn current_tab(&self) -> Option<&Tab> {
-        if let Some(tab_id) = &self.current_tab_id {
-            self.tabs.get(tab_id)
-        } else {
-            None
-        }
+        self.current_tab_id
+            .as_ref()
+            .and_then(|id| self.tabs.get(id))
+    }
+
+    /// Get mutable reference to current tab
+    pub fn current_tab_mut(&mut self) -> Option<&mut Tab> {
+        let tab_id = self.current_tab_id.clone();
+        tab_id.and_then(move |id| self.tabs.get_mut(&id))
     }
 
     /// Get application settings
@@ -56,18 +61,26 @@ impl AppState {
         &self.settings
     }
 
+    /// Get mutable reference to settings
+    pub fn settings_mut(&mut self) -> &mut AppSettings {
+        &mut self.settings
+    }
+
+    /// Get mutable reference to UI state
+    pub fn ui_state_mut(&mut self) -> &mut UiState {
+        &mut self.ui_state
+    }
+
     /// Add a new server
     pub fn add_server(&mut self, server_id: String, name: String) {
         let server_info = ServerInfo::new(name);
         self.servers.insert(server_id.clone(), server_info);
 
-        // Create server tab
         let tab = Tab::server(server_id.clone());
         let tab_id = format!("server:{server_id}");
         self.tabs.insert(tab_id.clone(), tab);
         self.tab_order.push(tab_id.clone());
 
-        // Set as current tab if it's the first one
         if self.current_tab_id.is_none() {
             self.current_tab_id = Some(tab_id);
         }
@@ -79,11 +92,8 @@ impl AppState {
         let tab_id = format!("{server_id}:{channel}");
         self.tabs.insert(tab_id.clone(), tab);
         self.tab_order.push(tab_id.clone());
-
-        // Set as current tab
         self.current_tab_id = Some(tab_id);
 
-        // Add channel to server if server exists
         if let Some(server) = self.servers.get_mut(&server_id) {
             server
                 .channels
@@ -95,15 +105,6 @@ impl AppState {
     pub fn remove_tab(&mut self, tab_id: &str) {
         self.tabs.remove(tab_id);
         self.tab_order.retain(|id| id != tab_id);
-    }
-
-    /// Get current tab
-    pub fn get_current_tab(&self) -> Option<&Tab> {
-        if let Some(tab_id) = &self.current_tab_id {
-            self.tabs.get(tab_id)
-        } else {
-            None
-        }
     }
 
     /// Set current tab
@@ -120,28 +121,9 @@ impl AppState {
         }
     }
 
-    /// Get mutable reference to current tab
-    pub fn current_tab_mut(&mut self) -> Option<&mut Tab> {
-        if let Some(tab_id) = &self.current_tab_id.clone() {
-            self.tabs.get_mut(tab_id)
-        } else {
-            None
-        }
-    }
-
     /// Close a tab
     pub fn close_tab(&mut self, tab_id: &str) {
         self.remove_tab(tab_id);
-    }
-
-    /// Get mutable reference to settings
-    pub fn settings_mut(&mut self) -> &mut AppSettings {
-        &mut self.settings
-    }
-
-    /// Get mutable reference to UI state
-    pub fn ui_state_mut(&mut self) -> &mut UiState {
-        &mut self.ui_state
     }
 
     /// Add a private message tab
@@ -150,21 +132,16 @@ impl AppState {
         let tab_id = format!("{server_id}:pm:{nick}");
         self.tabs.insert(tab_id.clone(), tab);
         self.tab_order.push(tab_id.clone());
-
-        // Set as current tab
         self.current_tab_id = Some(tab_id);
     }
 
     /// Add a message to a tab
     pub fn add_message(&mut self, server_id: &str, target: &str, message: &str, sender: &str) {
         let tab_id = if target.starts_with('#') || target.starts_with('&') {
-            // Channel message - use format server_id:channel_name
             format!("{server_id}:{target}")
         } else if target == server_id {
-            // Server message - use format server:server_id
             format!("server:{server_id}")
         } else {
-            // Private message - use format server_id:pm:nick
             format!(
                 "{}:pm:{}",
                 server_id,
@@ -172,7 +149,6 @@ impl AppState {
             )
         };
 
-        // Get message ID before mutable borrow
         let message_id = self.next_message_id();
 
         if let Some(tab) = self.tabs.get_mut(&tab_id) {
@@ -182,7 +158,6 @@ impl AppState {
                 sender: sender.to_string(),
                 content: message.to_string(),
                 message_type: MessageType::Message,
-                formatted_spans: Vec::new(),
                 is_highlight: false,
                 is_own_message: sender == "self",
             };
@@ -190,24 +165,16 @@ impl AppState {
             tab.messages.push_back(display_msg);
             tab.has_activity = true;
 
-            // Limit message history
             if tab.messages.len() > 1000 {
                 tab.messages.pop_front();
             }
-        } else {
-            // Log when tab is not found for debugging
-            eprintln!(
-                "Warning: Could not find tab '{tab_id}' for message from {sender} to {target} on server {server_id}"
-            );
         }
     }
 
     /// Remove a server and all associated tabs
     pub fn remove_server(&mut self, server_id: &str) {
-        // Remove server from servers map
         self.servers.remove(server_id);
 
-        // Remove all tabs for this server
         let tabs_to_remove: Vec<String> = self
             .tabs
             .iter()
@@ -220,7 +187,6 @@ impl AppState {
             self.tab_order.retain(|id| id != &tab_id);
         }
 
-        // If current tab was removed, switch to another tab
         if let Some(current_id) = &self.current_tab_id {
             if !self.tabs.contains_key(current_id) {
                 self.current_tab_id = self.tab_order.first().cloned();
@@ -228,7 +194,6 @@ impl AppState {
         }
     }
 
-    /// Generate next message ID
     fn next_message_id(&mut self) -> usize {
         self.settings.last_message_id += 1;
         self.settings.last_message_id
@@ -245,7 +210,6 @@ impl AppState {
             }
         }
 
-        // Also add to tab's user list if it exists
         let tab_id = format!("{server_id}:{channel}");
         if let Some(tab) = self.tabs.get_mut(&tab_id) {
             tab.users
@@ -262,7 +226,6 @@ impl AppState {
             }
         }
 
-        // Also remove from tab's user list if it exists
         let tab_id = format!("{server_id}:{channel}");
         if let Some(tab) = self.tabs.get_mut(&tab_id) {
             tab.users.remove(nick);
@@ -278,7 +241,6 @@ impl AppState {
             }
         }
 
-        // Also remove from all channel tabs for this server
         for (tab_id, tab) in self.tabs.iter_mut() {
             if tab_id.starts_with(&format!("{server_id}:")) && tab_id.contains('#') {
                 tab.users.remove(nick);
@@ -296,10 +258,8 @@ pub struct Tab {
     pub messages: VecDeque<DisplayMessage>,
     pub activity: ActivityLevel,
     pub last_read_time: Option<SystemTime>,
-    pub users: std::collections::HashMap<String, UserInfo>,
-    /// Whether tab has highlight activity (mentions, alerts)
+    pub users: HashMap<String, UserInfo>,
     pub has_highlight: bool,
-    /// Whether tab has general activity (new messages)
     pub has_activity: bool,
 }
 
@@ -346,21 +306,6 @@ impl Tab {
         }
     }
 
-    pub fn private(server_id: String, nick: String) -> Self {
-        Self {
-            name: nick,
-            tab_type: TabType::Private,
-            server_id: Some(server_id),
-            messages: VecDeque::new(),
-            activity: ActivityLevel::None,
-            last_read_time: None,
-            users: HashMap::new(),
-            has_highlight: false,
-            has_activity: false,
-        }
-    }
-
-    /// Mark the tab as read
     pub fn mark_as_read(&mut self) {
         self.last_read_time = Some(SystemTime::now());
         self.activity = ActivityLevel::None;
@@ -375,7 +320,6 @@ pub enum TabType {
     Server,
     Channel { channel: String },
     PrivateMessage { nick: String },
-    Private, // For backwards compatibility
 }
 
 /// Activity level indicators
@@ -395,9 +339,7 @@ pub struct ServerInfo {
     pub nickname: String,
     pub channels: HashMap<String, ChannelInfo>,
     pub users: HashMap<String, UserInfo>,
-    /// Server modes
     pub modes: Vec<String>,
-    /// Last ping time
     pub last_ping: Option<SystemTime>,
 }
 
@@ -447,7 +389,6 @@ pub struct UserInfo {
     pub is_away: bool,
     pub away_message: Option<String>,
     pub modes: Vec<char>,
-    pub away: bool,
     pub is_op: bool,
     pub is_voice: bool,
 }
@@ -462,34 +403,25 @@ impl UserInfo {
             is_away: false,
             away_message: None,
             modes: Vec::new(),
-            away: false,
             is_op: false,
             is_voice: false,
         }
     }
 
-    /// Check if user has a specific mode
     pub fn has_mode(&self, mode: char) -> bool {
         self.modes.contains(&mode)
     }
 
-    /// Get user privilege level (for sorting)
     pub fn privilege_level(&self) -> u8 {
         if self.has_mode('o') {
             4
-        }
-        // Op
-        else if self.has_mode('h') {
+        } else if self.has_mode('h') {
             3
-        }
-        // Half-op
-        else if self.has_mode('v') {
+        } else if self.has_mode('v') {
             2
-        }
-        // Voice
-        else {
+        } else {
             1
-        } // Regular user
+        }
     }
 }
 
@@ -531,7 +463,6 @@ impl Default for AppSettings {
 }
 
 impl AppSettings {
-    /// Get the default settings file path
     pub fn settings_path() -> std::path::PathBuf {
         dirs::config_dir()
             .unwrap_or_else(|| std::path::PathBuf::from("."))
@@ -539,7 +470,6 @@ impl AppSettings {
             .join("settings.toml")
     }
 
-    /// Save settings to the default path
     pub fn save(&self) -> anyhow::Result<()> {
         let path = Self::settings_path();
         if let Some(parent) = path.parent() {
@@ -550,7 +480,6 @@ impl AppSettings {
         Ok(())
     }
 
-    /// Load settings from the default path, falling back to defaults
     pub fn load() -> Self {
         let path = Self::settings_path();
         if path.exists() {
@@ -576,8 +505,6 @@ pub struct UiState {
     pub user_list_width: f32,
     pub show_server_tree: bool,
     pub show_user_list: bool,
-    pub show_sidebar: bool,
-    pub show_userlist: bool,
 }
 
 impl Default for UiState {
@@ -590,8 +517,6 @@ impl Default for UiState {
             user_list_width: 150.0,
             show_server_tree: true,
             show_user_list: true,
-            show_sidebar: true,
-            show_userlist: true,
         }
     }
 }
@@ -606,7 +531,6 @@ pub struct DisplayMessage {
     pub message_type: MessageType,
     pub is_highlight: bool,
     pub is_own_message: bool,
-    pub formatted_spans: Vec<FormattedText>,
 }
 
 /// Message types for display
@@ -622,39 +546,4 @@ pub enum MessageType {
     Topic,
     Mode,
     System,
-    Regular, // Regular text message without special formatting
-}
-
-/// Formatted text for IRC messages
-#[derive(Debug, Clone)]
-pub struct FormattedText {
-    pub spans: Vec<FormattedSpan>,
-}
-
-/// Formatted text span for IRC message formatting
-#[derive(Debug, Clone)]
-pub struct FormattedSpan {
-    pub text: String,
-    pub bold: bool,
-    pub italic: bool,
-    pub underline: bool,
-    pub strikethrough: bool,
-    pub monospace: bool,
-    pub color: Option<(u8, u8, u8)>,
-    pub background_color: Option<(u8, u8, u8)>,
-}
-
-impl FormattedSpan {
-    pub fn new(text: String) -> Self {
-        Self {
-            text,
-            bold: false,
-            italic: false,
-            underline: false,
-            strikethrough: false,
-            monospace: false,
-            color: None,
-            background_color: None,
-        }
-    }
 }
