@@ -3755,7 +3755,7 @@ dependencies = [
 
 [[package]]
 name = "rustirc"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "anyhow",
  "clap",
@@ -3772,7 +3772,7 @@ dependencies = [
 
 [[package]]
 name = "rustirc-core"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3799,7 +3799,7 @@ dependencies = [
 
 [[package]]
 name = "rustirc-gui"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3820,7 +3820,7 @@ dependencies = [
 
 [[package]]
 name = "rustirc-plugins"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "anyhow",
  "dirs",
@@ -3833,7 +3833,7 @@ dependencies = [
 
 [[package]]
 name = "rustirc-protocol"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "criterion",
  "pretty_assertions",
@@ -3845,7 +3845,7 @@ dependencies = [
 
 [[package]]
 name = "rustirc-scripting"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "anyhow",
  "mlua",
@@ -3858,7 +3858,7 @@ dependencies = [
 
 [[package]]
 name = "rustirc-tui"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "anyhow",
  "async-trait",

@@ -5,7 +5,7 @@
 
 ![RustIRC Logo](images/RustIRC_Logo.png)
 
-[![Version](https://img.shields.io/badge/version-0.4.1-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.4.2-blue.svg)](CHANGELOG.md)
 [![Rust Version](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE-MIT)
 [![Tests](https://img.shields.io/badge/tests-266%20passing-success.svg)](.github/workflows/ci.yml)
@@ -19,7 +19,7 @@
 
 A powerful, modern IRC client built in Rust with an enhanced Material Design 3 interface and comprehensive Lua scripting
 
-**Last Updated**: 2026-03-07 | **Branch**: main - v0.4.1 CI Fixes & Security Updates
+**Last Updated**: 2026-03-07 | **Branch**: main - v0.4.2 Dependency Maintenance & GitHub Cleanup
 
 [Features](#-features) • [Documentation](#-documentation) • [Development Plan](#-development-plan) • [Architecture](#️-architecture) • [Contributing](#-contributing)
 
@@ -64,10 +64,10 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 
 ## 📦 Latest Release
 
-[![Version](https://img.shields.io/badge/version-0.4.1-blue.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.4.1)
-[![Release Date](https://img.shields.io/badge/released-March%207%2C%202026-green.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.4.1)
+[![Version](https://img.shields.io/badge/version-0.4.2-blue.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.4.2)
+[![Release Date](https://img.shields.io/badge/released-March%207%2C%202026-green.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.4.2)
 
-**Version 0.4.1** - CI Fixes & Security Updates (patch for v0.4.0 Scripting, Plugins, DCC & IRCv3)
+**Version 0.4.2** - Dependency Maintenance & GitHub Cleanup
 
 ### 📜 Lua Scripting System Highlights
 
@@ -108,7 +108,7 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 
 ## 🏗️ Current Development Status
 
-**Last Updated**: March 7, 2026 - v0.4.1 CI Fixes & Security Updates
+**Last Updated**: March 7, 2026 - v0.4.2 Dependency Maintenance & GitHub Cleanup
 
 ### ✅ **Phase 1: Research & Setup** - **COMPLETE** (100%)
 
@@ -369,7 +369,7 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 
 ## 🚦 Current Status
 
-**Version**: 0.4.1 - CI Fixes & Security Updates
+**Version**: 0.4.2 - Dependency Maintenance & GitHub Cleanup
 **Phase**: Phases 1-6 Complete ✅ | Major Feature Release
 **Build Status**: All 6 crates compile successfully, 266 tests passing
 **Total Tasks**: 249+ across 7 phases | Phases 1-6 100% complete
@@ -398,6 +398,12 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 - **Search Engine**: Full-text message search with channel, user, and date filters
 - **URL Preview**: Regex-based URL detection in messages
 - **Settings Persistence**: GUI AppSettings save/load with XDG paths
+
+### 🔧 v0.4.2 Dependency Maintenance & GitHub Cleanup (March 7, 2026)
+
+- **Actions**: Bumped upload-artifact v6->v7, download-artifact v7->v8 across all workflows
+- **Cleanup**: Closed all 11 Dependabot PRs, 3 security issues, dismissed 1 security alert
+- **Status**: Zero open PRs, zero open issues, zero open security alerts
 
 ### 🔧 v0.4.1 CI Fixes & Security Updates (March 7, 2026)
 

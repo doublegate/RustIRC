@@ -5,6 +5,40 @@ All notable changes to RustIRC will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] - 2026-03-07 (Dependency Maintenance & GitHub Cleanup)
+
+### Summary
+Patch release updating GitHub Actions artifact actions, closing all 11 open Dependabot PRs (changes already incorporated via Cargo.lock refresh in v0.4.1), resolving all 3 open security issues, and dismissing the remaining Dependabot security alert. Repository now has zero open PRs, zero open issues, and zero open security alerts.
+
+### Changed
+
+#### GitHub Actions
+- **actions/upload-artifact**: v6 -> v7 across all workflow files (`ci.yml`, `master-pipeline.yml`, `release.yml`, `security-audit.yml`)
+- **actions/download-artifact**: v7 -> v8 across all workflow files (`ci.yml`, `master-pipeline.yml`, `release.yml`)
+
+### Resolved
+
+#### Dependabot PRs Closed (11)
+- PR #82: actions/download-artifact 7 -> 8 (applied directly)
+- PR #81: actions/upload-artifact 6 -> 7 (applied directly)
+- PR #79: webpki-roots 1.0.4 -> 1.0.6 (already in Cargo.lock)
+- PR #78: anyhow 1.0.100 -> 1.0.101 (already at 1.0.102)
+- PR #75: bytes 1.10.1 -> 1.11.1 (already in Cargo.lock since v0.4.1)
+- PR #73: mlua 0.11.5 -> 0.11.6 (already in Cargo.lock)
+- PR #72: thiserror 2.0.17 -> 2.0.18 (already in Cargo.lock)
+- PR #71: rustls-pki-types 1.13.2 -> 1.14.0 (already in Cargo.lock)
+- PR #70: chrono 0.4.42 -> 0.4.43 (already at 0.4.44)
+- PR #69: tokio-test 0.4.4 -> 0.4.5 (already in Cargo.lock)
+- PR #68: rustls 0.23.35 -> 0.23.36 (already at 0.23.37)
+
+#### Security Issues Closed (3)
+- Issue #76 (RUSTSEC-2026-0007): bytes integer overflow -- fixed in v0.4.1
+- Issue #77 (RUSTSEC-2026-0009): time DoS -- upstream-pinned, added to audit ignore list
+- Issue #66 (RUSTSEC-2025-0141): bincode unmaintained -- informational only, transitive via iced
+
+#### Dependabot Alert Dismissed (1)
+- Alert #4 (time crate): Dismissed as tolerable risk -- pinned at =0.3.45 by mac-notification-sys
+
 ## [0.4.1] - 2026-03-07 (CI Fixes & Security Updates)
 
 ### Summary
