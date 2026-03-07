@@ -547,3 +547,154 @@ pub enum MessageType {
     Mode,
     System,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_app_state_new() {
+        let state = AppState::new();
+        assert!(state.servers.is_empty());
+        assert!(state.tabs.is_empty());
+        assert!(state.current_tab_id.is_none());
+        assert!(state.tab_order.is_empty());
+    }
+
+    #[test]
+    fn test_add_server() {
+        let mut state = AppState::new();
+        state.add_server("irc.example.com:6697".to_string(), "Example".to_string());
+        assert_eq!(state.servers.len(), 1);
+        assert_eq!(state.tabs.len(), 1);
+        assert!(state.current_tab_id.is_some());
+    }
+
+    #[test]
+    fn test_add_channel_tab() {
+        let mut state = AppState::new();
+        state.add_server("server1".to_string(), "Server 1".to_string());
+        state.add_channel_tab("server1".to_string(), "#test".to_string());
+        assert_eq!(state.tabs.len(), 2); // server + channel
+        assert_eq!(state.current_tab_id, Some("server1:#test".to_string()));
+    }
+
+    #[test]
+    fn test_add_message() {
+        let mut state = AppState::new();
+        state.add_server("server1".to_string(), "Server 1".to_string());
+        state.add_channel_tab("server1".to_string(), "#test".to_string());
+        state.add_message("server1", "#test", "Hello world", "nick1");
+        let tab = state.tabs.get("server1:#test").unwrap();
+        assert_eq!(tab.messages.len(), 1);
+        assert_eq!(tab.messages[0].content, "Hello world");
+        assert_eq!(tab.messages[0].sender, "nick1");
+    }
+
+    #[test]
+    fn test_remove_server() {
+        let mut state = AppState::new();
+        state.add_server("server1".to_string(), "Server 1".to_string());
+        state.add_channel_tab("server1".to_string(), "#test".to_string());
+        assert_eq!(state.tabs.len(), 2);
+        state.remove_server("server1");
+        assert!(state.servers.is_empty());
+        assert!(state.tabs.is_empty());
+    }
+
+    #[test]
+    fn test_switch_tab() {
+        let mut state = AppState::new();
+        state.add_server("server1".to_string(), "Server 1".to_string());
+        state.add_channel_tab("server1".to_string(), "#a".to_string());
+        state.add_channel_tab("server1".to_string(), "#b".to_string());
+        state.switch_to_tab("server1:#a");
+        assert_eq!(state.current_tab_id, Some("server1:#a".to_string()));
+    }
+
+    #[test]
+    fn test_close_tab() {
+        let mut state = AppState::new();
+        state.add_server("server1".to_string(), "Server 1".to_string());
+        state.add_channel_tab("server1".to_string(), "#test".to_string());
+        assert_eq!(state.tabs.len(), 2);
+        state.close_tab("server1:#test");
+        assert_eq!(state.tabs.len(), 1);
+    }
+
+    #[test]
+    fn test_add_user_to_channel() {
+        let mut state = AppState::new();
+        state.add_server("server1".to_string(), "Server 1".to_string());
+        state.add_channel_tab("server1".to_string(), "#test".to_string());
+        state.add_user_to_channel("server1", "#test", "user1");
+        let server = state.servers.get("server1").unwrap();
+        let channel = server.channels.get("#test").unwrap();
+        assert_eq!(channel.users.len(), 1);
+        assert!(channel.users.contains(&"user1".to_string()));
+    }
+
+    #[test]
+    fn test_remove_user_from_channel() {
+        let mut state = AppState::new();
+        state.add_server("server1".to_string(), "Server 1".to_string());
+        state.add_channel_tab("server1".to_string(), "#test".to_string());
+        state.add_user_to_channel("server1", "#test", "user1");
+        state.remove_user_from_channel("server1", "#test", "user1");
+        let server = state.servers.get("server1").unwrap();
+        let channel = server.channels.get("#test").unwrap();
+        assert!(channel.users.is_empty());
+    }
+
+    #[test]
+    fn test_private_message_tab() {
+        let mut state = AppState::new();
+        state.add_server("server1".to_string(), "Server 1".to_string());
+        state.add_private_tab("server1", "friend".to_string());
+        assert!(state.tabs.contains_key("server1:pm:friend"));
+        assert_eq!(state.current_tab_id, Some("server1:pm:friend".to_string()));
+    }
+
+    #[test]
+    fn test_message_history_limit() {
+        let mut state = AppState::new();
+        state.add_server("server1".to_string(), "Server 1".to_string());
+        state.add_channel_tab("server1".to_string(), "#test".to_string());
+        for i in 0..1010 {
+            state.add_message("server1", "#test", &format!("msg {i}"), "user");
+        }
+        let tab = state.tabs.get("server1:#test").unwrap();
+        assert!(tab.messages.len() <= 1000);
+    }
+
+    #[test]
+    fn test_user_privilege_level() {
+        let mut user = UserInfo::new("nick".to_string());
+        assert_eq!(user.privilege_level(), 1);
+        user.modes.push('v');
+        assert_eq!(user.privilege_level(), 2);
+        user.modes.push('o');
+        assert_eq!(user.privilege_level(), 4);
+    }
+
+    #[test]
+    fn test_app_settings_default() {
+        let settings = AppSettings::default();
+        assert_eq!(settings.theme, "Dark");
+        assert!(settings.show_timestamps);
+        assert!(settings.auto_reconnect);
+        assert_eq!(settings.font_size, 13.0);
+    }
+
+    #[test]
+    fn test_tab_mark_as_read() {
+        let mut tab = Tab::channel("server1".to_string(), "#test".to_string());
+        tab.has_activity = true;
+        tab.has_highlight = true;
+        tab.activity = ActivityLevel::Highlight;
+        tab.mark_as_read();
+        assert!(!tab.has_activity);
+        assert!(!tab.has_highlight);
+        assert_eq!(tab.activity, ActivityLevel::None);
+    }
+}

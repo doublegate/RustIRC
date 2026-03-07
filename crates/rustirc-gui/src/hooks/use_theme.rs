@@ -149,3 +149,57 @@ impl std::str::FromStr for ThemeType {
 pub fn use_theme() -> Signal<ThemeType> {
     use_context::<Signal<ThemeType>>()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_theme_all_returns_22_themes() {
+        assert_eq!(ThemeType::all().len(), 22);
+    }
+
+    #[test]
+    fn test_theme_from_str_known() {
+        assert_eq!("dark".parse::<ThemeType>().unwrap(), ThemeType::Dark);
+        assert_eq!("light".parse::<ThemeType>().unwrap(), ThemeType::Light);
+        assert_eq!("dracula".parse::<ThemeType>().unwrap(), ThemeType::Dracula);
+        assert_eq!("nord".parse::<ThemeType>().unwrap(), ThemeType::Nord);
+        assert_eq!(
+            "tokyo-night".parse::<ThemeType>().unwrap(),
+            ThemeType::TokyoNight
+        );
+        assert_eq!(
+            "catppuccin".parse::<ThemeType>().unwrap(),
+            ThemeType::Catppuccin
+        );
+    }
+
+    #[test]
+    fn test_theme_from_str_unknown_defaults_to_dark() {
+        assert_eq!("nonexistent".parse::<ThemeType>().unwrap(), ThemeType::Dark);
+    }
+
+    #[test]
+    fn test_theme_from_str_case_insensitive() {
+        assert_eq!("DARK".parse::<ThemeType>().unwrap(), ThemeType::Dark);
+        assert_eq!("Dracula".parse::<ThemeType>().unwrap(), ThemeType::Dracula);
+        assert_eq!("NORD".parse::<ThemeType>().unwrap(), ThemeType::Nord);
+    }
+
+    #[test]
+    fn test_theme_as_str_roundtrip() {
+        for theme in ThemeType::all() {
+            let s = theme.as_str();
+            assert!(!s.is_empty());
+            assert_eq!(&s.parse::<ThemeType>().unwrap(), theme);
+        }
+    }
+
+    #[test]
+    fn test_theme_display_name_nonempty() {
+        for theme in ThemeType::all() {
+            assert!(!theme.display_name().is_empty());
+        }
+    }
+}
