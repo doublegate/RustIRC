@@ -2,7 +2,7 @@
 
 ## Overview
 
-RustIRC employs a modular, event-driven, message-passing architecture designed for maintainability, testability, and extensibility. The system is built on reactive patterns similar to Elm and Iced, providing the modularity of WeeChat with superior concurrency through Rust's async ecosystem.
+RustIRC employs a modular, event-driven, message-passing architecture designed for maintainability, testability, and extensibility. The system is built on reactive patterns using Dioxus signals, providing the modularity of WeeChat with superior concurrency through Rust's async ecosystem.
 
 ## High-Level Architecture
 
@@ -10,7 +10,7 @@ RustIRC employs a modular, event-driven, message-passing architecture designed f
 ┌─────────────────────────────────────────────────────────────────┐
 │                         Presentation Layer                       │
 │  ┌─────────────────────┐         ┌───────────────────────────┐ │
-│  │     GUI (Iced)      │ ← → │       TUI (ratatui)       │ │
+│  │   GUI (Dioxus)      │ ← → │       TUI (ratatui)       │ │
 │  └─────────────────────┘         └───────────────────────────┘ │
 └─────────────┬─────────────────────────────────┬─────────────────┘
               │ UI Events                       │ State Updates

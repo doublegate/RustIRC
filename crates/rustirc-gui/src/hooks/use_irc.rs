@@ -5,6 +5,7 @@
 
 use crate::state::{ActivityLevel, AppState};
 use dioxus::prelude::*;
+use dioxus_core::spawn_forever;
 use rustirc_core::connection::ConnectionState as CoreConnectionState;
 use rustirc_core::events::Event;
 use tracing::{debug, info, warn};
@@ -38,16 +39,35 @@ pub fn use_irc_event_handler(
 fn process_event(app_state: &mut Signal<AppState>, event: Event) {
     match event {
         Event::Connected { connection_id } => {
-            let mut state = app_state.write();
-            if let Some(server) = state.servers.get_mut(&connection_id) {
-                server.connection_state = CoreConnectionState::Connected;
+            let auto_joins = {
+                let mut state = app_state.write();
+                if let Some(server) = state.servers.get_mut(&connection_id) {
+                    server.connection_state = CoreConnectionState::Connected;
+                }
+                state.add_message(
+                    &connection_id,
+                    &connection_id,
+                    "Connected to server",
+                    "System",
+                );
+                // Take pending auto-join channels for this server
+                state.pending_auto_joins.remove(&connection_id)
+            };
+
+            // Auto-join channels now that connection is established
+            if let Some(channels) = auto_joins {
+                let client = crate::irc_client();
+                for channel in channels {
+                    info!("Auto-joining {} on {}", channel, connection_id);
+                    let client = client.clone();
+                    let channel = channel.clone();
+                    spawn_forever(async move {
+                        if let Err(e) = client.join_channel(&channel).await {
+                            tracing::error!("Auto-join {} failed: {}", channel, e);
+                        }
+                    });
+                }
             }
-            state.add_message(
-                &connection_id,
-                &connection_id,
-                "Connected to server",
-                "System",
-            );
         }
 
         Event::Disconnected {

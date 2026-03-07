@@ -38,16 +38,14 @@
 ## User Interface
 
 ### GUI Framework
-- **Primary**: Iced (v0.12+)
-  - Pure Rust implementation
-  - Cross-platform (Windows, macOS, Linux)
-  - GPU-accelerated rendering
-  - Reactive architecture
-  - Custom widget support
-
-- **Fallback**: gtk-rs (v0.18+)
-  - Mature bindings to GTK4
-  - Native look on Linux
+- **Primary**: Dioxus (v0.7.3)
+  - Reactive RSX component architecture
+  - Cross-platform (Desktop + Web)
+  - Blitz/WGPU native renderer for desktop
+  - Axum fullstack for web target
+  - Tailwind CSS with zero-config integration
+  - Signal-based state management
+  - Hot-patching development
   - Good accessibility support
   - Complex dependency chain
 

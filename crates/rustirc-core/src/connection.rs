@@ -483,46 +483,32 @@ impl IrcConnection {
         })
         .await?;
 
-        // Wait for registration complete (001 numeric)
-        self.set_state(ConnectionState::Authenticating).await;
-
-        // Start message processing loop to handle registration
+        // Registration commands have been sent. The reader task will detect
+        // the 001 RPL_WELCOME response and set state to Registered + emit
+        // Event::Connected. We spawn a timeout task to fail if registration
+        // doesn't complete within the configured period.
+        let state_arc = self.state.clone();
         let connection_id = self.connection_id.clone();
         let event_bus = self.event_bus.clone();
-        let state_arc = self.state.clone();
 
         tokio::spawn(async move {
-            // Wait for 001 RPL_WELCOME message with timeout
             let timeout_duration = Duration::from_secs(30);
-            let start_time = Instant::now();
+            sleep(timeout_duration).await;
 
-            while start_time.elapsed() < timeout_duration {
-                let current_state = state_arc.read().await.clone();
-                if current_state == ConnectionState::Registered {
-                    // Registration completed successfully
-                    drop(event_bus.publish(Event::Connected {
-                        connection_id: connection_id.clone(),
-                    }));
-                    return;
+            let current_state = state_arc.read().await.clone();
+            if current_state != ConnectionState::Registered {
+                warn!("Registration timeout for connection: {}", connection_id);
+                {
+                    let mut state_guard = state_arc.write().await;
+                    *state_guard = ConnectionState::Failed("Registration timeout".to_string());
                 }
-
-                // Check for failed state
-                if matches!(current_state, ConnectionState::Failed(_)) {
-                    return;
-                }
-
-                // Wait a bit before checking again
-                sleep(Duration::from_millis(100)).await;
+                let event = Event::Error {
+                    connection_id: Some(connection_id),
+                    error: "Registration timeout - server did not respond to NICK/USER".to_string(),
+                };
+                event_bus.emit(event).await;
             }
-
-            // Registration timeout
-            warn!("Registration timeout for connection: {}", connection_id);
-            let mut state_guard = state_arc.write().await;
-            *state_guard = ConnectionState::Failed("Registration timeout".to_string());
         });
-
-        // Set initial registered state (will be updated by message handler)
-        self.set_state(ConnectionState::Registered).await;
 
         Ok(())
     }
@@ -535,6 +521,9 @@ impl IrcConnection {
         let event_bus = self.event_bus.clone();
         let connection_id = self.connection_id.clone();
         let last_ping = self.last_ping.clone();
+        let tx_commands = self.tx_commands.clone();
+        let state = self.state.clone();
+        let state_broadcast = self.state_broadcast.clone();
 
         tokio::spawn(async move {
             // Use Lines iterator for more efficient line reading
@@ -551,10 +540,9 @@ impl IrcConnection {
                         // Parse IRC message
                         match Parser::parse_message(&message_text) {
                             Ok(message) => {
-                                // Handle PING specially
+                                // Handle PING - send PONG through the writer channel
                                 if message.command == "PING" {
                                     if let Some(server) = message.params.first() {
-                                        // Send PONG response via command channel
                                         debug!("Responding to PING from {}", server);
 
                                         let pong_command = Command::Pong {
@@ -562,24 +550,41 @@ impl IrcConnection {
                                             server2: None,
                                         };
 
-                                        // Actually use the pong_command by converting it to a message
-                                        // and creating an appropriate response event
-                                        let pong_message = pong_command.to_message();
-                                        debug!("Sending PONG response: {}", pong_message);
+                                        // Send PONG through the command channel to the writer task
+                                        let tx_opt = tx_commands.read().await;
+                                        if let Some(ref tx) = *tx_opt {
+                                            if let Err(e) = tx.send(pong_command) {
+                                                error!("Failed to send PONG: {}", e);
+                                            }
+                                        }
 
-                                        // Emit both a PongRequired event and a MessageSent event
                                         let pong_event = Event::PongRequired {
                                             connection_id: connection_id.clone(),
                                             server: server.clone(),
                                         };
                                         event_bus.emit(pong_event).await;
-
-                                        let sent_event = Event::MessageSent {
-                                            connection_id: connection_id.clone(),
-                                            message: pong_message,
-                                        };
-                                        event_bus.emit(sent_event).await;
                                     }
+                                }
+
+                                // Handle RPL_WELCOME (001) - marks successful registration
+                                if message.command == "001" {
+                                    info!("Received RPL_WELCOME for {}", connection_id);
+                                    {
+                                        let mut s = state.write().await;
+                                        *s = ConnectionState::Registered;
+                                    }
+                                    let _ = state_broadcast.send(ConnectionState::Registered);
+                                    let state_event = Event::StateChanged {
+                                        connection_id: connection_id.clone(),
+                                        state: ConnectionState::Registered,
+                                    };
+                                    event_bus.emit(state_event).await;
+
+                                    // Emit Connected event now that registration is confirmed
+                                    let connected_event = Event::Connected {
+                                        connection_id: connection_id.clone(),
+                                    };
+                                    event_bus.emit(connected_event).await;
                                 }
 
                                 // Update last ping time

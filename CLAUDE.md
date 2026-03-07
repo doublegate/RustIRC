@@ -14,7 +14,7 @@ The project prioritizes full compatibility with IRC standards including IRCv3 ex
 
 ## Development Status
 
-**v0.4.2 Dependency Maintenance & GitHub Cleanup** (2026-03-07)
+**v0.5.0 Dioxus 0.7.3 + Axum GUI Migration** (2026-03-07)
 
 - **Phase 1**: Research & Setup ✅ (Complete 2025-08-14)
 - **Phase 2**: Core IRC Engine ✅ (Complete 2025-08-17)
@@ -26,12 +26,11 @@ The project prioritizes full compatibility with IRC standards including IRCv3 ex
 - **v0.4.0 Major Feature Release**: Lua scripting engine, plugin system, DCC protocol, IRCv3 extensions, flood protection, proxy support, 266 tests ✅
 - **v0.4.1 Patch Release**: CI workflow fixes, security advisory updates, Windows DCC test fix, dependency updates ✅
 - **v0.4.2 Patch Release**: Actions artifact v7/v8, closed 11 Dependabot PRs, 3 issues, 1 alert; zero open items ✅
-- **GUI Framework**: Material Design 3 with iced 0.14.0 - reactive rendering, time-travel debugging
-- **Working Features**: typography, input, chip, plus major fixes in 7+ other components (0 errors)
-- **Implementation Complete**: SerializableColor wrapper, iced 0.14.0 API migration, lifetime management, ALL components fully functional
-- **Current Status**: 266 tests passing, ZERO errors, ZERO clippy warnings
-- **Interface Status**: Main branch stable with iced 0.14.0 and Material Design 3 integration
-- **Test Status**: 266 tests (233 unit + 33 integration) across all workspace crates
+- **v0.5.0 GUI Migration**: iced 0.14.0 replaced with Dioxus 0.7.3 + Axum, 18 RSX components, CSS themes
+- **GUI Framework**: Dioxus 0.7.3 with Signal-based reactivity, Tailwind CSS, 22 CSS themes
+- **Current Status**: 254 tests passing, ZERO errors, ZERO clippy warnings
+- **Interface Status**: Dioxus branch with reactive GUI and Axum web target
+- **Test Status**: 254 tests across all workspace crates
 
 The repository now contains:
 
@@ -56,7 +55,7 @@ The repository now contains:
 
 - **Language**: Rust
 - **Async Runtime**: Tokio for network I/O
-- **GUI Framework**: Iced 0.14.0 (functional API implementation)
+- **GUI Framework**: Dioxus 0.7.3 (reactive RSX components, Axum fullstack)
 - **TUI Framework**: ratatui
 - **TLS**: rustls
 - **Scripting**: mlua for Lua integration
@@ -77,7 +76,7 @@ cargo test
 cargo test -- --nocapture  # Show println! output
 
 # Run the client (multiple modes available)
-cargo run                    # GUI mode (Iced 0.14.0 interface)
+cargo run                    # GUI mode (Dioxus desktop)
 cargo run -- --cli          # CLI prototype mode for testing
 cargo run -- --tui          # TUI mode with ratatui
 cargo run -- --config path/to/config.toml  # With custom config
@@ -225,8 +224,8 @@ RustIRC/
 
 1. **Systematic Approach**: Implement everything, never remove/disable functionality to fix errors
 2. **Platform Integration**: Use conditional compilation (#[cfg]) with complete implementations
-3. **Message Routing**: Ensure proper Task<MessageType> conversions and Into<> implementations
-4. **Size Constraints**: Use Iced Size parameters for min/max dialog dimensions
+3. **Signal Reactivity**: Use `Signal<AppState>` with automatic re-rendering in Dioxus components
+4. **CSS Theming**: Use CSS custom properties with `[data-theme="..."]` selectors for themes
 5. **App State Sync**: Preferences dialogs must reflect current application state values
 
 ### GUI Debugging & Issue Resolution
@@ -234,9 +233,9 @@ RustIRC/
 When addressing GUI issues in RustIRC:
 
 1. **IRC Protocol Verification**: Always check field names against protocol definitions (e.g., WHOIS uses `targets` not `target/nickmasks`)
-2. **Iced 0.14.0 Styling**: Use proper border syntax with `0.0.into()` for radius, container styling for pane dividers
+2. **Dioxus RSX Styling**: Use Tailwind CSS classes in RSX `class` attributes; CSS custom properties for themes
 3. **Case-Sensitive Filtering**: Handle both "System" and "system" message senders in filtering logic
-4. **State Synchronization**: Use getter methods like `get_filter_state()` to sync UI checkmarks with actual filter states
+4. **State Synchronization**: Use Signal-based reactive state with `use_irc_event_handler` coroutine bridge
 
 ### Build and Testing Workflow
 
@@ -295,28 +294,31 @@ Ensuring CLI has full GUI feature equivalency:
    - **Complete Functionality**: Implement missing fields and state management
    - **Rust Compliance**: Ensure borrow checker satisfaction through proper dereferencing
 
-### GUI Warning Integration Patterns (August 21, 2025)
+### Dioxus GUI Patterns (March 2026)
 
-**Current GUI Warnings Requiring Implementation**:
+**Dioxus 0.7.3 Architecture Patterns**:
 
-1. **Dialog System Integration**:
+1. **Signal-Based State Management**:
 
-   - Connect `current_font_size`, `current_notifications`, `current_compact` to actual settings UI
-   - Implement settings dialog state synchronization
+   - Use `Signal<AppState>` for reactive state with automatic re-rendering
+   - EventBus bridge via `use_coroutine()` connects core events to Dioxus signals
+   - `IrcActions` as Copy-type dispatcher for connect, send, join, leave operations
 
-2. **Message Processing Integration**:
+2. **Component Architecture**:
 
-   - Connect `irc_message_receiver` to actual IRC message handling pipeline
-   - Implement `toggle_user_list` and `update_user_list` functionality
+   - 18 RSX components in `crates/rustirc-gui/src/components/`
+   - `spawn_forever()` for network operations (survives component unmount)
+   - `OnceLock<Arc<IrcClient>>` global pattern for Copy-compatible `IrcActions`
 
-3. **Menu System Integration**:
+3. **CSS Theme System**:
 
-   - Connect `active_menu` field to menu rendering and state management
-   - Implement all menu rendering methods (file, edit, view, server, channel, tools, help)
+   - 22 themes as CSS custom properties with `[data-theme="..."]` selectors
+   - Tailwind CSS utility classes in RSX `class` attributes
+   - IRC color codes as `.irc-color-N` CSS classes
 
-4. **Testing Framework Integration**:
-   - Implement `execute_task` method for test harness functionality
-   - Connect test execution to actual GUI testing pipeline
+4. **Asset Loading**:
+   - Use `include_str!()` + `document::Style` for CSS (not `asset!()` macro)
+   - `Dioxus.toml` configures dx CLI for hot-patching and asset directory
 
 ### Advanced Interface Features Complete Pattern (August 21, 2025 9:18 PM EDT)
 
@@ -509,57 +511,6 @@ Ensuring CLI has full GUI feature equivalency:
    - **Benefit**: Future reference for what doesn't work and why
    - **Repository state**: Stable v0.3.5 at commit 4e0fcf6
 
-### Material Design 3 Implementation Patterns (August 26, 2025)
+### Historical Note
 
-**SerializableColor Architecture for Config Persistence**:
-
-1. **Wrapper Type Implementation**:
-
-   - Create `SerializableColor` struct wrapping `[f32; 4]` for RGBA values
-   - Implement `serde::Serialize` and `serde::Deserialize` traits
-   - Add bidirectional conversions with `From<iced::Color>` and `Into<iced::Color>`
-   - Include `Copy` trait for performance optimization
-
-2. **API Compatibility Methods**:
-
-   - Implement `scale_alpha()` method for transparency adjustments
-   - Provide color manipulation methods matching iced::Color API
-   - Enable `.into()` conversions throughout codebase
-
-3. **Proven Error Resolution Patterns**:
-
-   - **Clone-before-move**: Resolve lifetime issues with `.clone()` before moving
-   - **Into conversions**: Use `.into()` for automatic color type conversions
-   - **Module-by-module**: Fix typography/input/chip first (0 errors), then apply patterns
-
-4. **Achievement Metrics**:
-   - Error reduction: 424 → 0 (100% reduction achieved)
-   - All modules: ZERO errors across all components
-   - Final status: 100% functional Material Design 3 implementation
-
-### Material Design 3 100% Completion Patterns (August 26, 2025 09:42 PM EDT)
-
-**Complete Error Elimination Strategy**:
-
-1. **Multi-Stage Sub-Agent Approach**:
-   - Sub-agent 1: Reduced errors from 424 → 40 (91% reduction)
-   - Sub-agent 2: Eliminated remaining 40 → 0 (100% complete)
-   - Key: Systematic application of proven patterns
-
-2. **Lifetime Management Resolution**:
-   - E0373: Extract values before move closures
-   - E0515: Clone instead of borrowing for return values
-   - E0382: Clone-before-move pattern for ownership
-   - E0310: Proper 'static lifetime annotations
-
-3. **Production Code Quality**:
-   - ZERO compilation errors achieved
-   - ZERO clippy warnings (73 warnings eliminated)
-   - 6 comprehensive doctests added and passing
-   - All public APIs documented with examples
-
-4. **Component Completeness**:
-   - All Material Design 3 components 100% functional
-   - SerializableColor with full config persistence
-   - MaterialText/MaterialButton .build() APIs complete
-   - Responsive layouts with proper enum traits
+The Material Design 3 / iced implementation patterns from v0.3.x-v0.4.x have been superseded by the Dioxus 0.7.3 migration in v0.5.0. The iced widget system, SerializableColor wrapper, and iced-specific lifetime patterns are no longer applicable. See the "Dioxus GUI Patterns" section above for current architecture guidance.

@@ -23,6 +23,8 @@ pub struct AppState {
     pub settings: AppSettings,
     /// UI state
     pub ui_state: UiState,
+    /// Channels to auto-join once a server connection is established
+    pub pending_auto_joins: HashMap<String, Vec<String>>,
 }
 
 impl Default for AppState {
@@ -40,6 +42,7 @@ impl AppState {
             tab_order: Vec::new(),
             settings: AppSettings::default(),
             ui_state: UiState::default(),
+            pending_auto_joins: HashMap::new(),
         }
     }
 

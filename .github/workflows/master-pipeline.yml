@@ -371,7 +371,7 @@ jobs:
 
           <div class="crate">
           <h2><a href="rustirc_gui/index.html">rustirc-gui</a></h2>
-          <div class="description">Modern graphical user interface using Iced</div>
+          <div class="description">Modern graphical user interface using Dioxus</div>
           </div>
 
           <div class="crate">

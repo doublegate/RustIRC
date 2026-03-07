@@ -1,0 +1,176 @@
+/* RustIRC - Tailwind utility classes (hand-written for cargo run compatibility) */
+/* When using dx serve, replace this with Tailwind CLI output */
+
+/* === LAYOUT === */
+.flex { display: flex; }
+.block { display: block; }
+.hidden { display: none; }
+.flex-col { flex-direction: column; }
+.flex-1 { flex: 1 1 0%; }
+.flex-shrink-0 { flex-shrink: 0; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.justify-end { justify-content: flex-end; }
+
+/* === POSITIONING === */
+.relative { position: relative; }
+.absolute { position: absolute; }
+.fixed { position: fixed; }
+.inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+.top-full { top: 100%; }
+.left-0 { left: 0; }
+.z-40 { z-index: 40; }
+.z-50 { z-index: 50; }
+
+/* === SIZING === */
+.h-full { height: 100%; }
+.h-screen { height: 100vh; }
+.w-full { width: 100%; }
+.w-screen { width: 100vw; }
+.w-40 { width: 10rem; }
+.w-52 { width: 13rem; }
+.w-2 { width: 0.5rem; }
+.w-1\.5 { width: 0.375rem; }
+.h-2 { height: 0.5rem; }
+.h-1\.5 { height: 0.375rem; }
+.h-7 { height: 1.75rem; }
+.h-9 { height: 2.25rem; }
+.min-w-0 { min-width: 0; }
+
+/* Fixed widths */
+.w-\[350px\] { width: 350px; }
+.w-\[400px\] { width: 400px; }
+.w-\[450px\] { width: 450px; }
+.min-w-\[150px\] { min-width: 150px; }
+.min-w-\[180px\] { min-width: 180px; }
+.max-h-\[80vh\] { max-height: 80vh; }
+
+/* === SPACING === */
+.p-2 { padding: 0.5rem; }
+.p-3 { padding: 0.75rem; }
+.p-4 { padding: 1rem; }
+.p-6 { padding: 1.5rem; }
+.px-1 { padding-left: 0.25rem; padding-right: 0.25rem; }
+.px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+.px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+.px-4 { padding-left: 1rem; padding-right: 1rem; }
+.px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+.py-0\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
+.py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+.py-1\.5 { padding-top: 0.375rem; padding-bottom: 0.375rem; }
+.gap-1 { gap: 0.25rem; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+.mb-1 { margin-bottom: 0.25rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 0.75rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mt-0\.5 { margin-top: 0.125rem; }
+.ml-2 { margin-left: 0.5rem; }
+.mr-1\.5 { margin-right: 0.375rem; }
+.my-1 { margin-top: 0.25rem; margin-bottom: 0.25rem; }
+.space-y-2 > * + * { margin-top: 0.5rem; }
+
+/* === OVERFLOW === */
+.overflow-hidden { overflow: hidden; }
+.overflow-y-auto { overflow-y: auto; }
+.overflow-x-auto { overflow-x: auto; }
+
+/* === TYPOGRAPHY === */
+.text-xs { font-size: 0.75rem; line-height: 1rem; }
+.text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+.text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+.text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.font-mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; }
+.font-bold { font-weight: 700; }
+.font-semibold { font-weight: 600; }
+.font-medium { font-weight: 500; }
+.italic { font-style: italic; }
+.underline { text-decoration: underline; }
+.uppercase { text-transform: uppercase; }
+.leading-5 { line-height: 1.25rem; }
+.tracking-wider { letter-spacing: 0.05em; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.whitespace-nowrap { white-space: nowrap; }
+.break-words { overflow-wrap: break-word; }
+
+/* === BORDERS === */
+.border { border-width: 1px; border-style: solid; }
+.border-b { border-bottom-width: 1px; border-bottom-style: solid; }
+.border-t { border-top-width: 1px; border-top-style: solid; }
+.border-l { border-left-width: 1px; border-left-style: solid; }
+.border-r { border-right-width: 1px; border-right-style: solid; }
+.rounded { border-radius: 0.25rem; }
+.rounded-lg { border-radius: 0.5rem; }
+.rounded-full { border-radius: 9999px; }
+
+/* === SHADOWS === */
+.shadow-lg { box-shadow: 0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1); }
+.shadow-xl { box-shadow: 0 20px 25px -5px rgba(0,0,0,.1), 0 8px 10px -6px rgba(0,0,0,.1); }
+
+/* === INTERACTIVITY === */
+.cursor-pointer { cursor: pointer; }
+.cursor-default { cursor: default; }
+.select-none { user-select: none; }
+.opacity-50 { opacity: 0.5; }
+
+/* === TRANSITIONS === */
+.transition-all { transition: all 150ms ease; }
+.duration-300 { transition-duration: 300ms; }
+
+/* === FOCUS / HOVER PSEUDO-CLASSES === */
+.focus\:outline-none:focus { outline: none; }
+
+/* === THEME-AWARE BACKGROUND COLORS === */
+.bg-\[var\(--bg-color\,\#1a1a1a\)\] { background-color: var(--bg-color, #1a1a1a); }
+.bg-\[var\(--surface-color\,\#2d2d2d\)\] { background-color: var(--surface-color, #2d2d2d); }
+.bg-\[var\(--input-bg\,\#1e1e1e\)\] { background-color: var(--input-bg, #1e1e1e); }
+.bg-\[var\(--input-field-bg\,\#1e1e1e\)\] { background-color: var(--input-field-bg, #1e1e1e); }
+.bg-\[var\(--input-field-bg\,\#2d2d2d\)\] { background-color: var(--input-field-bg, #2d2d2d); }
+.bg-\[var\(--menubar-bg\,\#252525\)\] { background-color: var(--menubar-bg, #252525); }
+.bg-\[var\(--menu-bg\,\#2d2d2d\)\] { background-color: var(--menu-bg, #2d2d2d); }
+.bg-\[var\(--statusbar-bg\,\#1a1a1a\)\] { background-color: var(--statusbar-bg, #1a1a1a); }
+.bg-\[var\(--tab-bg\,\#1e1e1e\)\] { background-color: var(--tab-bg, #1e1e1e); }
+.bg-\[var\(--accent-color\,\#4ecdc4\)\] { background-color: var(--accent-color, #4ecdc4); }
+.bg-\[var\(--activity-color\,\#4ecdc4\)\] { background-color: var(--activity-color, #4ecdc4); }
+.bg-\[var\(--highlight-color\,\#ff6b6b\)\] { background-color: var(--highlight-color, #ff6b6b); }
+.bg-black\/50 { background-color: rgba(0, 0, 0, 0.5); }
+.bg-green-500 { background-color: #22c55e; }
+.bg-red-500 { background-color: #ef4444; }
+
+/* === THEME-AWARE TEXT COLORS === */
+.text-\[var\(--text-color\,\#e0e0e0\)\] { color: var(--text-color, #e0e0e0); }
+.text-\[var\(--text-muted\,\#888\)\] { color: var(--text-muted, #888); }
+.text-\[var\(--accent-color\,\#4ecdc4\)\] { color: var(--accent-color, #4ecdc4); }
+.text-\[var\(--accent-text\,\#1a1a1a\)\] { color: var(--accent-text, #1a1a1a); }
+.text-\[var\(--nick-color\,\#e06c75\)\] { color: var(--nick-color, #e06c75); }
+.text-\[var\(--system-color\,\#888\)\] { color: var(--system-color, #888); }
+.text-\[var\(--timestamp-color\,\#555\)\] { color: var(--timestamp-color, #555); }
+.text-\[var\(--link-color\,\#0088ff\)\] { color: var(--link-color, #0088ff); }
+.text-\[var\(--action-color\,\#d19a66\)\] { color: var(--action-color, #d19a66); }
+.text-green-400 { color: #4ade80; }
+.text-green-500 { color: #22c55e; }
+.text-yellow-400 { color: #facc15; }
+.text-red-400 { color: #f87171; }
+.text-red-500 { color: #ef4444; }
+
+/* === THEME-AWARE BORDER COLORS === */
+.border-\[var\(--border-color\,\#333\)\] { border-color: var(--border-color, #333); }
+.border-\[var\(--accent-color\,\#4ecdc4\)\] { border-color: var(--accent-color, #4ecdc4); }
+
+/* === THEME-AWARE ACCENT === */
+.accent-\[var\(--accent-color\,\#4ecdc4\)\] { accent-color: var(--accent-color, #4ecdc4); }
+
+/* === HOVER STATES === */
+.hover\:bg-\[var\(--hover-bg\,\#333\)\]:hover { background-color: var(--hover-bg, #333); }
+.hover\:bg-\[var\(--hover-bg\,\#2a2a2a\)\]:hover { background-color: var(--hover-bg, #2a2a2a); }
+.hover\:text-\[var\(--text-color\,\#e0e0e0\)\]:hover { color: var(--text-color, #e0e0e0); }
+.hover\:opacity-80:hover { opacity: 0.8; }
+.hover\:opacity-90:hover { opacity: 0.9; }
+.hover\:opacity-100:hover { opacity: 1; }
+
+/* === FOCUS STATES === */
+.focus\:border-\[var\(--accent-color\,\#4ecdc4\)\]:focus { border-color: var(--accent-color, #4ecdc4); }

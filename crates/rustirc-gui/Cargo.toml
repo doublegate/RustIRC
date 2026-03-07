@@ -1,6 +1,6 @@
 [package]
 name = "rustirc-gui"
-version = "0.4.2"
+version = "0.5.0"
 edition = "2021"
 authors = ["RustIRC Contributors"]
 description = "GUI implementation for RustIRC"
@@ -20,6 +20,7 @@ chrono = { version = "0.4", features = ["serde"] }
 toml = { workspace = true }
 dirs = { workspace = true }
 
+rustls = { workspace = true }
 rustirc-core = { path = "../rustirc-core" }
 rustirc-protocol = { path = "../rustirc-protocol" }
 

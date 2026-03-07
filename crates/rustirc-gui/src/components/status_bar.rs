@@ -13,7 +13,12 @@ pub fn StatusBar() -> Element {
     let connected_count = state
         .servers
         .values()
-        .filter(|s| s.connection_state == ConnectionState::Connected)
+        .filter(|s| {
+            matches!(
+                s.connection_state,
+                ConnectionState::Connected | ConnectionState::Registered
+            )
+        })
         .count();
 
     let current_server = state
@@ -21,6 +26,26 @@ pub fn StatusBar() -> Element {
         .as_ref()
         .and_then(|tab_id| state.tabs.get(tab_id).and_then(|tab| tab.server_id.clone()))
         .unwrap_or_else(|| "No server".to_string());
+
+    let current_server_state = state
+        .current_tab_id
+        .as_ref()
+        .and_then(|tab_id| {
+            state
+                .tabs
+                .get(tab_id)
+                .and_then(|tab| tab.server_id.as_ref())
+                .and_then(|sid| state.servers.get(sid))
+        })
+        .map(|s| match &s.connection_state {
+            ConnectionState::Disconnected => "Disconnected",
+            ConnectionState::Connecting => "Connecting...",
+            ConnectionState::Connected | ConnectionState::Registered => "Connected",
+            ConnectionState::Authenticating => "Authenticating...",
+            ConnectionState::Reconnecting => "Reconnecting...",
+            ConnectionState::Failed(_) => "Failed",
+        })
+        .unwrap_or("No server");
 
     let current_nick = state
         .current_tab_id
@@ -54,8 +79,20 @@ pub fn StatusBar() -> Element {
                 }
             }
 
-            // Center: current server
-            div { "{current_server}" }
+            // Center: current server + state
+            div {
+                class: "flex items-center gap-2",
+                span { "{current_server}" }
+                span {
+                    class: match current_server_state {
+                        "Connected" => "text-green-400",
+                        "Connecting..." | "Authenticating..." | "Reconnecting..." => "text-yellow-400",
+                        "Failed" => "text-red-400",
+                        _ => "text-[var(--text-muted,#888)]",
+                    },
+                    "[{current_server_state}]"
+                }
+            }
 
             // Right: version
             div { {"RustIRC v".to_string() + env!("CARGO_PKG_VERSION")} }

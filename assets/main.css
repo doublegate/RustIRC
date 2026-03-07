@@ -1,5 +1,5 @@
-/* RustIRC - Base CSS with theme variables */
-@import url("themes/base.css");
+/* RustIRC - Base CSS */
+/* Theme variables loaded separately via base.css */
 
 /* Reset */
 *, *::before, *::after {

@@ -5,6 +5,70 @@ All notable changes to RustIRC will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-03-07 (Dioxus 0.7.3 + Axum GUI Migration)
+
+### Summary
+Major release replacing the iced 0.14.0 GUI framework with Dioxus 0.7.3 + Axum. The GUI is now built with reactive RSX components, Signal-based state management, Tailwind CSS styling, and CSS custom property themes. Adds web target support via Axum fullstack. All non-GUI functionality (core, protocol, TUI, scripting, plugins) unchanged.
+
+### Added
+
+#### Dioxus GUI Framework
+- **Dioxus 0.7.3**: Reactive RSX component architecture replacing iced 0.14.0
+- **Axum 0.8**: Fullstack web target support via `#[server]` functions
+- **Signal<AppState>**: Reactive state management with automatic re-rendering
+- **EventBus Bridge**: `use_coroutine()` bridges core EventBus to Dioxus signals
+- **IrcActions**: Copy-type action dispatcher for connect, send, join, leave operations
+- **18 RSX Components**: Layout, TabBar, ServerTree, UserList, MessageView, InputArea, StatusBar, MenuBar, SearchBar, ContextMenu, UrlPreview, DccTransfer, DccChat, ScriptConsole, PluginManager, and 3 dialog components
+- **CSS Theme System**: 22 themes as CSS custom properties with `[data-theme="..."]` selectors
+- **Tailwind CSS**: Zero-config utility-first CSS in RSX class attributes
+- **IRC Color CSS**: mIRC color codes 0-15 as `.irc-color-N` CSS classes
+- **Feature Flags**: `desktop`, `server`, `web` features for target selection
+- **Dioxus.toml**: Configuration for dx CLI (hot-patching, asset directory)
+
+#### New Tests
+- 14 state management unit tests (CRUD operations, message limits, user management)
+- 5 formatting tests (IRC color parsing, CSS style generation)
+- 6 theme tests (roundtrip, case-insensitive parsing, display names)
+
+### Changed
+- **GUI Framework**: iced 0.14.0 -> Dioxus 0.7.3 (complete rewrite)
+- **Styling**: Rust `ColorPalette` structs -> CSS custom properties + Tailwind
+- **IRC Colors**: `iced::Color` values -> CSS hex strings
+- **Theme System**: Rust enum -> CSS `[data-theme]` attribute selectors
+- **MSRV**: 1.75.0 -> 1.80.0 (Dioxus requirement)
+- **Version**: 0.4.2 -> 0.5.0
+- **CI MSRV Job**: Updated toolchain from 1.75.0 to 1.80.0
+- **Formatting Module**: Output changed from iced elements to CSS-styled HTML spans
+
+### Removed
+- **iced 0.14.0**: Entire iced dependency and all widget implementations
+- **vendor/iced_glyphon/**: Security patch directory no longer needed
+- **Material Design 3 Widgets**: iced-specific MD3 components (typography, buttons, cards, etc.)
+- **--material-demo flag**: iced component showcase removed
+- **SerializableColor**: Wrapper type replaced by CSS hex strings
+- **iced Widget Files**: `widgets/`, `themes/`, `theme.rs`, `event_handler.rs`, `menus.rs`, `dialogs.rs`, `material_demo.rs`, `accessibility.rs`, `notifications.rs`, `performance.rs`, `platform.rs`, `search.rs`, `testing.rs`, `simple_app.rs`
+- **iced Patch**: `[patch.crates-io]` section for iced_glyphon
+
+### Fixed
+
+#### Core IRC Engine (`crates/rustirc-core/src/connection.rs`)
+- **`drop()` on async future**: Fixed `drop()` call that silently discarded `Event::Connected` emission, preventing connection state from propagating
+- **Premature `ConnectionState::Registered`**: Fixed state being set to `Registered` before server's 001 RPL_WELCOME response; moved to reader task for proper async event emission
+- **PONG handler**: Fixed handler that only emitted events about PONG but never actually sent PONG through the writer channel
+
+#### Runtime Compatibility
+- **Tokio runtime**: Added explicit `Runtime::new()` + `rt.enter()` for Dioxus desktop compatibility
+- **rustls 0.23+ TLS**: Added explicit `rustls::crypto::ring::default_provider().install_default()` call
+- **`spawn_forever()`**: Used instead of `spawn()` for network operations to survive component unmount
+- **`OnceLock<Arc<IrcClient>>`**: Global pattern keeps `IrcActions` as `Copy` (required for RSX closures in `for` loops)
+- **CSS loading**: `include_str!()` + `document::Style` instead of `asset!()` macro (only works with dx CLI)
+
+### Technical Details
+- ~24K lines of iced GUI code replaced by ~6K lines of Dioxus RSX
+- All 254 workspace tests passing (zero regressions)
+- Zero clippy warnings
+- Auto-join channels via `pending_auto_joins` HashMap, executed on `Event::Connected`
+
 ## [0.4.2] - 2026-03-07 (Dependency Maintenance & GitHub Cleanup)
 
 ### Summary

@@ -82,8 +82,8 @@ fn run_gui(config: rustirc_core::Config) -> Result<()> {
     let _script_engine = init_scripting(&config);
     let _plugin_manager = init_plugins(&config);
 
-    // Launch the Dioxus desktop GUI
-    rustirc_gui::run_gui().map_err(|e| anyhow::anyhow!("GUI error: {}", e))?;
+    // Launch the Dioxus desktop GUI with config
+    rustirc_gui::run_gui_with_config(config).map_err(|e| anyhow::anyhow!("GUI error: {}", e))?;
 
     Ok(())
 }
