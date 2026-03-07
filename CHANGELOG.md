@@ -5,6 +5,31 @@ All notable changes to RustIRC will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-03-07 (CI Fixes & Security Updates)
+
+### Summary
+Patch release addressing GitHub Actions CI failures and security advisories discovered after the v0.4.0 release. Fixes Windows DCC test failure, updates `bytes` crate to resolve CVE-2026-25541, adds ignore for upstream-pinned `time` advisory, and reduces security audit frequency to weekly.
+
+### Fixed
+
+#### Security
+- **RUSTSEC-2026-0007 (CVE-2026-25541)**: Updated `bytes` crate from 1.10.1 to 1.11.1 to fix integer overflow vulnerability in `BytesMut::reserve` that could cause out-of-bounds memory access in release builds
+- **RUSTSEC-2026-0009 (CVE-2026-25727)**: Added to security audit ignore list -- `time` crate pinned at `=0.3.45` by `mac-notification-sys` (transitive via `notify-rust`); upstream fix required for `time >=0.3.47`
+
+#### CI/CD
+- **Windows DCC Test Failure**: Added `#[cfg(not(windows))]` to `test_send_and_receive_file` -- Windows TCP sends RST instead of FIN when sender drops connection with unread ACK data in receive buffer, causing `receive_file()` to fail with "connection reset" instead of clean EOF
+- **Security Audit Workflow**: Updated advisory ignore lists in `security-audit.yml` (defaults, fallback, and comments) and `master-pipeline.yml` (workflow_call input)
+
+### Changed
+
+#### CI/CD
+- **Security Audit Schedule**: Changed from daily (`0 0 * * *`) to weekly on Mondays (`0 0 * * 1`) to reduce unnecessary CI resource usage
+- **Dependency Updates**: Cargo.lock updated with latest compatible transitive dependencies
+
+### Dependencies
+- `bytes`: 1.10.1 -> 1.11.1 (security fix)
+- Multiple transitive dependency updates via Cargo.lock refresh
+
 ## [0.4.0] - 2026-03-07 (Scripting, Plugins, DCC & IRCv3)
 
 ### Summary

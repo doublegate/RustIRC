@@ -14,7 +14,7 @@ The project prioritizes full compatibility with IRC standards including IRCv3 ex
 
 ## Development Status
 
-**v0.4.0 Scripting, Plugins, DCC & IRCv3** (2026-03-07)
+**v0.4.1 CI Fixes & Security Updates** (2026-03-07)
 
 - **Phase 1**: Research & Setup ✅ (Complete 2025-08-14)
 - **Phase 2**: Core IRC Engine ✅ (Complete 2025-08-17)
@@ -24,6 +24,7 @@ The project prioritizes full compatibility with IRC standards including IRCv3 ex
 - **Phase 6**: Testing & Integration ✅ (Complete 2026-03-07)
 - **v0.3.9 iced 0.14.0 Migration**: Complete GUI framework upgrade with 82+ breaking API changes resolved ✅
 - **v0.4.0 Major Feature Release**: Lua scripting engine, plugin system, DCC protocol, IRCv3 extensions, flood protection, proxy support, 266 tests ✅
+- **v0.4.1 Patch Release**: CI workflow fixes, security advisory updates, Windows DCC test fix, dependency updates ✅
 - **GUI Framework**: Material Design 3 with iced 0.14.0 - reactive rendering, time-travel debugging
 - **Working Features**: typography, input, chip, plus major fixes in 7+ other components (0 errors)
 - **Implementation Complete**: SerializableColor wrapper, iced 0.14.0 API migration, lifetime management, ALL components fully functional

@@ -2,14 +2,14 @@ name: Security Audit
 
 on:
   schedule:
-    # Run daily at midnight UTC
-    - cron: '0 0 * * *'
+    # Run weekly on Mondays at midnight UTC
+    - cron: '0 0 * * 1'
   workflow_dispatch:
     inputs:
       ignore_advisories:
         description: 'Comma-separated list of advisory IDs to ignore (e.g., RUSTSEC-2024-0384,RUSTSEC-2024-0436)'
         required: false
-        default: 'RUSTSEC-2024-0384,RUSTSEC-2024-0436'
+        default: 'RUSTSEC-2024-0384,RUSTSEC-2024-0436,RUSTSEC-2026-0009'
         type: string
       create_issues:
         description: 'Create GitHub issues for new vulnerabilities'
@@ -21,7 +21,7 @@ on:
       ignore_advisories:
         description: 'Comma-separated list of advisory IDs to ignore'
         required: false
-        default: 'RUSTSEC-2024-0384,RUSTSEC-2024-0436'
+        default: 'RUSTSEC-2024-0384,RUSTSEC-2024-0436,RUSTSEC-2026-0009'
         type: string
       create_issues:
         description: 'Create GitHub issues for new vulnerabilities'
@@ -72,7 +72,8 @@ jobs:
         # Allow unmaintained dependencies that are indirect through GUI frameworks
         # RUSTSEC-2024-0384: instant crate (via iced framework) - unmaintained but actively used
         # RUSTSEC-2024-0436: paste crate (via ratatui/iced frameworks) - unmaintained but actively used
-        ignore: ${{ inputs.ignore_advisories || 'RUSTSEC-2024-0384,RUSTSEC-2024-0436' }}
+        # RUSTSEC-2026-0009: time crate - pinned at =0.3.45 by mac-notification-sys via notify-rust (upstream fix needed)
+        ignore: ${{ inputs.ignore_advisories || 'RUSTSEC-2024-0384,RUSTSEC-2024-0436,RUSTSEC-2026-0009' }}
 
     - name: Install cargo-audit for additional checks
       run: |

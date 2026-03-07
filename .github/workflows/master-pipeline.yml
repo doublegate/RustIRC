@@ -412,7 +412,7 @@ jobs:
       checks: write
     uses: ./.github/workflows/security-audit.yml
     with:
-      ignore_advisories: 'RUSTSEC-2024-0384,RUSTSEC-2024-0436'
+      ignore_advisories: 'RUSTSEC-2024-0384,RUSTSEC-2024-0436,RUSTSEC-2026-0009'
       create_issues: ${{ github.event_name != 'pull_request' }}
     secrets: inherit
 
