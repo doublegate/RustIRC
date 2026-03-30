@@ -463,7 +463,7 @@ jobs:
           RUSTC_WRAPPER: ""  # Disable sccache for coverage to avoid conflicts
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           files: ./cobertura.xml
           use_oidc: true

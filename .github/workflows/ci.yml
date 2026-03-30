@@ -475,7 +475,7 @@ jobs:
     # Upload test results to Codecov for Test Analytics
     - name: Upload test results to Codecov
       if: ${{ !cancelled() }}
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@v6
       continue-on-error: true
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
