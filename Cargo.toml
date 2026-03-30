@@ -59,7 +59,7 @@ mlua = { version = "0.11", features = ["lua54", "vendored", "async", "send"] }
 
 # Testing
 mockall = "0.13"
-proptest = "1.9"
+proptest = "1.11"
 tokio-test = "0.4"
 pretty_assertions = "1.4"
 criterion = { version = "0.8.1", features = ["html_reports"] }
