@@ -545,21 +545,19 @@ impl MessageHandler for ChannelHandler {
                     }
                 }
             }
-            "TOPIC" => {
-                if message.params.len() >= 2 {
-                    let channel = &message.params[0];
-                    let topic = &message.params[1];
-                    info!("Topic changed in {}: {}", channel, topic);
+            "TOPIC" if message.params.len() >= 2 => {
+                let channel = &message.params[0];
+                let topic = &message.params[1];
+                info!("Topic changed in {}: {}", channel, topic);
 
-                    // Emit topic change event
-                    if let Some(event_bus) = self.get_event_bus(context).await {
-                        let event = Event::TopicChanged {
-                            connection_id: context.connection_id.clone(),
-                            channel: channel.clone(),
-                            topic: topic.clone(),
-                        };
-                        event_bus.emit(event).await;
-                    }
+                // Emit topic change event
+                if let Some(event_bus) = self.get_event_bus(context).await {
+                    let event = Event::TopicChanged {
+                        connection_id: context.connection_id.clone(),
+                        channel: channel.clone(),
+                        topic: topic.clone(),
+                    };
+                    event_bus.emit(event).await;
                 }
             }
             _ => {}
