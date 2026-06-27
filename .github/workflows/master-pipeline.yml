@@ -88,7 +88,7 @@ jobs:
 
       # Setup sccache with comprehensive resilience for GitHub cache service outages
       - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.9
+        uses: mozilla-actions/sccache-action@v0.0.10
         continue-on-error: true
         id: sccache
         with:
@@ -463,7 +463,7 @@ jobs:
           RUSTC_WRAPPER: ""  # Disable sccache for coverage to avoid conflicts
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           files: ./cobertura.xml
           use_oidc: true
