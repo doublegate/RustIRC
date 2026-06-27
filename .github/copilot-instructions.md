@@ -11,7 +11,7 @@ RustIRC is a modern IRC client built in Rust that combines the best features fro
 
 ## Technology Stack
 
-- **Language**: Rust (MSRV: 1.75+)
+- **Language**: Rust (MSRV: 1.85+)
 - **Async Runtime**: Tokio for network I/O
 - **GUI Framework**: Iced 0.13.1 with Material Design 3 components
 - **TUI Framework**: ratatui for terminal interface

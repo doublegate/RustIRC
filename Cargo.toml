@@ -71,7 +71,7 @@ clap = { version = "4.6.1", features = ["derive"] }
 name = "rustirc"
 version = "0.4.2"
 edition = "2021"
-rust-version = "1.75.0"
+rust-version = "1.85.0"
 authors = ["RustIRC Contributors"]
 description = "A powerful, modern IRC client combining the best of mIRC, HexChat, and WeeChat"
 documentation = "https://docs.rs/rustirc"

@@ -35,7 +35,7 @@ If applicable, add screenshots to help explain your problem.
 
 - **OS**: [e.g. Ubuntu 22.04, Windows 11, macOS 13]
 - **RustIRC Version**: [e.g. 0.1.0, git commit hash]
-- **Rust Version**: [e.g. 1.75.0]
+- **Rust Version**: [e.g. 1.85.0]
 - **Interface**: [GUI/TUI]
 
 ## IRC Server Details
