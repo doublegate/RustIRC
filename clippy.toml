@@ -1,7 +1,7 @@
 # RustIRC Clippy Configuration
 
 # Set MSRV for clippy
-msrv = "1.85.0"
+msrv = "1.89.0"
 
 # Lint configuration
 avoid-breaking-exported-api = true
