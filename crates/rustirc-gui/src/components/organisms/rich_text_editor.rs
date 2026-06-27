@@ -468,7 +468,7 @@ impl RichTextEditor {
         }
 
         // Add remaining emojis if any
-        if COMMON_EMOJIS.len() % emojis_per_row != 0 {
+        if !COMMON_EMOJIS.len().is_multiple_of(emojis_per_row) {
             emoji_grid = emoji_grid.push(container(current_row).padding([0, 8]));
         }
 

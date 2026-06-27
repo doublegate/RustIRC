@@ -721,7 +721,7 @@ impl TuiState {
 
         // Log timestamp update for debugging
         let total_seconds = epoch_duration.as_secs();
-        if total_seconds % 60 == 0 {
+        if total_seconds.is_multiple_of(60) {
             // Every minute
             println!("Timestamp update: {total_seconds} seconds since UNIX_EPOCH");
         }
