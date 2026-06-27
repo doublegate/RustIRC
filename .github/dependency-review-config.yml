@@ -72,6 +72,10 @@ allow-dependencies-licenses:
   - pkg:cargo/iced_core
   - pkg:cargo/iced_widget
   - pkg:cargo/iced_runtime
+  # Notification backend (macOS-only). Genuinely MIT/Apache-2.0, but its
+  # crate metadata uses a non-SPDX "MIT/Apache-2.0" string that GitHub's
+  # license parser cannot resolve (rendered as LicenseRef-bad-mitapache-2.0).
+  - pkg:cargo/mac-notification-sys
 
 # Deny specific packages using purl format
 deny-packages: []

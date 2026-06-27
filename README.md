@@ -337,7 +337,7 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 
 ### Core Technologies
 
-- **Language**: Rust (Edition 2021, MSRV 1.75.0)
+- **Language**: Rust (Edition 2021, MSRV 1.89.0)
 - **Async Runtime**: Tokio (multi-threaded, work-stealing)
 - **GUI Framework**: Enhanced Iced 0.14.0 with Material Design 3
   - WGPU backend for GPU acceleration
