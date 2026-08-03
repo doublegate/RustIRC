@@ -132,7 +132,7 @@ jobs:
 
     # Setup sccache with comprehensive GitHub cache service resilience
     - name: Run sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.10
+      uses: mozilla-actions/sccache-action@v0.0.11
       continue-on-error: true
       id: sccache
       with:
