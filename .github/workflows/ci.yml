@@ -211,7 +211,7 @@ jobs:
     # Install cargo-nextest using pre-built binaries (much faster than compiling from source)
     # This avoids the timeout issue on Windows where cargo-nextest takes >10 minutes to compile
     - name: Install cargo-nextest (pre-built binary)
-      uses: taiki-e/install-action@v2
+      uses: taiki-e/install-action@v2.85.5
       with:
         tool: cargo-nextest
 
