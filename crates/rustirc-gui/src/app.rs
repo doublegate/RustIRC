@@ -1844,7 +1844,7 @@ impl RustIrcGui {
                                 if !message.params.is_empty() {
                                     let channel = &message.params[0];
                                     let part_reason = if message.params.len() >= 2 {
-                                        format!(" ({})", &message.params[1])
+                                        format!(" ({})", message.params[1])
                                     } else {
                                         String::new()
                                     };
@@ -1874,7 +1874,7 @@ impl RustIrcGui {
                                     &message.prefix
                                 {
                                     let quit_reason = if !message.params.is_empty() {
-                                        format!(" ({})", &message.params[0])
+                                        format!(" ({})", message.params[0])
                                     } else {
                                         String::new()
                                     };
