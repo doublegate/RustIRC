@@ -18,7 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Patch/minor refresh of the whole lock graph (215 packages), including tokio 1.53.1, rustls 0.23.45,
   tokio-rustls 0.26.5, serde_json 1.0.151, toml 1.1.6, regex 1.13.1, open 5.4.4, ratatui 0.30.2,
   clap 4.6.7, rustls-pki-types 1.15.1, zeroize 1.9.0, chrono 0.4.45, tokio-socks 0.5.3, anyhow 1.0.104
-- `ordered-float` held at 5.4.0: 5.5.0 declares `rust-version = 1.90`, above the workspace MSRV of 1.89
+- `ordered-float` 5.x is not taken: 5.5.0 declares `rust-version = 1.90`, above the workspace MSRV
+  of 1.89. `wgpu-hal` (the only 5.x consumer, requirement `>=3, <6`) now shares the 4.6.0 that
+  `termwiz`/`wezterm-dynamic` already required (`^4.1`), so one copy is locked instead of two
 
 #### GitHub Actions
 - actions/checkout v6 -> v7, actions/cache v5 -> v6, codecov/codecov-action v6 -> v7

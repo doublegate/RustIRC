@@ -62,6 +62,10 @@ allow-dependencies-licenses:
   - pkg:cargo/aws-lc-rs
   - pkg:cargo/aws-lc-sys
   - pkg:cargo/untrusted
+  # Mozilla CA root bundle. Licensed CDLA-Permissive-2.0 (a permissive data
+  # licence) since 1.0; dependency review only flags changed packages, so it
+  # surfaced on the 1.0.8 -> 1.0.9 bump rather than when 1.0 was adopted.
+  - pkg:cargo/webpki-roots
   # OpenSSL bindings
   - pkg:cargo/openssl
   - pkg:cargo/openssl-sys
