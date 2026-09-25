@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       ignore_advisories:
-        description: 'Comma-separated list of advisory IDs to ignore (e.g., RUSTSEC-2024-0384,RUSTSEC-2024-0436)'
+        description: 'Comma-separated list of advisory IDs to ignore (e.g., RUSTSEC-2024-0436)'
         required: false
-        default: 'RUSTSEC-2024-0384,RUSTSEC-2024-0436,RUSTSEC-2026-0009'
+        default: 'RUSTSEC-2024-0436'
         type: string
       create_issues:
         description: 'Create GitHub issues for new vulnerabilities'
@@ -21,7 +21,7 @@ on:
       ignore_advisories:
         description: 'Comma-separated list of advisory IDs to ignore'
         required: false
-        default: 'RUSTSEC-2024-0384,RUSTSEC-2024-0436,RUSTSEC-2026-0009'
+        default: 'RUSTSEC-2024-0436'
         type: string
       create_issues:
         description: 'Create GitHub issues for new vulnerabilities'
@@ -53,12 +53,12 @@ jobs:
       checks: write
     steps:
     - name: Checkout code
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         fetch-depth: 0
 
     - name: Cache cargo audit database
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: ~/.cache/cargo-audit
         key: cargo-audit-db-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
@@ -70,10 +70,10 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         # Allow unmaintained dependencies that are indirect through GUI frameworks
-        # RUSTSEC-2024-0384: instant crate (via iced framework) - unmaintained but actively used
         # RUSTSEC-2024-0436: paste crate (via ratatui/iced frameworks) - unmaintained but actively used
-        # RUSTSEC-2026-0009: time crate - pinned at =0.3.45 by mac-notification-sys via notify-rust (upstream fix needed)
-        ignore: ${{ inputs.ignore_advisories || 'RUSTSEC-2024-0384,RUSTSEC-2024-0436,RUSTSEC-2026-0009' }}
+        # RUSTSEC-2024-0384 (instant) and RUSTSEC-2026-0009 (time) were dropped from this list:
+        # instant is no longer in the lock graph and time now resolves to 0.3.55 (patched >=0.3.47).
+        ignore: ${{ inputs.ignore_advisories || 'RUSTSEC-2024-0436' }}
 
     - name: Install cargo-audit for additional checks
       run: |
@@ -252,7 +252,7 @@ jobs:
       pull-requests: write
     steps:
     - name: Checkout code
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
 
     - name: Dependency Review
       uses: actions/dependency-review-action@v5

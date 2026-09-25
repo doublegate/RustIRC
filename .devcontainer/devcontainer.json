@@ -1,6 +1,6 @@
 {
   "name": "RustIRC Development",
-  "image": "mcr.microsoft.com/vscode/devcontainers/rust:1-bullseye",
+  "image": "mcr.microsoft.com/devcontainers/rust:2-1-trixie",
   "features": {
     "ghcr.io/devcontainers/features/rust:1": {
       "version": "stable",

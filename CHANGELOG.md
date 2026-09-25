@@ -5,6 +5,42 @@ All notable changes to RustIRC will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+#### Dependencies (consolidates Dependabot PRs #115-#139)
+- **mlua** 0.11.6 -> 0.12.1 (major; the scripting crate needed no source changes -- its
+  `Lua`, `Table`, `Function`, `UserData` and hook APIs are unchanged in 0.12)
+- **dirs** 6 -> 7 (major; only `preference_dir` on Windows changed, which RustIRC does not call)
+- **base64** 0.22 -> 0.23 in `rustirc-core` (major; the `Engine`/`general_purpose::STANDARD` API is unchanged)
+- **mockall** workspace requirement 0.13 -> 0.15 (declared in `[workspace.dependencies]`, not currently used by any member)
+- Patch/minor refresh of the whole lock graph (215 packages), including tokio 1.53.1, rustls 0.23.45,
+  tokio-rustls 0.26.5, serde_json 1.0.151, toml 1.1.6, regex 1.13.1, open 5.4.4, ratatui 0.30.2,
+  clap 4.6.7, rustls-pki-types 1.15.1, zeroize 1.9.0, chrono 0.4.45, tokio-socks 0.5.3, anyhow 1.0.104
+- `ordered-float` held at 5.4.0: 5.5.0 declares `rust-version = 1.90`, above the workspace MSRV of 1.89
+
+#### GitHub Actions
+- actions/checkout v6 -> v7, actions/cache v5 -> v6, codecov/codecov-action v6 -> v7
+- mozilla-actions/sccache-action v0.0.10 -> v0.0.11, and the sccache binary it installs v0.10.0 -> v0.18.0
+- taiki-e/install-action pinned `v2` -> `v2.87.20`
+
+#### Dev container
+- `.devcontainer/devcontainer.json` image `mcr.microsoft.com/vscode/devcontainers/rust:1-bullseye` ->
+  `mcr.microsoft.com/devcontainers/rust:2-1-trixie` (the `vscode/` namespace is retired)
+- `.devcontainer/Dockerfile` base `rust:1.75-bullseye` -> `rust:1.98-trixie` (1.75 is below the MSRV)
+
+### Fixed
+- **Security**: `cargo audit` goes from 7 vulnerabilities to 0 -- quick-xml 0.37.5/0.39.2 -> 0.41.0
+  (RUSTSEC-2026-0194, RUSTSEC-2026-0195), rustls 0.23.41 -> 0.23.45 (RUSTSEC-2026-0285),
+  crossbeam-epoch 0.9.18 -> 0.9.21 (RUSTSEC-2026-0204). Unsound anyhow (RUSTSEC-2026-0190),
+  memmap2 (RUSTSEC-2026-0186) and event-listener (RUSTSEC-2026-0221) warnings are also resolved.
+- `time` now resolves to 0.3.55 and `instant` is gone from the graph, so RUSTSEC-2026-0009 and
+  RUSTSEC-2024-0384 were removed from the security-audit ignore list
+- Two `clippy::useless_borrows_in_formatting` errors in `rustirc-gui/src/app.rs` that failed
+  `cargo clippy -D warnings` on current stable (1.98)
+- README MSRV badge said 1.75; the workspace `rust-version` is 1.89
+
 ## [0.4.2] - 2026-03-07 (Dependency Maintenance & GitHub Cleanup)
 
 ### Summary
