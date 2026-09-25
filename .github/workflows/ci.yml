@@ -59,7 +59,7 @@ jobs:
     if: ${{ !inputs.cache_key }}
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - uses: dtolnay/rust-toolchain@stable
       with:
         components: rustfmt
@@ -76,7 +76,7 @@ jobs:
     if: ${{ !inputs.cache_key }}
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     - uses: dtolnay/rust-toolchain@stable
       with:
         components: clippy
@@ -101,7 +101,7 @@ jobs:
             rust: beta
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     
     # Setup cross-platform helper functions
     - name: Load helper functions
@@ -132,11 +132,11 @@ jobs:
 
     # Setup sccache with comprehensive GitHub cache service resilience
     - name: Run sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.10
+      uses: mozilla-actions/sccache-action@v0.0.11
       continue-on-error: true
       id: sccache
       with:
-        version: v0.10.0
+        version: v0.18.0
 
     - name: Configure sccache with GitHub cache service resilience
       id: configure_sccache
@@ -211,7 +211,7 @@ jobs:
     # Install cargo-nextest using pre-built binaries (much faster than compiling from source)
     # This avoids the timeout issue on Windows where cargo-nextest takes >10 minutes to compile
     - name: Install cargo-nextest (pre-built binary)
-      uses: taiki-e/install-action@v2
+      uses: taiki-e/install-action@v2.87.20
       with:
         tool: cargo-nextest
 
@@ -475,7 +475,7 @@ jobs:
     # Upload test results to Codecov for Test Analytics
     - name: Upload test results to Codecov
       if: ${{ !cancelled() }}
-      uses: codecov/codecov-action@v6
+      uses: codecov/codecov-action@v7
       continue-on-error: true
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
@@ -498,7 +498,7 @@ jobs:
     name: Minimum Supported Rust Version
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
     
     # Setup cross-platform helper functions
     - name: Load helper functions

@@ -1,4 +1,5 @@
-FROM rust:1.75-bullseye
+# The workspace MSRV is 1.89 (Cargo.toml rust-version); an older image cannot build it.
+FROM rust:1.98-trixie
 
 # Install development dependencies
 RUN apt-get update && apt-get install -y \

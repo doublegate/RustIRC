@@ -17,11 +17,11 @@ tracing = { workspace = true }
 async-trait = "0.1"
 rustls = "0.23"
 tokio-rustls = "0.26"
-rustls-pki-types = "1.13.2"
+rustls-pki-types = "1.15.1"
 webpki-roots = "1.0"
 rand = "0.10"
-base64 = "0.22"
-zeroize = { version = "1.8", features = ["zeroize_derive"] }
+base64 = "0.23"
+zeroize = { version = "1.9", features = ["zeroize_derive"] }
 
 dirs = { workspace = true }
 tokio-socks = { workspace = true }
