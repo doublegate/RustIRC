@@ -152,18 +152,29 @@ impl TuiApp {
 
     /// Main event loop
     async fn main_loop(&mut self) -> Result<()> {
+        let mut needs_redraw = true;
+
         while !self.should_quit {
+            // Determine timeout until next tick
+            let timeout = self
+                .tick_rate
+                .saturating_sub(self.last_tick.elapsed())
+                .clamp(Duration::from_millis(10), Duration::from_millis(50));
+
             // Handle terminal events
-            if event::poll(Duration::from_millis(50))? {
+            if event::poll(timeout)? {
                 match event::read()? {
                     Event::Key(key) => {
                         self.handle_key_event(key)?;
+                        needs_redraw = true;
                     }
                     Event::Mouse(mouse) => {
                         self.handle_mouse_event(mouse)?;
+                        needs_redraw = true;
                     }
                     Event::Resize(width, height) => {
                         self.handle_resize_event(width, height)?;
+                        needs_redraw = true;
                     }
                     _ => {}
                 }
@@ -175,8 +186,11 @@ impl TuiApp {
                 while let Ok(event) = receiver.try_recv() {
                     events.push(event);
                 }
-                for event in events {
-                    self.handle_core_event(event);
+                if !events.is_empty() {
+                    for event in events {
+                        self.handle_core_event(event);
+                    }
+                    needs_redraw = true;
                 }
             }
 
@@ -184,12 +198,14 @@ impl TuiApp {
             if self.last_tick.elapsed() >= self.tick_rate {
                 self.on_tick();
                 self.last_tick = Instant::now();
+                needs_redraw = true;
             }
 
-            // Render
-            self.draw()?;
-
-            tokio::time::sleep(Duration::from_millis(50)).await;
+            // Render only when state has changed
+            if needs_redraw {
+                self.draw()?;
+                needs_redraw = false;
+            }
         }
 
         Ok(())

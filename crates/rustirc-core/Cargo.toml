@@ -22,6 +22,8 @@ webpki-roots = "1.0"
 rand = "0.10"
 base64 = "0.23"
 zeroize = { version = "1.9", features = ["zeroize_derive"] }
+sha2 = "0.10"
+hmac = "0.12"
 
 dirs = { workspace = true }
 tokio-socks = { workspace = true }

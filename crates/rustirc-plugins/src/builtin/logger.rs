@@ -67,4 +67,19 @@ impl PluginApi for LoggerPlugin {
         self.enabled = enabled;
         Ok(())
     }
+
+    fn handle_event(&mut self, event: &rustirc_core::events::Event) -> PluginResult<()> {
+        if let rustirc_core::events::Event::MessageReceived {
+            connection_id,
+            message,
+        } = event
+        {
+            tracing::debug!(
+                "Logger plugin recorded message from {}: {}",
+                connection_id,
+                message
+            );
+        }
+        Ok(())
+    }
 }

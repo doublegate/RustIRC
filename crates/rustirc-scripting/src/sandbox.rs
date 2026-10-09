@@ -66,14 +66,22 @@ impl Sandbox {
         // Set instruction count hook for CPU timeout
         if self.timeout_ms > 0 {
             let max_instructions = self.timeout_ms * 1000;
+            let execution_state =
+                std::sync::Arc::new(std::sync::Mutex::new((std::time::Instant::now(), 0u64)));
             let _ = lua.set_hook(
                 mlua::HookTriggers::new().every_nth_instruction(10000),
                 move |_lua, _debug| {
-                    static COUNTER: std::sync::atomic::AtomicU64 =
-                        std::sync::atomic::AtomicU64::new(0);
-                    let count = COUNTER.fetch_add(10000, std::sync::atomic::Ordering::Relaxed);
-                    if count > max_instructions {
-                        COUNTER.store(0, std::sync::atomic::Ordering::Relaxed);
+                    let mut guard = execution_state.lock().unwrap();
+                    let (ref mut last_tick, ref mut count) = *guard;
+                    let now = std::time::Instant::now();
+                    // If more than 100ms passed since previous hook trigger, this is a new execution run
+                    if now.duration_since(*last_tick) > std::time::Duration::from_millis(100) {
+                        *count = 0;
+                    }
+                    *last_tick = now;
+                    *count += 10000;
+                    if *count > max_instructions {
+                        *count = 0;
                         Err(mlua::Error::RuntimeError(
                             "Script execution timeout exceeded".to_string(),
                         ))

@@ -319,6 +319,29 @@ impl ScriptEngine {
     }
 }
 
+#[async_trait::async_trait]
+impl rustirc_core::events::EventHandler for ScriptEngine {
+    async fn handle(&self, event: &rustirc_core::events::Event) {
+        match event {
+            rustirc_core::events::Event::MessageReceived { message, .. } => {
+                let script_msg = ScriptMessage::from_protocol_message(message);
+                let _ = self.trigger_event(&message.command, &script_msg);
+            }
+            rustirc_core::events::Event::ChannelJoined { channel, .. } => {
+                let script_msg =
+                    ScriptMessage::new(None, "JOIN".to_string(), vec![channel.clone()]);
+                let _ = self.trigger_event("JOIN", &script_msg);
+            }
+            rustirc_core::events::Event::ChannelLeft { channel, .. } => {
+                let script_msg =
+                    ScriptMessage::new(None, "PART".to_string(), vec![channel.clone()]);
+                let _ = self.trigger_event("PART", &script_msg);
+            }
+            _ => {}
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

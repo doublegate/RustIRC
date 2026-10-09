@@ -268,7 +268,9 @@ impl fmt::Display for Message {
         // Parameters
         for (i, param) in self.params.iter().enumerate() {
             write!(f, " ")?;
-            if i == self.params.len() - 1 && (param.contains(' ') || param.starts_with(':')) {
+            if i == self.params.len() - 1
+                && (param.is_empty() || param.contains(' ') || param.starts_with(':'))
+            {
                 write!(f, ":{param}")?;
             } else {
                 write!(f, "{param}")?;
@@ -293,6 +295,75 @@ impl fmt::Display for Prefix {
                 }
                 Ok(())
             }
+        }
+    }
+}
+
+use smallvec::SmallVec;
+
+/// Borrowed IRCv3 message tag referencing slices of the original line
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TagRef<'a> {
+    pub key: &'a str,
+    pub value: Option<&'a str>,
+}
+
+impl<'a> TagRef<'a> {
+    pub fn new(key: &'a str, value: Option<&'a str>) -> Self {
+        Self { key, value }
+    }
+
+    pub fn to_owned(&self) -> Tag {
+        Tag {
+            key: self.key.to_string(),
+            value: self.value.map(unescape_tag_value),
+        }
+    }
+}
+
+/// Borrowed IRC prefix referencing slices of the original line
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PrefixRef<'a> {
+    Server(&'a str),
+    User {
+        nick: &'a str,
+        user: Option<&'a str>,
+        host: Option<&'a str>,
+    },
+}
+
+impl<'a> PrefixRef<'a> {
+    pub fn to_owned(&self) -> Prefix {
+        match *self {
+            PrefixRef::Server(server) => Prefix::Server(server.to_string()),
+            PrefixRef::User { nick, user, host } => Prefix::User {
+                nick: nick.to_string(),
+                user: user.map(str::to_string),
+                host: host.map(str::to_string),
+            },
+        }
+    }
+}
+
+/// Zero-copy borrowed view of an IRC message
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MessageRef<'a> {
+    pub tags: Option<SmallVec<[TagRef<'a>; 4]>>,
+    pub prefix: Option<PrefixRef<'a>>,
+    pub command: &'a str,
+    pub params: SmallVec<[&'a str; 4]>,
+}
+
+impl<'a> MessageRef<'a> {
+    pub fn to_owned(&self) -> Message {
+        Message {
+            tags: self
+                .tags
+                .as_ref()
+                .map(|tags| tags.iter().map(TagRef::to_owned).collect()),
+            prefix: self.prefix.as_ref().map(PrefixRef::to_owned),
+            command: self.command.to_string(),
+            params: self.params.iter().map(|&p| p.to_string()).collect(),
         }
     }
 }
@@ -361,5 +432,16 @@ mod tests {
         assert_eq!(tag.key, "key");
         assert_eq!(tag.raw_value(), Some("hello\\:\\sworld"));
         assert_eq!(tag.unescaped_value(), Some("hello; world".to_string()));
+    }
+
+    #[test]
+    fn test_empty_trailing_parameter_display() {
+        let msg = Message {
+            tags: None,
+            prefix: None,
+            command: "QUIT".to_string(),
+            params: vec!["".to_string()],
+        };
+        assert_eq!(msg.to_string(), "QUIT :");
     }
 }

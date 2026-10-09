@@ -86,10 +86,15 @@ impl DccChat {
     ///
     /// This should be called after sending the CTCP DCC CHAT message to the peer.
     pub async fn wait_for_connection(&mut self, listener: TcpListener) -> DccResult<()> {
-        let (stream, _remote_addr) = listener
-            .accept()
-            .await
-            .map_err(|e| DccError::ConnectionFailed(format!("Failed to accept connection: {e}")))?;
+        let (stream, _remote_addr) =
+            tokio::time::timeout(std::time::Duration::from_secs(30), listener.accept())
+                .await
+                .map_err(|_| {
+                    DccError::ConnectionFailed("Timed out waiting for connection (30s)".to_string())
+                })?
+                .map_err(|e| {
+                    DccError::ConnectionFailed(format!("Failed to accept connection: {e}"))
+                })?;
 
         let (read_half, write_half) = tokio::io::split(stream);
         self.reader = Some(BufReader::new(read_half));
@@ -206,7 +211,7 @@ impl DccChat {
 mod tests {
     use super::*;
     use std::net::Ipv4Addr;
-    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::io::AsyncWriteExt;
 
     /// Helper to create a chat with a dummy event channel.
     fn make_chat(

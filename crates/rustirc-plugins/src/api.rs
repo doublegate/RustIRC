@@ -427,4 +427,9 @@ pub trait PluginApi: Send + Sync {
     fn set_enabled(&mut self, _enabled: bool) -> PluginResult<()> {
         Ok(())
     }
+
+    /// Handle an incoming IRC event if the plugin has `handles_events` capability
+    fn handle_event(&mut self, _event: &rustirc_core::events::Event) -> PluginResult<()> {
+        Ok(())
+    }
 }

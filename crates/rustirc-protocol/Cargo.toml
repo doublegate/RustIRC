@@ -10,6 +10,7 @@ license = "MIT OR Apache-2.0"
 serde = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+smallvec = { workspace = true }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }

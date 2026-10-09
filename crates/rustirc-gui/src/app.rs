@@ -2473,36 +2473,38 @@ impl RustIrcGui {
             .into()
     }
 
-    /// Subscription function for receiving IRC events
+    /// Subscription function for receiving IRC events via a reactive stream
     fn subscription(&self) -> iced::Subscription<Message> {
-        // Poll for IRC events from the global receiver
-        // The instance receiver (irc_message_receiver) is used for testing
-        // and is polled separately in the update() method when needed
-        iced::time::every(std::time::Duration::from_millis(100)).map(|_| {
-            // Try to receive IRC events from the global receiver
-            if let Some(receiver_arc) = IRC_EVENT_RECEIVER.get() {
-                let mut guard = receiver_arc.lock().unwrap();
-                if let Some(ref mut receiver) = guard.as_mut() {
-                    match receiver.try_recv() {
-                        Ok(message) => {
-                            info!("GUI: Received IRC event via subscription: {:?}", message);
-                            return message;
-                        }
-                        Err(tokio::sync::mpsc::error::TryRecvError::Empty) => {
-                            // No message available, continue
-                        }
-                        Err(tokio::sync::mpsc::error::TryRecvError::Disconnected) => {
-                            warn!("IRC event channel disconnected");
-                        }
+        iced::Subscription::run(Self::irc_event_stream)
+    }
+
+    /// Reactive event stream that yields IRC messages as soon as they arrive
+    fn irc_event_stream() -> impl iced::futures::Stream<Item = Message> {
+        use iced::futures::SinkExt;
+
+        iced::stream::channel(100, async |mut output| {
+            let mut receiver_opt = None;
+            for _ in 0..20 {
+                if let Some(receiver_arc) = IRC_EVENT_RECEIVER.get() {
+                    let mut guard = receiver_arc.lock().unwrap();
+                    if guard.is_some() {
+                        receiver_opt = guard.take();
+                        break;
                     }
                 }
+                tokio::time::sleep(std::time::Duration::from_millis(50)).await;
             }
 
-            // Note: The instance irc_message_receiver is connected for testing scenarios
-            // It allows test harnesses to inject IRC messages directly into the GUI
-            // without going through the global event system
-
-            Message::None
+            if let Some(mut receiver) = receiver_opt {
+                while let Some(message) = receiver.recv().await {
+                    info!("GUI: Received IRC event via subscription: {:?}", message);
+                    if output.send(message).await.is_err() {
+                        break;
+                    }
+                }
+            } else {
+                warn!("IRC event receiver was not initialized for subscription stream");
+            }
         })
     }
 

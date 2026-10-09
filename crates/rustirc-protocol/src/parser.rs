@@ -28,7 +28,7 @@
 //! assert!(message.tags.is_some());
 //! ```
 
-use crate::{IrcValidator, Message, Prefix, Tag, ValidationError};
+use crate::{IrcValidator, Message, MessageRef, Prefix, PrefixRef, Tag, TagRef, ValidationError};
 use thiserror::Error;
 
 /// Errors that can occur during IRC message parsing
@@ -142,6 +142,154 @@ impl Parser {
         Self::new().parse(input)
     }
 
+    /// Static convenience method for zero-copy parsing into a `MessageRef`
+    pub fn parse_message_ref<'a>(input: &'a str) -> Result<MessageRef<'a>, ParseError> {
+        Self::new().parse_ref(input)
+    }
+
+    /// Parse an IRC message string into a zero-copy borrowed `MessageRef`
+    ///
+    /// Avoids heap allocations for commands, parameters, prefixes, and tags
+    /// by borrowing string slices directly from the input buffer.
+    pub fn parse_ref<'a>(&self, mut input: &'a str) -> Result<MessageRef<'a>, ParseError> {
+        // Strip trailing CR and LF
+        input = input.trim_end_matches(['\r', '\n']);
+
+        if input.is_empty() {
+            return Err(ParseError::EmptyMessage);
+        }
+
+        self.validator.validate_message_length(input)?;
+
+        let (tags_part, body_part) = if input.starts_with('@') {
+            input.split_once(' ').unwrap_or((input, ""))
+        } else {
+            ("", input)
+        };
+
+        if !tags_part.is_empty() && tags_part.len() > crate::MAX_TAGS_LENGTH + 2 {
+            return Err(ParseError::MessageTooLong(tags_part.len()));
+        }
+
+        if body_part.len() > crate::MAX_MESSAGE_LENGTH {
+            return Err(ParseError::MessageTooLong(body_part.len()));
+        }
+
+        let mut rest = input;
+
+        // Parse IRCv3 tags
+        let tags = if rest.starts_with('@') {
+            let (tags_str, remainder) = rest[1..].split_once(' ').unwrap_or((&rest[1..], ""));
+            rest = remainder.trim_start();
+
+            let mut tag_vec = smallvec::SmallVec::new();
+            for item in tags_str.split(';') {
+                if item.is_empty() {
+                    continue;
+                }
+                if let Some((k, v)) = item.split_once('=') {
+                    self.validator.validate_tag_key(k)?;
+                    self.validator.validate_tag_value(v)?;
+                    tag_vec.push(TagRef {
+                        key: k,
+                        value: Some(v),
+                    });
+                } else {
+                    self.validator.validate_tag_key(item)?;
+                    tag_vec.push(TagRef {
+                        key: item,
+                        value: None,
+                    });
+                }
+            }
+            Some(tag_vec)
+        } else {
+            None
+        };
+
+        rest = rest.trim_start();
+
+        // Parse prefix
+        let prefix = if rest.starts_with(':') {
+            let (prefix_str, remainder) = rest[1..].split_once(' ').unwrap_or((&rest[1..], ""));
+            rest = remainder.trim_start();
+
+            if prefix_str.is_empty() {
+                return Err(ParseError::InvalidFormat("Empty prefix".to_string()));
+            }
+
+            if prefix_str.contains('!') || prefix_str.contains('@') {
+                if let Some((nick, uh)) = prefix_str.split_once('!') {
+                    let (user, host) = match uh.split_once('@') {
+                        Some((u, h)) => (Some(u), Some(h)),
+                        None => (Some(uh), None),
+                    };
+                    Some(PrefixRef::User { nick, user, host })
+                } else if let Some((nick, host)) = prefix_str.split_once('@') {
+                    Some(PrefixRef::User {
+                        nick,
+                        user: None,
+                        host: Some(host),
+                    })
+                } else {
+                    Some(PrefixRef::User {
+                        nick: prefix_str,
+                        user: None,
+                        host: None,
+                    })
+                }
+            } else {
+                Some(PrefixRef::Server(prefix_str))
+            }
+        } else {
+            None
+        };
+
+        rest = rest.trim_start();
+
+        if rest.is_empty() {
+            return Err(ParseError::InvalidFormat("Missing command".to_string()));
+        }
+
+        // Parse command
+        let (command, remainder) = match rest.split_once(' ') {
+            Some((cmd, rem)) => (cmd, rem.trim_start()),
+            None => (rest, ""),
+        };
+
+        self.validator.validate_command(command)?;
+
+        // Parse parameters
+        let mut params = smallvec::SmallVec::new();
+        let mut curr = remainder;
+
+        while !curr.is_empty() {
+            if let Some(trailing) = curr.strip_prefix(':') {
+                self.validator.validate_parameter(trailing)?;
+                params.push(trailing);
+                break;
+            }
+
+            let (p, rem) = match curr.split_once(' ') {
+                Some((param, r)) => (param, r.trim_start()),
+                None => (curr, ""),
+            };
+
+            if !p.is_empty() {
+                self.validator.validate_parameter(p)?;
+                params.push(p);
+            }
+            curr = rem;
+        }
+
+        Ok(MessageRef {
+            tags,
+            prefix,
+            command,
+            params,
+        })
+    }
+
     /// Parse an IRC message string into structured components
     ///
     /// This is the main parsing method that handles the complete IRC message format:
@@ -190,8 +338,18 @@ impl Parser {
         // Validate message length first
         self.validator.validate_message_length(input)?;
 
-        if input.len() > crate::MAX_MESSAGE_LENGTH {
-            return Err(ParseError::MessageTooLong(input.len()));
+        let (tags_part, body_part) = if input.starts_with('@') {
+            input.split_once(' ').unwrap_or((input, ""))
+        } else {
+            ("", input)
+        };
+
+        if !tags_part.is_empty() && tags_part.len() > crate::MAX_TAGS_LENGTH + 2 {
+            return Err(ParseError::MessageTooLong(tags_part.len()));
+        }
+
+        if body_part.len() > crate::MAX_MESSAGE_LENGTH {
+            return Err(ParseError::MessageTooLong(body_part.len()));
         }
 
         let mut chars = input.chars().peekable();
@@ -434,5 +592,48 @@ mod tests {
                 .unwrap();
         assert!(msg.tags.is_some());
         assert_eq!(msg.tags.unwrap()[0].key, "time");
+    }
+
+    #[test]
+    fn test_parse_long_message_with_tags() {
+        let long_tags = format!(
+            "@tag1={};tag2={} :nick!user@host PRIVMSG #chan :hello",
+            "A".repeat(500),
+            "B".repeat(500)
+        );
+        let msg = Parser::parse_message(&long_tags).unwrap();
+        assert_eq!(msg.command, "PRIVMSG");
+        assert_eq!(msg.params, vec!["#chan", "hello"]);
+        assert!(msg.tags.is_some());
+    }
+
+    #[test]
+    fn test_parse_message_ref_zero_copy() {
+        let raw = "@account=alice;typing=active :alice!user@example.com PRIVMSG #rust :Hello, zero-copy!\r\n";
+        let msg_ref = Parser::parse_message_ref(raw).unwrap();
+
+        assert_eq!(msg_ref.command, "PRIVMSG");
+        assert_eq!(msg_ref.params.as_slice(), &["#rust", "Hello, zero-copy!"]);
+        assert!(msg_ref.tags.is_some());
+        let tags = msg_ref.tags.as_ref().unwrap();
+        assert_eq!(tags.len(), 2);
+        assert_eq!(tags[0].key, "account");
+        assert_eq!(tags[0].value, Some("alice"));
+        assert_eq!(tags[1].key, "typing");
+        assert_eq!(tags[1].value, Some("active"));
+
+        match msg_ref.prefix {
+            Some(PrefixRef::User { nick, user, host }) => {
+                assert_eq!(nick, "alice");
+                assert_eq!(user, Some("user"));
+                assert_eq!(host, Some("example.com"));
+            }
+            _ => panic!("Expected User prefix"),
+        }
+
+        // Verify conversion to owned Message
+        let owned = msg_ref.to_owned();
+        assert_eq!(owned.command, "PRIVMSG");
+        assert_eq!(owned.params, vec!["#rust", "Hello, zero-copy!"]);
     }
 }

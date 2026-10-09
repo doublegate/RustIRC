@@ -137,6 +137,237 @@ impl SaslMechanism for ExternalMechanism {
     }
 }
 
+// SCRAM-SHA-256 helper functions
+fn pbkdf2_sha256(password: &[u8], salt: &[u8], iterations: u32) -> [u8; 32] {
+    use hmac::{Hmac, Mac};
+    use sha2::Sha256;
+    type HmacSha256 = Hmac<Sha256>;
+
+    let mut mac = HmacSha256::new_from_slice(password).expect("HMAC key");
+    mac.update(salt);
+    mac.update(&[0, 0, 0, 1]);
+    let mut u = mac.finalize().into_bytes();
+    let mut result = u;
+
+    for _ in 1..iterations {
+        let mut mac = HmacSha256::new_from_slice(password).expect("HMAC key");
+        mac.update(&u);
+        u = mac.finalize().into_bytes();
+        for (r, byte) in result.iter_mut().zip(u.iter()) {
+            *r ^= byte;
+        }
+    }
+
+    result.into()
+}
+
+fn hmac_sha256(key: &[u8], data: &[u8]) -> [u8; 32] {
+    use hmac::{Hmac, Mac};
+    use sha2::Sha256;
+    type HmacSha256 = Hmac<Sha256>;
+
+    let mut mac = HmacSha256::new_from_slice(key).expect("HMAC key");
+    mac.update(data);
+    mac.finalize().into_bytes().into()
+}
+
+fn sha256_digest(data: &[u8]) -> [u8; 32] {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(data);
+    hasher.finalize().into()
+}
+
+fn generate_scram_nonce() -> String {
+    use rand::RngExt;
+    let mut rng = rand::rng();
+    let random_bytes: [u8; 18] = rng.random();
+    BASE64.encode(random_bytes)
+}
+
+fn parse_scram_attributes(input: &str) -> HashMap<String, String> {
+    let mut attrs = HashMap::new();
+    for part in input.split(',') {
+        if let Some((k, v)) = part.split_once('=') {
+            attrs.insert(k.to_string(), v.to_string());
+        }
+    }
+    attrs
+}
+
+#[derive(Debug, PartialEq)]
+enum ScramState {
+    Initial,
+    ClientFirstSent,
+    ClientFinalSent,
+    Complete,
+}
+
+struct ScramInner {
+    client_nonce: String,
+    client_first_bare: String,
+    password: Vec<u8>,
+    server_signature: Option<[u8; 32]>,
+    state: ScramState,
+}
+
+/// SCRAM-SHA-256 authentication mechanism (RFC 5802 / RFC 7677)
+pub struct ScramSha256Mechanism {
+    inner: std::sync::Mutex<ScramInner>,
+}
+
+impl Default for ScramSha256Mechanism {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ScramSha256Mechanism {
+    pub fn new() -> Self {
+        Self {
+            inner: std::sync::Mutex::new(ScramInner {
+                client_nonce: String::new(),
+                client_first_bare: String::new(),
+                password: Vec::new(),
+                server_signature: None,
+                state: ScramState::Initial,
+            }),
+        }
+    }
+
+    /// Testing helper to set fixed client nonce
+    pub fn with_fixed_nonce(nonce: String) -> Self {
+        Self {
+            inner: std::sync::Mutex::new(ScramInner {
+                client_nonce: nonce,
+                client_first_bare: String::new(),
+                password: Vec::new(),
+                server_signature: None,
+                state: ScramState::Initial,
+            }),
+        }
+    }
+}
+
+impl SaslMechanism for ScramSha256Mechanism {
+    fn name(&self) -> &str {
+        "SCRAM-SHA-256"
+    }
+
+    fn initial_response(&self, credentials: &SaslCredentials) -> Result<Vec<u8>> {
+        let mut inner = self.inner.lock().unwrap();
+        let client_nonce = if inner.client_nonce.is_empty() {
+            generate_scram_nonce()
+        } else {
+            inner.client_nonce.clone()
+        };
+
+        let username = credentials.username.replace('=', "=3D").replace(',', "=2C");
+        let client_first_bare = format!("n={},r={}", username, client_nonce);
+        let client_first = format!("n,,{}", client_first_bare);
+
+        inner.client_nonce = client_nonce;
+        inner.client_first_bare = client_first_bare;
+        inner.password = credentials.password.as_bytes().to_vec();
+        inner.state = ScramState::ClientFirstSent;
+
+        Ok(client_first.into_bytes())
+    }
+
+    fn continue_auth(&mut self, challenge: Option<&[u8]>) -> Result<Vec<u8>> {
+        let mut inner = self.inner.lock().unwrap();
+        let challenge_bytes =
+            challenge.ok_or_else(|| anyhow::anyhow!("Missing challenge in SCRAM-SHA-256"))?;
+        let challenge_str = std::str::from_utf8(challenge_bytes)
+            .map_err(|e| anyhow::anyhow!("Invalid UTF-8 in SCRAM challenge: {e}"))?;
+
+        match inner.state {
+            ScramState::ClientFirstSent => {
+                let attrs = parse_scram_attributes(challenge_str);
+                let server_nonce = attrs
+                    .get("r")
+                    .ok_or_else(|| anyhow::anyhow!("Missing nonce in server-first message"))?;
+                if !server_nonce.starts_with(&inner.client_nonce) {
+                    return Err(anyhow::anyhow!("Server nonce does not extend client nonce"));
+                }
+
+                let salt_str = attrs
+                    .get("s")
+                    .ok_or_else(|| anyhow::anyhow!("Missing salt in server-first message"))?;
+                let salt = BASE64
+                    .decode(salt_str)
+                    .map_err(|e| anyhow::anyhow!("Invalid base64 salt: {e}"))?;
+
+                let iterations = attrs
+                    .get("i")
+                    .ok_or_else(|| {
+                        anyhow::anyhow!("Missing iteration count in server-first message")
+                    })?
+                    .parse::<u32>()
+                    .map_err(|e| anyhow::anyhow!("Invalid iteration count: {e}"))?;
+
+                if iterations == 0 {
+                    return Err(anyhow::anyhow!("Iteration count must be > 0"));
+                }
+
+                let channel_binding = "c=biws";
+                let client_final_without_proof = format!("{},r={}", channel_binding, server_nonce);
+
+                let salted_password = pbkdf2_sha256(&inner.password, &salt, iterations);
+                let client_key = hmac_sha256(&salted_password, b"Client Key");
+                let stored_key = sha256_digest(&client_key);
+
+                let auth_message = format!(
+                    "{},{},{}",
+                    inner.client_first_bare, challenge_str, client_final_without_proof
+                );
+
+                let client_signature = hmac_sha256(&stored_key, auth_message.as_bytes());
+                let mut client_proof = [0u8; 32];
+                for i in 0..32 {
+                    client_proof[i] = client_key[i] ^ client_signature[i];
+                }
+
+                let server_key = hmac_sha256(&salted_password, b"Server Key");
+                let server_signature = hmac_sha256(&server_key, auth_message.as_bytes());
+
+                let client_final = format!(
+                    "{},p={}",
+                    client_final_without_proof,
+                    BASE64.encode(client_proof)
+                );
+
+                inner.server_signature = Some(server_signature);
+                inner.state = ScramState::ClientFinalSent;
+
+                Ok(client_final.into_bytes())
+            }
+            ScramState::ClientFinalSent => {
+                let attrs = parse_scram_attributes(challenge_str);
+                let v = attrs.get("v").ok_or_else(|| {
+                    anyhow::anyhow!("Missing server signature in server-final message")
+                })?;
+                let received_sig = BASE64
+                    .decode(v)
+                    .map_err(|e| anyhow::anyhow!("Invalid base64 server signature: {e}"))?;
+
+                let expected_sig = inner
+                    .server_signature
+                    .ok_or_else(|| anyhow::anyhow!("Missing expected server signature"))?;
+
+                if received_sig != expected_sig {
+                    return Err(anyhow::anyhow!("Server signature verification failed"));
+                }
+
+                inner.state = ScramState::Complete;
+                Ok(Vec::new())
+            }
+            ScramState::Complete => Ok(Vec::new()),
+            ScramState::Initial => Err(anyhow::anyhow!("SCRAM authentication not initiated")),
+        }
+    }
+}
+
 /// SASL authenticator managing the authentication flow
 pub struct SaslAuthenticator {
     state: AuthState,
@@ -161,6 +392,7 @@ impl SaslAuthenticator {
         // Register built-in mechanisms
         auth.register_mechanism("PLAIN", Box::new(PlainMechanism));
         auth.register_mechanism("EXTERNAL", Box::new(ExternalMechanism));
+        auth.register_mechanism("SCRAM-SHA-256", Box::new(ScramSha256Mechanism::new()));
 
         auth
     }
@@ -420,5 +652,45 @@ mod tests {
         // by ensuring the struct implements the trait
         fn assert_zeroize_on_drop<T: zeroize::ZeroizeOnDrop>() {}
         assert_zeroize_on_drop::<SaslCredentials>();
+    }
+
+    #[test]
+    fn test_scram_sha256_rfc7677() {
+        let mut mech = ScramSha256Mechanism::with_fixed_nonce("rOprNGfwEbeRWgbNEkqO".to_string());
+        let creds = SaslCredentials {
+            username: "user".to_string(),
+            password: SecureString::new("pencil".to_string()),
+            authzid: None,
+        };
+
+        // 1. Initial client-first message
+        let client_first = mech.initial_response(&creds).unwrap();
+        assert_eq!(
+            std::str::from_utf8(&client_first).unwrap(),
+            "n,,n=user,r=rOprNGfwEbeRWgbNEkqO"
+        );
+
+        // 2. Server-first challenge (RFC 7677 Section 3)
+        let server_first =
+            b"r=rOprNGfwEbeRWgbNEkqO%hvYDpWUa2RaTCAfuxFIlj)hNlF$k0,s=W22ZaJ0SNY7soEsUEjb6gQ==,i=4096";
+        let client_final = mech.continue_auth(Some(server_first)).unwrap();
+        assert_eq!(
+            std::str::from_utf8(&client_final).unwrap(),
+            "c=biws,r=rOprNGfwEbeRWgbNEkqO%hvYDpWUa2RaTCAfuxFIlj)hNlF$k0,p=dHzbZapWIk4jUhN+Ute9ytag9zjfMHgsqmmiz7AndVQ="
+        );
+
+        // 3. Server-final challenge (RFC 7677 Section 3)
+        let server_final = b"v=6rriTRBi23WpRR/wtup+mMhUZUn/dB5nLTJRsjl95G4=";
+        let final_resp = mech.continue_auth(Some(server_final)).unwrap();
+        assert!(final_resp.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_scram_sha256_authenticator_registration() {
+        let auth = SaslAuthenticator::new();
+        let mechs = auth.get_available_mechanisms();
+        assert!(mechs.contains(&"SCRAM-SHA-256".to_string()));
+        assert!(mechs.contains(&"PLAIN".to_string()));
+        assert!(mechs.contains(&"EXTERNAL".to_string()));
     }
 }

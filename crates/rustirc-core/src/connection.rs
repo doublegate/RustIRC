@@ -9,6 +9,7 @@
 
 use crate::error::{Error, Result};
 use crate::events::{Event, EventBus};
+use rustirc_protocol::command::CapSubcommand;
 use rustirc_protocol::{Command, Message, Parser, MAX_MESSAGE_LENGTH};
 use rustls::{ClientConfig as TlsConfig, RootCertStore};
 use rustls_pki_types::ServerName;
@@ -102,6 +103,7 @@ pub struct ConnectionConfig {
     pub reconnect_delay: Duration,
     pub ping_timeout: Duration,
     pub message_timeout: Duration,
+    pub flood: crate::config::FloodConfig,
 }
 
 impl Default for ConnectionConfig {
@@ -119,6 +121,7 @@ impl Default for ConnectionConfig {
             reconnect_delay: Duration::from_secs(5),
             ping_timeout: Duration::from_secs(300), // 5 minutes
             message_timeout: Duration::from_secs(30),
+            flood: crate::config::FloodConfig::default(),
         }
     }
 }
@@ -461,6 +464,14 @@ impl IrcConnection {
     async fn register(&self) -> Result<()> {
         self.set_state(ConnectionState::Authenticating).await;
 
+        // Initiate IRCv3 capability negotiation (CAP LS 302)
+        self.send_command_internal(Command::Cap {
+            subcommand: CapSubcommand::Ls {
+                version: Some("302".to_string()),
+            },
+        })
+        .await?;
+
         // Send PASS if password provided
         if let Some(password) = &self.config.password {
             self.send_command_internal(Command::Pass {
@@ -535,6 +546,7 @@ impl IrcConnection {
         let event_bus = self.event_bus.clone();
         let connection_id = self.connection_id.clone();
         let last_ping = self.last_ping.clone();
+        let tx_commands = self.tx_commands.clone();
 
         tokio::spawn(async move {
             // Use Lines iterator for more efficient line reading
@@ -562,8 +574,17 @@ impl IrcConnection {
                                             server2: None,
                                         };
 
-                                        // Actually use the pong_command by converting it to a message
-                                        // and creating an appropriate response event
+                                        // Actually send the PONG command to tx_commands
+                                        let tx_opt = tx_commands.read().await;
+                                        if let Some(ref tx) = *tx_opt {
+                                            if let Err(e) = tx.send(pong_command.clone()) {
+                                                error!(
+                                                    "Failed to send PONG command to writer: {}",
+                                                    e
+                                                );
+                                            }
+                                        }
+
                                         let pong_message = pong_command.to_message();
                                         debug!("Sending PONG response: {}", pong_message);
 
@@ -585,6 +606,53 @@ impl IrcConnection {
                                 // Update last ping time
                                 if message.command == "PONG" {
                                     *last_ping.write().await = Some(Instant::now());
+                                }
+
+                                // Handle IRCv3 CAP negotiation
+                                if message.command == "CAP" {
+                                    let subcmd = message.params.get(1).map(|s| s.as_str());
+                                    match subcmd {
+                                        Some("LS") => {
+                                            let is_multiline =
+                                                message.params.get(2).map(|s| s.as_str())
+                                                    == Some("*");
+                                            debug!("Received CAP LS (multiline={})", is_multiline);
+
+                                            if !is_multiline {
+                                                // Request supported capabilities
+                                                let desired_caps = vec![
+                                                    "account-tag".to_string(),
+                                                    "batch".to_string(),
+                                                    "extended-join".to_string(),
+                                                    "message-tags".to_string(),
+                                                    "server-time".to_string(),
+                                                ];
+                                                let req_cmd = Command::Cap {
+                                                    subcommand: CapSubcommand::Req {
+                                                        capabilities: desired_caps,
+                                                    },
+                                                };
+                                                let tx_opt = tx_commands.read().await;
+                                                if let Some(ref tx) = *tx_opt {
+                                                    let _ = tx.send(req_cmd);
+                                                }
+                                            }
+                                        }
+                                        Some("ACK") | Some("NAK") => {
+                                            debug!(
+                                                "Received CAP {}, ending capability negotiation",
+                                                subcmd.unwrap_or("")
+                                            );
+                                            let end_cmd = Command::Cap {
+                                                subcommand: CapSubcommand::End,
+                                            };
+                                            let tx_opt = tx_commands.read().await;
+                                            if let Some(ref tx) = *tx_opt {
+                                                let _ = tx.send(end_cmd);
+                                            }
+                                        }
+                                        _ => {}
+                                    }
                                 }
 
                                 // Emit message event
@@ -628,8 +696,28 @@ impl IrcConnection {
     where
         W: tokio::io::AsyncWrite + Unpin + Send + 'static,
     {
+        let mut flood_protector = crate::flood::FloodProtector::from_config(&self.config.flood);
+
         tokio::spawn(async move {
             while let Some(command) = rx_commands.recv().await {
+                // Rate-limit outgoing commands with token bucket flood protection
+                while !flood_protector.try_send() {
+                    let wait_duration = if let Some(next_time) = flood_protector.next_send_time() {
+                        let now = std::time::Instant::now();
+                        if next_time > now {
+                            next_time.duration_since(now)
+                        } else {
+                            Duration::from_millis(50)
+                        }
+                    } else {
+                        Duration::from_millis(50)
+                    };
+                    tokio::time::sleep(
+                        wait_duration.clamp(Duration::from_millis(10), Duration::from_millis(500)),
+                    )
+                    .await;
+                }
+
                 let message = command.to_message();
                 let message_text = format!("{message}\r\n");
 
