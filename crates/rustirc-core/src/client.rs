@@ -101,6 +101,7 @@ impl IrcClient {
                 username: self.config.user.username.clone(),
                 realname: self.config.user.realname.clone(),
                 password: srv_config.password.clone(),
+                flood: self.config.flood.clone(),
                 ..Default::default()
             }
         } else {
@@ -110,6 +111,7 @@ impl IrcClient {
                 nickname: "RustIRC".to_string(),
                 username: "rustirc".to_string(),
                 realname: "RustIRC Client".to_string(),
+                flood: self.config.flood.clone(),
                 ..Default::default()
             }
         };

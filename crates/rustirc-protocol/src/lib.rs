@@ -16,7 +16,9 @@ pub use builder::MessageBuilder;
 pub use caps::{Capability, CapabilitySet};
 pub use command::Command;
 pub use ctcp::{escape_ctcp, unescape_ctcp, CtcpHandler, CtcpMessage};
-pub use message::{escape_tag_value, unescape_tag_value, Message, Prefix, Tag};
+pub use message::{
+    escape_tag_value, unescape_tag_value, Message, MessageRef, Prefix, PrefixRef, Tag, TagRef,
+};
 pub use numeric::Numeric;
 pub use parser::Parser;
 pub use validation::{
@@ -26,5 +28,11 @@ pub use validation::{
 /// IRC protocol version
 pub const PROTOCOL_VERSION: &str = "RustIRC-0.1.0";
 
-/// Maximum message length per IRC specification
+/// Maximum message length per IRC specification (excluding message tags)
 pub const MAX_MESSAGE_LENGTH: usize = 512;
+
+/// Maximum tags section length per IRCv3 Message Tags specification (4094 bytes tag data + space)
+pub const MAX_TAGS_LENGTH: usize = 4094;
+
+/// Maximum total length for an IRCv3 message with tags
+pub const MAX_TOTAL_MESSAGE_LENGTH: usize = MAX_MESSAGE_LENGTH + MAX_TAGS_LENGTH + 2; // 4608

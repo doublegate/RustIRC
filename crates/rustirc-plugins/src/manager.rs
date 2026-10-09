@@ -105,6 +105,37 @@ impl PluginManager {
         self.plugins.clear();
         info!("All plugins shut down");
     }
+
+    /// Dispatch an IRC event to all enabled plugins that handle events
+    pub fn dispatch_event(&mut self, event: &rustirc_core::events::Event) {
+        for (name, plugin) in self.plugins.iter_mut() {
+            if plugin.enabled && plugin.info.capabilities.handles_events {
+                if let Err(e) = plugin.instance.handle_event(event) {
+                    error!("Error in plugin {} handling event: {}", name, e);
+                }
+            }
+        }
+    }
+}
+
+/// Event handler bridge connecting `PluginManager` to `rustirc_core::events::EventBus`
+pub struct PluginEventHandler {
+    manager: std::sync::Arc<tokio::sync::Mutex<PluginManager>>,
+}
+
+impl PluginEventHandler {
+    /// Create a new event handler bridge for a shared `PluginManager`
+    pub fn new(manager: std::sync::Arc<tokio::sync::Mutex<PluginManager>>) -> Self {
+        Self { manager }
+    }
+}
+
+#[async_trait::async_trait]
+impl rustirc_core::events::EventHandler for PluginEventHandler {
+    async fn handle(&self, event: &rustirc_core::events::Event) {
+        let mut guard = self.manager.lock().await;
+        guard.dispatch_event(event);
+    }
 }
 
 impl Default for PluginManager {

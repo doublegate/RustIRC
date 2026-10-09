@@ -6,4 +6,4 @@ pub mod loader;
 pub mod manager;
 
 pub use api::PluginApi;
-pub use manager::PluginManager;
+pub use manager::{PluginEventHandler, PluginManager};

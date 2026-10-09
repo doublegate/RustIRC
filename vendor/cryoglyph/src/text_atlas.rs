@@ -1,14 +1,15 @@
 use crate::{
-    text_render::ContentType, Cache, CacheKey, FontSystem, GlyphDetails, GpuCacheStatus, SwashCache,
+    Cache, CacheKey, FontSystem, GlyphDetails, GpuCacheStatus, SwashCache, text_render::ContentType,
 };
-use etagere::{size2, Allocation, BucketedAtlasAllocator};
+use etagere::{Allocation, BucketedAtlasAllocator, size2};
 use lru::LruCache;
 use rustc_hash::FxHasher;
-use std::{collections::HashSet, hash::BuildHasherDefault, sync::Arc};
+use std::{collections::HashSet, hash::BuildHasherDefault};
 use wgpu::{
-    BindGroup, DepthStencilState, Device, Extent3d, ImageCopyTexture, ImageDataLayout,
-    MultisampleState, Origin3d, Queue, RenderPipeline, Texture, TextureAspect, TextureDescriptor,
-    TextureDimension, TextureFormat, TextureUsages, TextureView, TextureViewDescriptor,
+    BindGroup, DepthStencilState, Device, Extent3d, MultisampleState, Origin3d, Queue,
+    RenderPipeline, TexelCopyBufferLayout, TexelCopyTextureInfo, Texture, TextureAspect,
+    TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView,
+    TextureViewDescriptor,
 };
 
 type Hasher = BuildHasherDefault<FxHasher>;
@@ -106,16 +107,6 @@ impl InnerAtlas {
         self.kind.num_channels()
     }
 
-    pub(crate) fn promote(&mut self, glyph: CacheKey) {
-        self.glyph_cache.promote(&glyph);
-        self.glyphs_in_use.insert(glyph);
-    }
-
-    pub(crate) fn put(&mut self, glyph: CacheKey, details: GlyphDetails) {
-        self.glyph_cache.put(glyph, details);
-        self.glyphs_in_use.insert(glyph);
-    }
-
     pub(crate) fn grow(
         &mut self,
         device: &wgpu::Device,
@@ -163,7 +154,7 @@ impl InnerAtlas {
             let height = image.placement.height as usize;
 
             queue.write_texture(
-                ImageCopyTexture {
+                TexelCopyTextureInfo {
                     texture: &self.texture,
                     mip_level: 0,
                     origin: Origin3d {
@@ -174,7 +165,7 @@ impl InnerAtlas {
                     aspect: TextureAspect::All,
                 },
                 &image.data,
-                ImageDataLayout {
+                TexelCopyBufferLayout {
                     offset: 0,
                     bytes_per_row: Some(width as u32 * self.kind.num_channels() as u32),
                     rows_per_image: None,
@@ -326,13 +317,6 @@ impl TextAtlas {
         did_grow
     }
 
-    pub(crate) fn glyph(&self, glyph: &CacheKey) -> Option<&GlyphDetails> {
-        self.mask_atlas
-            .glyph_cache
-            .peek(glyph)
-            .or_else(|| self.color_atlas.glyph_cache.peek(glyph))
-    }
-
     pub(crate) fn inner_for_content_mut(&mut self, content_type: ContentType) -> &mut InnerAtlas {
         match content_type {
             ContentType::Color => &mut self.color_atlas,
@@ -345,7 +329,7 @@ impl TextAtlas {
         device: &Device,
         multisample: MultisampleState,
         depth_stencil: Option<DepthStencilState>,
-    ) -> Arc<RenderPipeline> {
+    ) -> RenderPipeline {
         self.cache
             .get_or_create_pipeline(device, self.format, multisample, depth_stencil)
     }

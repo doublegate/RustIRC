@@ -40,6 +40,7 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 # Text processing
 regex = "1.13.1"
 async-trait = "0.1"
+smallvec = "1.16"
 
 # System integration
 open = "5.4.4"
@@ -114,8 +115,7 @@ strip = true
 opt-level = 3
 debug = false
 
-# Patch vulnerable lru 0.12.5 by replacing iced_glyphon with patched version
-# The patched version updates lru from 0.12.1 to 0.16.3 which includes the security fix
-# See SECURITY-FIX-RUSTSEC-2026-0002.md for details
 [patch.crates-io]
-iced_glyphon = { path = "vendor/iced_glyphon" }
+# Patch cryoglyph with lru 0.18.5 to resolve RUSTSEC-2026-0253
+cryoglyph = { path = "vendor/cryoglyph" }
+

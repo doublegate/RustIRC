@@ -2,12 +2,12 @@ use crate::{
     ColorMode, FontSystem, GlyphDetails, GlyphToRender, GpuCacheStatus, PrepareError, RenderError,
     SwashCache, SwashContent, TextArea, TextAtlas, Viewport,
 };
-use std::{num::NonZeroU64, slice, sync::Arc};
+use std::{num::NonZeroU64, slice};
 use wgpu::util::StagingBelt;
 use wgpu::{
-    Buffer, BufferDescriptor, BufferUsages, CommandEncoder, DepthStencilState, Device, Extent3d,
-    ImageCopyTexture, ImageDataLayout, MultisampleState, Origin3d, Queue, RenderPass,
-    RenderPipeline, TextureAspect, COPY_BUFFER_ALIGNMENT,
+    Buffer, BufferDescriptor, BufferUsages, COPY_BUFFER_ALIGNMENT, CommandEncoder,
+    DepthStencilState, Device, Extent3d, MultisampleState, Origin3d, Queue, RenderPass,
+    RenderPipeline, TexelCopyBufferLayout, TexelCopyTextureInfo, TextureAspect,
 };
 
 /// A text renderer that uses cached glyphs to render text into an existing render pass.
@@ -15,7 +15,7 @@ pub struct TextRenderer {
     staging_belt: StagingBelt,
     vertex_buffer: Buffer,
     vertex_buffer_size: u64,
-    pipeline: Arc<RenderPipeline>,
+    pipeline: RenderPipeline,
     glyph_vertices: Vec<GlyphToRender>,
     glyphs_to_render: u32,
 }
@@ -67,23 +67,40 @@ impl TextRenderer {
         let resolution = viewport.resolution();
 
         for text_area in text_areas {
-            for run in text_area.buffer.layout_runs() {
+            let bounds_min_x = text_area.bounds.left.max(0);
+            let bounds_min_y = text_area.bounds.top.max(0);
+            let bounds_max_x = text_area.bounds.right.min(resolution.width as i32);
+            let bounds_max_y = text_area.bounds.bottom.min(resolution.height as i32);
+
+            let is_run_visible = |run: &cosmic_text::LayoutRun| {
+                let start_y_physical = (text_area.top + (run.line_top * text_area.scale)) as i32;
+                let end_y_physical = start_y_physical + (run.line_height * text_area.scale) as i32;
+
+                start_y_physical <= text_area.bounds.bottom
+                    && text_area.bounds.top <= end_y_physical
+            };
+
+            let layout_runs = text_area
+                .buffer
+                .layout_runs()
+                .skip_while(|run| !is_run_visible(run))
+                .take_while(is_run_visible);
+
+            for run in layout_runs {
                 for glyph in run.glyphs.iter() {
                     let physical_glyph =
                         glyph.physical((text_area.left, text_area.top), text_area.scale);
 
-                    if atlas
-                        .mask_atlas
-                        .glyph_cache
-                        .contains(&physical_glyph.cache_key)
+                    let cache_key = physical_glyph.cache_key;
+
+                    let details = if let Some(details) =
+                        atlas.mask_atlas.glyph_cache.get(&cache_key)
                     {
-                        atlas.mask_atlas.promote(physical_glyph.cache_key);
-                    } else if atlas
-                        .color_atlas
-                        .glyph_cache
-                        .contains(&physical_glyph.cache_key)
-                    {
-                        atlas.color_atlas.promote(physical_glyph.cache_key);
+                        atlas.mask_atlas.glyphs_in_use.insert(cache_key);
+                        details
+                    } else if let Some(details) = atlas.color_atlas.glyph_cache.get(&cache_key) {
+                        atlas.color_atlas.glyphs_in_use.insert(cache_key);
+                        details
                     } else {
                         let Some(image) =
                             cache.get_image_uncached(font_system, physical_glyph.cache_key)
@@ -130,7 +147,7 @@ impl TextRenderer {
                             let atlas_min = allocation.rectangle.min;
 
                             queue.write_texture(
-                                ImageCopyTexture {
+                                TexelCopyTextureInfo {
                                     texture: &inner.texture,
                                     mip_level: 0,
                                     origin: Origin3d {
@@ -141,7 +158,7 @@ impl TextRenderer {
                                     aspect: TextureAspect::All,
                                 },
                                 &image.data,
-                                ImageDataLayout {
+                                TexelCopyBufferLayout {
                                     offset: 0,
                                     bytes_per_row: Some(width as u32 * inner.num_channels() as u32),
                                     rows_per_image: None,
@@ -167,20 +184,17 @@ impl TextRenderer {
                             (GpuCacheStatus::SkipRasterization, None, inner)
                         };
 
-                        inner.put(
-                            physical_glyph.cache_key,
-                            GlyphDetails {
-                                width: width as u16,
-                                height: height as u16,
-                                gpu_cache,
-                                atlas_id,
-                                top: image.placement.top as i16,
-                                left: image.placement.left as i16,
-                            },
-                        );
-                    }
-
-                    let details = atlas.glyph(&physical_glyph.cache_key).unwrap();
+                        inner.glyphs_in_use.insert(cache_key);
+                        // Insert the glyph into the cache and return the details reference
+                        inner.glyph_cache.get_or_insert(cache_key, || GlyphDetails {
+                            width: image.placement.width as u16,
+                            height: image.placement.height as u16,
+                            gpu_cache,
+                            atlas_id,
+                            top: image.placement.top as i16,
+                            left: image.placement.left as i16,
+                        })
+                    };
 
                     let mut x = physical_glyph.x + details.left as i32;
                     let mut y = (run.line_y * text_area.scale).round() as i32 + physical_glyph.y
@@ -193,11 +207,6 @@ impl TextRenderer {
 
                     let mut width = details.width as i32;
                     let mut height = details.height as i32;
-
-                    let bounds_min_x = text_area.bounds.left.max(0);
-                    let bounds_min_y = text_area.bounds.top.max(0);
-                    let bounds_max_x = text_area.bounds.right.min(resolution.width as i32);
-                    let bounds_max_y = text_area.bounds.bottom.min(resolution.height as i32);
 
                     // Starts beyond right edge or ends beyond left edge
                     let max_x = x + width;
@@ -336,11 +345,11 @@ impl TextRenderer {
     }
 
     /// Renders all layouts that were previously provided to `prepare`.
-    pub fn render<'pass>(
-        &'pass self,
-        atlas: &'pass TextAtlas,
-        viewport: &'pass Viewport,
-        pass: &mut RenderPass<'pass>,
+    pub fn render(
+        &self,
+        atlas: &TextAtlas,
+        viewport: &Viewport,
+        pass: &mut RenderPass<'_>,
     ) -> Result<(), RenderError> {
         if self.glyphs_to_render == 0 {
             return Ok(());

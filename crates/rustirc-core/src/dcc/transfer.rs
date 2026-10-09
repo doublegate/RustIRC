@@ -143,10 +143,15 @@ impl DccTransfer {
             .await
             .map_err(|e| DccError::ConnectionFailed(format!("Failed to bind {bind_addr}: {e}")))?;
 
-        let (mut stream, _remote_addr) = listener
-            .accept()
-            .await
-            .map_err(|e| DccError::ConnectionFailed(format!("Failed to accept connection: {e}")))?;
+        let (mut stream, _remote_addr) =
+            tokio::time::timeout(std::time::Duration::from_secs(30), listener.accept())
+                .await
+                .map_err(|_| {
+                    DccError::ConnectionFailed("Timed out waiting for connection (30s)".to_string())
+                })?
+                .map_err(|e| {
+                    DccError::ConnectionFailed(format!("Failed to accept connection: {e}"))
+                })?;
 
         let mut file = File::open(file_path).await.map_err(DccError::Io)?;
 
@@ -183,7 +188,11 @@ impl DccTransfer {
             // Some clients may not send ACKs reliably; we attempt to read but
             // don't hard-fail if the read times out on the last chunk.
             if total_sent < self.file_size {
-                let _ = stream.read_exact(&mut ack_buf).await;
+                let _ = tokio::time::timeout(
+                    std::time::Duration::from_secs(30),
+                    stream.read_exact(&mut ack_buf),
+                )
+                .await;
             }
 
             let elapsed = start_time.elapsed().as_secs_f64();
@@ -225,16 +234,25 @@ impl DccTransfer {
         resume_position: u64,
     ) -> DccResult<PathBuf> {
         let remote_addr = SocketAddr::new(address, port);
-        let mut stream = TcpStream::connect(remote_addr).await.map_err(|e| {
-            DccError::ConnectionFailed(format!("Failed to connect to {remote_addr}: {e}"))
-        })?;
+        let mut stream = tokio::time::timeout(
+            std::time::Duration::from_secs(30),
+            TcpStream::connect(remote_addr),
+        )
+        .await
+        .map_err(|_| {
+            DccError::ConnectionFailed(format!("Timed out connecting to {remote_addr} (30s)"))
+        })??;
 
         // Create the download directory if it doesn't exist.
         tokio::fs::create_dir_all(download_dir)
             .await
             .map_err(DccError::Io)?;
 
-        let file_path = download_dir.join(&self.filename);
+        let clean_filename = Path::new(&self.filename)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("downloaded_file");
+        let file_path = download_dir.join(clean_filename);
 
         let mut file = if resume_position > 0 {
             // Open in append mode for resume.
@@ -263,7 +281,16 @@ impl DccTransfer {
                 return Err(DccError::Cancelled);
             }
 
-            let bytes_read = stream.read(&mut buf).await.map_err(DccError::Io)?;
+            let bytes_read =
+                tokio::time::timeout(std::time::Duration::from_secs(30), stream.read(&mut buf))
+                    .await
+                    .map_err(|_| {
+                        DccError::Io(std::io::Error::new(
+                            std::io::ErrorKind::TimedOut,
+                            "Read timed out",
+                        ))
+                    })?
+                    .map_err(DccError::Io)?;
             if bytes_read == 0 {
                 break; // Connection closed by sender (transfer complete).
             }
@@ -469,7 +496,7 @@ mod tests {
         let file_size = test_data.len() as u64;
 
         // Create sender transfer.
-        let (mut sender, _tx_rx) = make_transfer(1, "receiver", "testfile.bin", file_size);
+        let (_sender, _tx_rx) = make_transfer(1, "receiver", "testfile.bin", file_size);
 
         // Bind sender listener.
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -570,7 +597,7 @@ mod tests {
         let test_content = b"Hello, DCC world!";
         tokio::fs::write(&source_file, test_content).await.unwrap();
 
-        let (mut sender, mut sender_events) =
+        let (mut sender, _sender_events) =
             make_transfer(1, "receiver", "small.txt", test_content.len() as u64);
 
         // Use send_file which binds its own listener.

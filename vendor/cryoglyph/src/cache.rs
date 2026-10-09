@@ -1,20 +1,19 @@
 use crate::{GlyphToRender, Params};
-
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutEntry,
     BindingResource, BindingType, BlendState, Buffer, BufferBindingType, ColorTargetState,
     ColorWrites, DepthStencilState, Device, FilterMode, FragmentState, MultisampleState,
-    PipelineLayout, PipelineLayoutDescriptor, PrimitiveState, PrimitiveTopology, RenderPipeline,
-    RenderPipelineDescriptor, Sampler, SamplerBindingType, SamplerDescriptor, ShaderModule,
-    ShaderModuleDescriptor, ShaderSource, ShaderStages, TextureFormat, TextureSampleType,
-    TextureView, TextureViewDimension, VertexFormat, VertexState,
+    PipelineCompilationOptions, PipelineLayout, PipelineLayoutDescriptor, PrimitiveState,
+    PrimitiveTopology, RenderPipeline, RenderPipelineDescriptor, Sampler, SamplerBindingType,
+    SamplerDescriptor, ShaderModule, ShaderModuleDescriptor, ShaderSource, ShaderStages,
+    TextureFormat, TextureSampleType, TextureView, TextureViewDimension, VertexFormat, VertexState,
 };
 
 use std::borrow::Cow;
 use std::mem;
 use std::num::NonZeroU64;
 use std::ops::Deref;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone)]
 pub struct Cache(Arc<Inner>);
@@ -27,12 +26,12 @@ struct Inner {
     atlas_layout: BindGroupLayout,
     uniforms_layout: BindGroupLayout,
     pipeline_layout: PipelineLayout,
-    cache: RwLock<
+    cache: Mutex<
         Vec<(
             TextureFormat,
             MultisampleState,
             Option<DepthStencilState>,
-            Arc<RenderPipeline>,
+            RenderPipeline,
         )>,
     >,
 }
@@ -150,7 +149,7 @@ impl Cache {
             uniforms_layout,
             atlas_layout,
             pipeline_layout,
-            cache: RwLock::new(Vec::new()),
+            cache: Mutex::new(Vec::new()),
         }))
     }
 
@@ -197,7 +196,7 @@ impl Cache {
         format: TextureFormat,
         multisample: MultisampleState,
         depth_stencil: Option<DepthStencilState>,
-    ) -> Arc<RenderPipeline> {
+    ) -> RenderPipeline {
         let Inner {
             cache,
             pipeline_layout,
@@ -206,29 +205,31 @@ impl Cache {
             ..
         } = self.0.deref();
 
-        let mut cache = cache.write().expect("Write pipeline cache");
+        let mut cache = cache.lock().expect("Write pipeline cache");
 
         cache
             .iter()
             .find(|(fmt, ms, ds, _)| fmt == &format && ms == &multisample && ds == &depth_stencil)
-            .map(|(_, _, _, p)| Arc::clone(p))
+            .map(|(_, _, _, p)| p.clone())
             .unwrap_or_else(|| {
-                let pipeline = Arc::new(device.create_render_pipeline(&RenderPipelineDescriptor {
+                let pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
                     label: Some("glyphon pipeline"),
                     layout: Some(pipeline_layout),
                     vertex: VertexState {
                         module: shader,
-                        entry_point: "vs_main",
+                        entry_point: Some("vs_main"),
                         buffers: vertex_buffers,
+                        compilation_options: PipelineCompilationOptions::default(),
                     },
                     fragment: Some(FragmentState {
                         module: shader,
-                        entry_point: "fs_main",
+                        entry_point: Some("fs_main"),
                         targets: &[Some(ColorTargetState {
                             format,
                             blend: Some(BlendState::ALPHA_BLENDING),
                             write_mask: ColorWrites::default(),
                         })],
+                        compilation_options: PipelineCompilationOptions::default(),
                     }),
                     primitive: PrimitiveState {
                         topology: PrimitiveTopology::TriangleStrip,
@@ -237,7 +238,8 @@ impl Cache {
                     depth_stencil: depth_stencil.clone(),
                     multisample,
                     multiview: None,
-                }));
+                    cache: None,
+                });
 
                 cache.push((format, multisample, depth_stencil, pipeline.clone()));
 

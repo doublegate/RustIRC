@@ -395,10 +395,26 @@ impl IrcValidator {
     }
 
     /// Validate complete IRC message length
+    ///
+    /// Per RFC 1459/2812, traditional IRC messages must not exceed 512 bytes.
+    /// Under the IRCv3 Message Tags specification, tag data (starting with `@`)
+    /// can be up to 4094 bytes and does not count towards the 512-byte limit
+    /// for the rest of the message.
     pub fn validate_message_length(&self, message: &str) -> Result<(), ValidationError> {
-        if message.len() > 512 {
-            return Err(ValidationError::MessageTooLong(message.len()));
+        let (tags_part, body_part) = if message.starts_with('@') {
+            message.split_once(' ').unwrap_or((message, ""))
+        } else {
+            ("", message)
+        };
+
+        if !tags_part.is_empty() && tags_part.len() > crate::MAX_TAGS_LENGTH + 2 {
+            return Err(ValidationError::MessageTooLong(tags_part.len()));
         }
+
+        if body_part.len() > crate::MAX_MESSAGE_LENGTH {
+            return Err(ValidationError::MessageTooLong(body_part.len()));
+        }
+
         Ok(())
     }
 
@@ -637,6 +653,22 @@ mod tests {
 
         let long_message = "PRIVMSG #channel :".to_string() + &"a".repeat(500);
         assert!(validator.validate_message_length(&long_message).is_err());
+
+        // Message with IRCv3 tags: tags up to 4094 bytes allowed, body up to 512 bytes allowed
+        let long_tags_message = format!(
+            "@tag1={};tag2={} :nick!user@host PRIVMSG #chan :hello",
+            "A".repeat(500),
+            "B".repeat(500)
+        );
+        assert!(validator
+            .validate_message_length(&long_tags_message)
+            .is_ok());
+
+        // Message where body itself exceeds 512 bytes should fail even with tags
+        let long_body_with_tags = format!("@tag=value PRIVMSG #channel :{}", "a".repeat(500));
+        assert!(validator
+            .validate_message_length(&long_body_with_tags)
+            .is_err());
     }
 
     #[test]

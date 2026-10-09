@@ -365,6 +365,7 @@ impl RecoveryManager {
                     reconnect_delay: recovery.config.initial_delay,
                     ping_timeout: std::time::Duration::from_secs(300),
                     message_timeout: std::time::Duration::from_secs(30),
+                    flood: crate::config::FloodConfig::default(),
                 });
             }
         }

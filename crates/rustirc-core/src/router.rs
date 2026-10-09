@@ -192,6 +192,8 @@ pub struct MessageRouter {
     rate_limits: Arc<RwLock<HashMap<String, RateLimitState>>>,
     rate_limit_config: RateLimitConfig,
     command_queue: mpsc::UnboundedSender<(String, Command)>, // connection_id, command
+    batch_manager: Arc<RwLock<crate::batch::BatchManager>>,
+    chat_history_manager: Arc<RwLock<crate::chathistory::ChatHistoryManager>>,
 }
 
 impl MessageRouter {
@@ -207,6 +209,10 @@ impl MessageRouter {
             rate_limits: Arc::new(RwLock::new(HashMap::new())),
             rate_limit_config: RateLimitConfig::default(),
             command_queue,
+            batch_manager: Arc::new(RwLock::new(crate::batch::BatchManager::new())),
+            chat_history_manager: Arc::new(RwLock::new(
+                crate::chathistory::ChatHistoryManager::new(),
+            )),
         };
 
         // Register built-in handlers
@@ -263,6 +269,30 @@ impl MessageRouter {
                     error!("Handler error for {}: {}", message.command, e);
                 }
             }
+        }
+
+        // Track IRCv3 batch boundaries and message membership
+        if message.command == "BATCH" {
+            let mut bm = self.batch_manager.write().await;
+            if let Some(param) = message.params.first() {
+                if param.starts_with('+') {
+                    if let Ok(ref_tag) = bm.handle_batch_start(&message) {
+                        debug!("Batch started: {} on connection {}", ref_tag, connection_id);
+                    }
+                } else if param.starts_with('-') {
+                    if let Ok(batch) = bm.handle_batch_end(&message) {
+                        debug!(
+                            "Batch completed: {} (type {:?}) with {} messages",
+                            batch.ref_tag,
+                            batch.batch_type,
+                            batch.messages.len()
+                        );
+                    }
+                }
+            }
+        } else {
+            let mut bm = self.batch_manager.write().await;
+            bm.add_message(&message);
         }
 
         // Update state through event system
@@ -380,6 +410,34 @@ impl MessageRouter {
     /// Apply events to state management
     pub async fn process_state_event(&self, event: &crate::events::Event) -> Result<()> {
         self.state_manager.apply_event(event).await
+    }
+
+    /// Get the BatchManager instance
+    pub fn batch_manager(&self) -> Arc<RwLock<crate::batch::BatchManager>> {
+        self.batch_manager.clone()
+    }
+
+    /// Get the ChatHistoryManager instance
+    pub fn chat_history_manager(&self) -> Arc<RwLock<crate::chathistory::ChatHistoryManager>> {
+        self.chat_history_manager.clone()
+    }
+
+    /// Request chat history from server using IRCv3 CHATHISTORY specification
+    pub async fn request_chat_history(
+        &self,
+        connection_id: &str,
+        request: crate::chathistory::HistoryRequest,
+    ) -> Result<u64> {
+        let (req_id, msg) = {
+            let mut chm = self.chat_history_manager.write().await;
+            chm.request_history(request)
+        };
+        let cmd = Command::Raw {
+            command: msg.command,
+            params: msg.params,
+        };
+        self.send_command(connection_id.to_string(), cmd).await?;
+        Ok(req_id)
     }
 }
 
@@ -835,5 +893,84 @@ impl CommandProcessor {
     /// Add a custom alias
     pub fn add_alias(&mut self, alias: String, command: String) {
         self.aliases.insert(alias, command);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_router_batch_tracking() {
+        let state_manager = Arc::new(StateManager::new());
+        let event_bus = Arc::new(EventBus::new());
+        let (tx, _rx) = mpsc::unbounded_channel();
+        let router = MessageRouter::new(state_manager, event_bus, tx);
+
+        // 1. Send BATCH start
+        let start_msg = Message {
+            tags: None,
+            prefix: None,
+            command: "BATCH".to_string(),
+            params: vec![
+                "+batch1".to_string(),
+                "chathistory".to_string(),
+                "#chan".to_string(),
+            ],
+        };
+        router
+            .route_message("conn1".to_string(), start_msg)
+            .await
+            .unwrap();
+
+        // 2. Send message in batch
+        let in_batch_msg = Message {
+            tags: Some(vec![rustirc_protocol::Tag::new("batch", Some("batch1"))]),
+            prefix: None,
+            command: "PRIVMSG".to_string(),
+            params: vec!["#chan".to_string(), "Historical message".to_string()],
+        };
+        router
+            .route_message("conn1".to_string(), in_batch_msg)
+            .await
+            .unwrap();
+
+        // 3. Send BATCH end
+        let end_msg = Message {
+            tags: None,
+            prefix: None,
+            command: "BATCH".to_string(),
+            params: vec!["-batch1".to_string()],
+        };
+        router
+            .route_message("conn1".to_string(), end_msg)
+            .await
+            .unwrap();
+
+        let bm_arc = router.batch_manager();
+        let bm = bm_arc.read().await;
+        let completed = bm.get_batch("batch1").unwrap();
+        assert_eq!(completed.messages.len(), 1);
+        assert_eq!(completed.messages[0].params[1], "Historical message");
+    }
+
+    #[tokio::test]
+    async fn test_router_request_chat_history() {
+        let state_manager = Arc::new(StateManager::new());
+        let event_bus = Arc::new(EventBus::new());
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        let router = MessageRouter::new(state_manager, event_bus, tx);
+
+        let req = crate::chathistory::HistoryRequest::Latest {
+            target: "#rust".to_string(),
+            reference: None,
+            limit: 50,
+        };
+        let req_id = router.request_chat_history("conn1", req).await.unwrap();
+        assert_eq!(req_id, 1);
+
+        let (conn_id, cmd) = rx.recv().await.unwrap();
+        assert_eq!(conn_id, "conn1");
+        assert!(matches!(cmd, Command::Raw { command, .. } if command == "CHATHISTORY"));
     }
 }

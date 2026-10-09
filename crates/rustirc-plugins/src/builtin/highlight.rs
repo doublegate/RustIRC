@@ -89,6 +89,18 @@ impl PluginApi for HighlightPlugin {
         self.enabled = enabled;
         Ok(())
     }
+
+    fn handle_event(&mut self, event: &rustirc_core::events::Event) -> PluginResult<()> {
+        if let rustirc_core::events::Event::MessageReceived { message, .. } = event {
+            if let Some(text) = message.params.last() {
+                let matches = self.check_message(text);
+                if !matches.is_empty() {
+                    tracing::info!("Highlight matches found: {:?}", matches);
+                }
+            }
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]

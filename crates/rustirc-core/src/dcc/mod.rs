@@ -392,7 +392,12 @@ impl DccManager {
                         "DCC SEND requires: <filename> <ip> <port> <filesize>".to_string(),
                     ));
                 }
-                let filename = parts[1].to_string();
+                let raw_filename = parts[1];
+                let filename = std::path::Path::new(raw_filename)
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("downloaded_file")
+                    .to_string();
                 let address = Self::parse_ip_long(parts[2])?;
                 let port = parts[3]
                     .parse::<u16>()
@@ -415,7 +420,12 @@ impl DccManager {
                         "DCC RESUME requires: <filename> <port> <position>".to_string(),
                     ));
                 }
-                let filename = parts[1].to_string();
+                let raw_filename = parts[1];
+                let filename = std::path::Path::new(raw_filename)
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("downloaded_file")
+                    .to_string();
                 let port = parts[2]
                     .parse::<u16>()
                     .map_err(|_| DccError::InvalidRequest(format!("Invalid port: {}", parts[2])))?;
@@ -436,7 +446,12 @@ impl DccManager {
                         "DCC ACCEPT requires: <filename> <port> <position>".to_string(),
                     ));
                 }
-                let filename = parts[1].to_string();
+                let raw_filename = parts[1];
+                let filename = std::path::Path::new(raw_filename)
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("downloaded_file")
+                    .to_string();
                 let port = parts[2]
                     .parse::<u16>()
                     .map_err(|_| DccError::InvalidRequest(format!("Invalid port: {}", parts[2])))?;
@@ -1100,5 +1115,20 @@ mod tests {
     fn test_parse_dotted_quad_ip() {
         let addr = DccManager::parse_ip_long("192.168.1.1").unwrap();
         assert_eq!(addr, IpAddr::V4(Ipv4Addr::new(192, 168, 1, 1)));
+    }
+
+    #[test]
+    fn test_parse_dcc_send_path_traversal_sanitization() {
+        let req = DccManager::parse_dcc_request(
+            "attacker",
+            "SEND ../../../../etc/passwd 2130706433 5000 1024",
+        )
+        .unwrap();
+        match req {
+            DccRequest::Send { filename, .. } => {
+                assert_eq!(filename, "passwd");
+            }
+            _ => panic!("Expected DccRequest::Send"),
+        }
     }
 }

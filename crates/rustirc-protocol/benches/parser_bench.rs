@@ -68,6 +68,39 @@ fn benchmark_batch_parsing(c: &mut Criterion) {
     });
 }
 
+fn benchmark_zero_copy_complex_message(c: &mut Criterion) {
+    c.bench_function("zero-copy parse complex message", |b| {
+        b.iter(|| {
+            Parser::parse_message_ref(black_box(
+                ":nick!user@host.example.com PRIVMSG #channel :Hello, world!",
+            ))
+        })
+    });
+}
+
+fn benchmark_zero_copy_batch_parsing(c: &mut Criterion) {
+    let messages = vec![
+        "PING :server1.example.com",
+        ":nick1!user1@host1.com PRIVMSG #test :Message 1",
+        ":nick2!user2@host2.com PRIVMSG #test :Message 2",
+        "@time=2021-01-01T00:00:00.000Z :nick3!user3@host3.com PRIVMSG #test :Message 3",
+        "JOIN #newchannel",
+        "PART #oldchannel :Leaving",
+        ":server.example.com 001 nick :Welcome to the network",
+        ":server.example.com 353 nick = #channel :nick1 nick2 nick3",
+        "QUIT :Client disconnecting",
+        "NOTICE #channel :Server maintenance in 10 minutes",
+    ];
+
+    c.bench_function("zero-copy parse message batch", |b| {
+        b.iter(|| {
+            for msg in &messages {
+                let _ = Parser::parse_message_ref(black_box(msg));
+            }
+        })
+    });
+}
+
 criterion_group!(
     benches,
     benchmark_simple_message,
@@ -75,6 +108,8 @@ criterion_group!(
     benchmark_ircv3_message,
     benchmark_long_message,
     benchmark_malformed_message,
-    benchmark_batch_parsing
+    benchmark_batch_parsing,
+    benchmark_zero_copy_complex_message,
+    benchmark_zero_copy_batch_parsing
 );
 criterion_main!(benches);
