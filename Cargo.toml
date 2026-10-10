@@ -118,4 +118,6 @@ debug = false
 [patch.crates-io]
 # Patch cryoglyph with lru 0.18.5 to resolve RUSTSEC-2026-0253
 cryoglyph = { path = "vendor/cryoglyph" }
+# Patch cosmic-text to use fontdb 0.24.0 to resolve RUSTSEC-2026-0192 (ttf-parser unmaintained)
+cosmic-text = { path = "vendor/cosmic-text" }
 
