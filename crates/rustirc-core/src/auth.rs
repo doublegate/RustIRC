@@ -179,8 +179,8 @@ fn sha256_digest(data: &[u8]) -> [u8; 32] {
 }
 
 fn generate_scram_nonce() -> String {
-    use rand::RngExt;
-    let mut rng = rand::rng();
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
     let random_bytes: [u8; 18] = rng.random();
     BASE64.encode(random_bytes)
 }
