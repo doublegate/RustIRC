@@ -185,8 +185,8 @@ upgrade requirements, and remaining dependency maintenance warnings.
 
 ### ✅ **Phase 6: Testing & Integration** - **COMPLETE** (100%)
 
-- ✅ **Integration Test Suite**: 33 integration tests across 5 test files
-- ✅ **266 Total Tests**: 233 unit + 33 integration, all passing
+- ✅ **Integration Test Suite**: 41 integration tests across 6 test files
+- ✅ **223 Executable Tests**: 182 unit + 41 integration, plus 59 doctests; all passing
 - ✅ **Zero Clippy Warnings**: Clean lint pass with `-D warnings`
 
 **Status**: Phases 1-6 complete. All 6 crates compile successfully. 223 unit/integration tests and 59 doctests passing.
@@ -385,7 +385,7 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 - ✅ **Phase 3: User Interface Enhanced** - Iced Material Design 3, TUI (ratatui), CLI prototype, advanced features
 - ✅ **Phase 4: Scripting & Plugins** - Lua scripting engine, plugin system, config I/O, built-in plugins
 - ✅ **Phase 5: Advanced Features** - DCC protocol, IRCv3 batch/chathistory, flood protection, proxy, search, notifications
-- ✅ **Phase 6: Testing & Integration** - 266 tests (233 unit + 33 integration), zero clippy warnings
+- ✅ **Phase 6: Testing & Integration** - 223 executable tests (182 unit + 41 integration) and 59 doctests, zero clippy warnings
 
 ### 🆕 v0.4.0 Scripting, Plugins, DCC & IRCv3 (March 7, 2026)
 
@@ -538,7 +538,7 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 
 ```bash
 ✅ cargo build              # Successful compilation (zero errors)
-✅ cargo test --workspace   # 266 tests pass (233 unit + 33 integration)
+✅ cargo test --workspace   # 223 executable tests + 59 doctests pass
 ✅ cargo run                # Full-featured GUI with LIVE IRC connectivity
 ✅ cargo run -- --material-demo  # Material Design 3 component showcase
 ✅ cargo run -- --cli       # CLI prototype with multi-server support
