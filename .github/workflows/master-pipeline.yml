@@ -453,7 +453,8 @@ jobs:
     needs: [quick-checks, test-matrix, security-audit]
     if: |
       always() &&
-      needs.quick-checks.outputs.should_run_release == 'true' &&
+      (needs.quick-checks.outputs.should_run_release == 'true' ||
+       (github.event_name == 'pull_request' && startsWith(github.head_ref, 'release/'))) &&
       needs.test-matrix.result == 'success' &&
       (needs.security-audit.result == 'success' || needs.security-audit.result == 'skipped')
     strategy:
