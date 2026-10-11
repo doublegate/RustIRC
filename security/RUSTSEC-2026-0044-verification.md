@@ -5,7 +5,8 @@
 **Advisory:** RUSTSEC-2026-0044  
 **Title:** AWS-LC X.509 Name Constraints Bypass via Wildcard/Unicode CN  
 **Package:** `aws-lc-sys`  
-**Vulnerable Version:** `0.38.0`  
+**Vulnerable Versions:** `>=0.32.0, <0.39.0`  
+**Unaffected Versions:** `<0.32.0`  
 **Patched Versions:** `>=0.39.0`  
 **Date Reported:** 2026-03-19  
 **Date Verified:** 2026-10-10

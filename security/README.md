@@ -34,10 +34,9 @@ cargo audit --deny warnings
 
 ## Reporting Security Issues
 
-If you discover a security vulnerability in RustIRC, please report it to:
+If you discover a security vulnerability in RustIRC, please report it via:
 
-- **Email**: security@example.com (to be configured)
-- **GitHub Security Advisories**: Use the [GitHub Security tab](https://github.com/doublegate/RustIRC/security)
+- **GitHub Security Advisories**: Submit a private vulnerability report via the [GitHub Security tab](https://github.com/doublegate/RustIRC/security) per the project's [SECURITY.md](../SECURITY.md).
 
 Please do NOT report security vulnerabilities through public GitHub issues.
 
@@ -45,7 +44,7 @@ Please do NOT report security vulnerabilities through public GitHub issues.
 
 RustIRC follows these security best practices:
 
-1. **TLS by Default**: All network communication uses TLS via `rustls`
+1. **TLS Supported**: Encrypted network communication is supported via `rustls` (plain TCP and TLS options are configurable in GUI and TUI connection dialogs)
 2. **Memory Safety**: Leveraging Rust's ownership model and borrow checker
 3. **Sandboxed Scripting**: Lua scripting environment with appropriate restrictions
 4. **Input Validation**: All IRC messages are validated against malformed input
