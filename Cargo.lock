@@ -3929,15 +3929,24 @@ version = "0.4.2"
 dependencies = [
  "anyhow",
  "clap",
+ "crossbeam-epoch",
+ "event-listener",
+ "quick-xml",
  "rustirc-core",
  "rustirc-gui",
  "rustirc-plugins",
  "rustirc-protocol",
  "rustirc-scripting",
  "rustirc-tui",
+ "rustls",
+ "rustls-pki-types",
+ "rustls-webpki",
+ "static_assertions",
  "tokio",
+ "toml",
  "tracing",
  "tracing-subscriber",
+ "webpki-roots",
 ]
 
 [[package]]

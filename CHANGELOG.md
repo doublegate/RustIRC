@@ -34,9 +34,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Security**: `cargo audit` goes from 7 vulnerabilities to 0 -- quick-xml 0.37.5/0.39.2 -> 0.41.0
-  (RUSTSEC-2026-0194, RUSTSEC-2026-0195), rustls 0.23.41 -> 0.23.45 (RUSTSEC-2026-0285),
-  crossbeam-epoch 0.9.18 -> 0.9.21 (RUSTSEC-2026-0204). Unsound anyhow (RUSTSEC-2026-0190),
-  memmap2 (RUSTSEC-2026-0186) and event-listener (RUSTSEC-2026-0221) warnings are also resolved.
+  (RUSTSEC-2026-0194, RUSTSEC-2026-0195; resolves #127, #129, #130), rustls 0.23.41 -> 0.23.45 (RUSTSEC-2026-0285,
+  RUSTSEC-2026-0104, RUSTSEC-2026-0099, RUSTSEC-2026-0098, RUSTSEC-2026-0049; resolves #90, #102, #103, #104),
+  crossbeam-epoch 0.9.18 -> 0.9.21 (RUSTSEC-2026-0204; resolves #136). Unsound anyhow (RUSTSEC-2026-0190; resolves #132),
+  memmap2 (RUSTSEC-2026-0186) and event-listener (RUSTSEC-2026-0221; resolves #137) warnings are also resolved.
 - `time` now resolves to 0.3.55 and `instant` is gone from the graph, so RUSTSEC-2026-0009 and
   RUSTSEC-2024-0384 were removed from the security-audit ignore list
 - Two `clippy::useless_borrows_in_formatting` errors in `rustirc-gui/src/app.rs` that failed

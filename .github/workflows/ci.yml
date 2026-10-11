@@ -399,6 +399,32 @@ jobs:
             run_with_timeout 600s cargo test -p rustirc-gui --release --all-features --lib
           fi
         fi
+
+    - name: Test rustirc (root and integration tests)
+      shell: bash
+      env:
+        CI: true
+      run: |
+        echo "Testing package: rustirc (root and integration tests)"
+        # Try with sccache if available
+        if [ "${{ steps.configure_sccache.outputs.sccache_available }}" = "true" ]; then
+          export RUSTC_WRAPPER="${{ steps.configure_sccache.outputs.rustc_wrapper }}"
+          if ! run_with_timeout 600s cargo nextest run -p rustirc --release --all-features --profile ci 2>&1; then
+            echo "nextest failed with sccache, trying without sccache..."
+            unset RUSTC_WRAPPER
+            export RUSTC_WRAPPER=""
+            if ! run_with_timeout 600s cargo nextest run -p rustirc --release --all-features --profile ci; then
+              echo "nextest failed, trying cargo test..."
+              run_with_timeout 600s cargo test -p rustirc --release --all-features
+            fi
+          fi
+        else
+          export RUSTC_WRAPPER=""
+          if ! run_with_timeout 600s cargo nextest run -p rustirc --release --all-features --profile ci; then
+            echo "nextest failed, trying cargo test..."
+            run_with_timeout 600s cargo test -p rustirc --release --all-features
+          fi
+        fi
     # Run doctests on all platforms for comprehensive testing
     - name: Run doctests for rustirc-core
       shell: bash

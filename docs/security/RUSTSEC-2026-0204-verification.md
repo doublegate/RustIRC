@@ -1,5 +1,6 @@
 # RUSTSEC-2026-0204 Security Verification
 
+**GitHub Issue**: [#136](https://github.com/doublegate/RustIRC/issues/136)  
 **Issue**: Invalid pointer dereference in `fmt::Pointer` impl for `Atomic` and `Shared` in `crossbeam-epoch`
 
 **Date Verified**: 2026-10-10
@@ -16,7 +17,7 @@
 
 ## Issue Description
 
-Affected versions of `fmt::Display` dereference the underlying pointer, causing invalid pointer dereferences when using pointers created with `Atomic::null` or `Shared::null`. The `fmt::Debug` implementations and pre-0.9 `fmt::Display` implementations are not affected as they do not dereference pointers.
+The affected `fmt::Pointer` implementations for `Atomic` and `Shared` formed a reference by dereferencing the underlying pointer, which is invalid for null pointers. The advisory title and upstream formatting implementation identify the pointer-formatting (`{:p}`) path. Ordinary formatting assertions exercise this path but do not prove absence of undefined behavior; the patched version and lockfile floor provide downgrade protection.
 
 ## Verification Results
 

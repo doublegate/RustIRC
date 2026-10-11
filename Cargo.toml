@@ -21,6 +21,7 @@ tokio-rustls = "0.26"
 
 # TLS
 rustls = "0.23.45" # RUSTSEC-2026-0285: Require patched version (>=0.23.45)
+rustls-webpki = { version = "0.103.15", default-features = false, features = ["alloc"] } # RUSTSEC-2026-0104, RUSTSEC-2026-0099, RUSTSEC-2026-0098, RUSTSEC-2026-0049
 rustls-pemfile = "2.2"
 webpki-roots = "1.0"
 
@@ -30,8 +31,13 @@ serde_json = "1.0.151"
 toml = "1.1"
 
 # Error handling
-anyhow = "1.0"
+anyhow = "1.0.104" # RUSTSEC-2026-0190: Require patched version (>=1.0.103)
 thiserror = "2.0"
+
+# Concurrency & XML (Security patches)
+event-listener = "5.4.2" # RUSTSEC-2026-0221: Require patched version (>=5.4.2)
+crossbeam-epoch = "0.9.21" # RUSTSEC-2026-0204: Require patched version (>=0.9.20)
+quick-xml = "0.41.0" # RUSTSEC-2026-0194, RUSTSEC-2026-0195: Require patched version (>=0.41.0)
 
 # Logging
 tracing = "0.1.44"
@@ -100,6 +106,18 @@ rustirc-gui = { path = "crates/rustirc-gui" }
 rustirc-tui = { path = "crates/rustirc-tui" }
 rustirc-scripting = { path = "crates/rustirc-scripting" }
 rustirc-plugins = { path = "crates/rustirc-plugins" }
+
+[dev-dependencies]
+static_assertions = "1.1"
+toml = { workspace = true }
+event-listener = { workspace = true }
+crossbeam-epoch = { workspace = true }
+quick-xml = { workspace = true }
+rustls = { workspace = true }
+rustls-pki-types = "1.15.1"
+webpki-roots = "1.0"
+rustls-webpki = { workspace = true }
+tokio = { workspace = true }
 
 [profile.dev]
 opt-level = 0
