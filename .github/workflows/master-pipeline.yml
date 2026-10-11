@@ -20,11 +20,6 @@ on:
         description: 'Skip code coverage'
         type: boolean
         default: false
-      release_type:
-        description: 'Release type (only for manual runs)'
-        type: choice
-        options: [none, patch, minor, major]
-        default: none
       rust_version:
         description: 'Rust version to test'
         type: choice
@@ -242,25 +237,7 @@ jobs:
             should_run_security="${{ !inputs.skip_security }}"
             should_run_coverage="${{ !inputs.skip_coverage }}"
 
-            if [ "${{ inputs.release_type }}" != "none" ]; then
-              should_run_release="true"
-              # Generate release tag based on type
-              latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-              case "${{ inputs.release_type }}" in
-                patch)
-                  new_tag=$(echo $latest_tag | awk -F. '{$NF = $NF + 1; print}' OFS=.)
-                  ;;
-                minor)
-                  new_tag=$(echo $latest_tag | \
-                    awk -F. '{$(NF-1) = $(NF-1) + 1; $NF = 0; print}' OFS=.)
-                  ;;
-                major)
-                  new_tag=$(echo $latest_tag | \
-                    awk -F. '{$1 = substr($1, 2) + 1; $2 = 0; $3 = 0; print "v" $0}' OFS=.)
-                  ;;
-              esac
-              release_tag="$new_tag"
-            fi
+
           fi
 
           # Tag push triggers release
@@ -675,18 +652,11 @@ jobs:
           echo "| Release | ${{ needs.release.result || 'skipped' }} | - |"
           echo ""
 
-          # Calculate overall status
-          overall_status="success"
-          if [[ "${{ needs.quick-checks.result }}" == "failure" ]]; then
-            overall_status="failure"
-          elif [[ "${{ needs.test-matrix.result }}" == "failure" ]]; then
-            overall_status="failure"
-          elif [[ "${{ needs.security-audit.result }}" == "failure" ]]; then
-            overall_status="failure"
-          fi
-
-          echo "Overall pipeline status: $overall_status"
-
-          if [ "$overall_status" = "failure" ]; then
+          # Include every prerequisite, including the reusable workflow's MSRV gate.
+          if ! jq -e 'all(.[]; .result == "success" or .result == "skipped")' <<< "$JOB_RESULTS"; then
+            echo "Overall pipeline status: failure"
             exit 1
           fi
+          echo "Overall pipeline status: success"
+        env:
+          JOB_RESULTS: ${{ toJSON(needs) }}
