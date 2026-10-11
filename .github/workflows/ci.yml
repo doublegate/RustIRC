@@ -571,14 +571,14 @@ jobs:
 
         if [ "$sccache_available" = "true" ]; then
           export RUSTC_WRAPPER="$rustc_wrapper"
-          if ! run_with_timeout 600s cargo check --all-features; then
+          if ! run_with_timeout 600s cargo check --workspace --all-targets --all-features --locked; then
             echo "MSRV check failed with sccache, retrying without sccache..."
             unset RUSTC_WRAPPER
             export RUSTC_WRAPPER=""
-            run_with_timeout 600s cargo check --all-features
+            run_with_timeout 600s cargo check --workspace --all-targets --all-features --locked
           fi
         else
           echo "Running MSRV check without sccache"
           export RUSTC_WRAPPER=""
-          run_with_timeout 600s cargo check --all-features
+          run_with_timeout 600s cargo check --workspace --all-targets --all-features --locked
         fi

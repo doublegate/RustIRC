@@ -293,22 +293,6 @@ jobs:
           echo "  Release: $should_run_release"
           echo "  Release Tag: $release_tag"
 
-  msrv:
-    name: Minimum Rust 1.89
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@1.89.0
-      - uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: msrv-1.89
-      - name: Check complete workspace at the declared minimum
-        run: cargo check --workspace --all-targets --locked
-        env:
-          RUSTC_WRAPPER: ""
-
   # Phase 2: Parallel execution of tests, security, and documentation
   test-matrix:
     name: Test Matrix
@@ -576,12 +560,11 @@ jobs:
   # Phase 5: Release (only after all checks pass)
   release:
     name: Create Release
-    needs: [quick-checks, msrv, test-matrix, security-audit, documentation, coverage, build-artifacts]
+    needs: [quick-checks, test-matrix, security-audit, documentation, coverage, build-artifacts]
     if: |
       always() &&
       needs.quick-checks.outputs.should_run_release == 'true' &&
       needs.test-matrix.result == 'success' &&
-      needs.msrv.result == 'success' &&
       needs.security-audit.result == 'success' &&
       needs.documentation.result == 'success' &&
       needs.coverage.result == 'success' &&
@@ -639,7 +622,7 @@ jobs:
             jq -e '.isDraft == true' existing-release.json
           elif grep -qi 'release not found' release-query.err; then
             gh release create "$tag_name" --verify-tag --draft \
-              --title "RustIRC $tag_name — Protocol Integration & Dependency Security" \
+              --title "$(head -n 1 "$notes" | sed 's/^# //')" \
               --notes-file "$notes"
           else
             cat release-query.err >&2
@@ -669,7 +652,6 @@ jobs:
     if: always()
     needs:
       - quick-checks
-      - msrv
       - test-matrix
       - security-audit
       - documentation
