@@ -21,6 +21,7 @@ tokio-rustls = "0.26"
 
 # TLS
 rustls = "0.23.45" # RUSTSEC-2026-0285: Require patched version (>=0.23.45)
+rustls-webpki = { version = "0.103.15", default-features = false, features = ["alloc"] } # RUSTSEC-2026-0104, RUSTSEC-2026-0099, RUSTSEC-2026-0098, RUSTSEC-2026-0049
 rustls-pemfile = "2.2"
 webpki-roots = "1.0"
 
@@ -113,6 +114,7 @@ quick-xml = { workspace = true }
 rustls = { workspace = true }
 rustls-pki-types = "1.15.1"
 webpki-roots = "1.0"
+rustls-webpki = { workspace = true }
 tokio = { workspace = true }
 
 [profile.dev]

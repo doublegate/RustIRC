@@ -3940,6 +3940,7 @@ dependencies = [
  "rustirc-tui",
  "rustls",
  "rustls-pki-types",
+ "rustls-webpki",
  "tokio",
  "tracing",
  "tracing-subscriber",
