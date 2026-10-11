@@ -113,7 +113,7 @@ impl Tag {
 }
 
 /// Escape tag value according to IRCv3 spec
-/// https://ircv3.net/specs/extensions/message-tags.html#escaping-values
+/// <https://ircv3.net/specs/extensions/message-tags.html#escaping-values>
 pub fn escape_tag_value(value: &str) -> String {
     let mut escaped = String::with_capacity(value.len());
 
@@ -132,7 +132,7 @@ pub fn escape_tag_value(value: &str) -> String {
 }
 
 /// Unescape tag value according to IRCv3 spec
-/// https://ircv3.net/specs/extensions/message-tags.html#escaping-values
+/// <https://ircv3.net/specs/extensions/message-tags.html#escaping-values>
 pub fn unescape_tag_value(value: &str) -> String {
     let mut unescaped = String::with_capacity(value.len());
     let mut chars = value.chars().peekable();

@@ -56,7 +56,7 @@ impl DccChat {
     /// Initiate a DCC CHAT by listening on a local port and waiting for the peer to connect.
     ///
     /// Returns the CTCP message string that should be sent to the peer via IRC PRIVMSG.
-    /// The caller should send this CTCP message and then call [`wait_for_connection`] to
+    /// The caller should send this CTCP message and then call [`Self::wait_for_connection`] to
     /// accept the incoming TCP connection.
     ///
     /// # Arguments
@@ -67,7 +67,7 @@ impl DccChat {
     /// # Returns
     ///
     /// A tuple of `(TcpListener, ctcp_message_string)`. The listener should be passed
-    /// to [`wait_for_connection`].
+    /// to [`Self::wait_for_connection`].
     pub async fn initiate(local_addr: IpAddr, port: u16) -> DccResult<(TcpListener, u16, String)> {
         let bind_addr = SocketAddr::new(local_addr, port);
         let listener = TcpListener::bind(bind_addr)

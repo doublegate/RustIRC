@@ -293,6 +293,22 @@ jobs:
           echo "  Release: $should_run_release"
           echo "  Release Tag: $release_tag"
 
+  msrv:
+    name: Minimum Rust 1.89
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@1.89.0
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: msrv-1.89
+      - name: Check complete workspace at the declared minimum
+        run: cargo check --workspace --all-targets --locked
+        env:
+          RUSTC_WRAPPER: ""
+
   # Phase 2: Parallel execution of tests, security, and documentation
   test-matrix:
     name: Test Matrix
@@ -506,7 +522,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.99.0
         with:
           targets: ${{ matrix.target }}
 
@@ -530,9 +546,9 @@ jobs:
         run: |
           if [ "${{ matrix.cross }}" = "true" ]; then
             # Use cross with proper configuration for ARM64 builds
-            cross build --release --target ${{ matrix.target }} --bin rustirc
+            cross build --locked --release --target ${{ matrix.target }} --bin rustirc
           else
-            cargo build --release --target ${{ matrix.target }} --bin rustirc
+            cargo build --locked --release --target ${{ matrix.target }} --bin rustirc
           fi
         env:
           RUSTC_WRAPPER: ""  # Disable sccache for cross-platform builds
@@ -560,13 +576,15 @@ jobs:
   # Phase 5: Release (only after all checks pass)
   release:
     name: Create Release
-    needs: [quick-checks, test-matrix, security-audit, build-artifacts]
+    needs: [quick-checks, msrv, test-matrix, security-audit, documentation, coverage, build-artifacts]
     if: |
       always() &&
       needs.quick-checks.outputs.should_run_release == 'true' &&
       needs.test-matrix.result == 'success' &&
-      (needs.security-audit.result == 'success' ||
-       needs.security-audit.result == 'skipped') &&
+      needs.msrv.result == 'success' &&
+      needs.security-audit.result == 'success' &&
+      needs.documentation.result == 'success' &&
+      needs.coverage.result == 'success' &&
       needs.build-artifacts.result == 'success'
     runs-on: ubuntu-latest
     permissions:
@@ -586,7 +604,7 @@ jobs:
         run: |
           mkdir -p release-assets
           # Find only files (not directories) with proper parentheses for OR condition
-          find artifacts -type f \( -name "*.tar.gz" -o -name "*.zip" \) | while read file; do
+          find artifacts -type f \( -name "*.tar.gz" -o -name "*.zip" \) | while read -r file; do
             echo "Processing: $file"
             cp "$file" release-assets/
             # Generate checksums
@@ -602,90 +620,48 @@ jobs:
           echo "Release assets prepared:"
           ls -la release-assets/
 
-      - name: Create or update release
+      - name: Publish immutable release with curated notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.quick-checks.outputs.release_tag }}
         run: |
-          tag_name="${{ needs.quick-checks.outputs.release_tag }}"
-
-          # Create build information section
-          cat > build_info.md << EOF
+          set -euo pipefail
+          tag_name="$RELEASE_TAG"
+          version="${tag_name#v}"
+          manifest_version=$(sed -n '/^\[package\]/,/^\[/s/^version = "\([^"]*\)"/\1/p' Cargo.toml)
+          test "$version" = "$manifest_version"
+          test "$(head -n 1 VERSION)" = "$version"
+          notes="docs/releases/$tag_name.md"
+          test -s "$notes"
+          git rev-parse --verify "refs/tags/$tag_name"
+          # A retry may reuse a draft, but must never replace a published version.
+          if gh release view "$tag_name" --json isDraft > existing-release.json 2> release-query.err; then
+            jq -e '.isDraft == true' existing-release.json
+          elif grep -qi 'release not found' release-query.err; then
+            gh release create "$tag_name" --verify-tag --draft \
+              --title "RustIRC $tag_name — Protocol Integration & Dependency Security" \
+              --notes-file "$notes"
+          else
+            cat release-query.err >&2
+            exit 1
+          fi
+          cp "$notes" release_notes.md
+          cat >> release_notes.md << EOF
 
           ---
 
           **Build Information:**
           - Pipeline Run: [${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           - Commit: [${{ github.sha }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
+          - Toolchain: Rust 1.99.0; locked Cargo dependency graph
           - Build Date: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
           EOF
-
-          # Check if release already exists
-          if gh release view "$tag_name" >/dev/null 2>&1; then
-            echo "Release $tag_name already exists. Checking if we need to append build info..."
-
-            # Get existing release notes
-            existing_notes=$(gh release view "$tag_name" --json body -q '.body')
-            
-            # Check if build info already exists in notes
-            if ! echo "$existing_notes" | grep -q "Build Information:"; then
-              echo "Appending build information to existing release notes..."
-              
-              # Append build info to existing notes
-              echo "$existing_notes" > existing_notes.md
-              cat build_info.md >> existing_notes.md
-              
-              # Update release with appended notes
-              gh release edit "$tag_name" --notes-file existing_notes.md
-            else
-              echo "Build information already exists in release notes."
-            fi
-
-            # Upload artifacts to existing release (will replace if they exist)
-            for file in release-assets/*; do
-              if [[ -f "$file" ]]; then
-                echo "Uploading $file to existing release..."
-                gh release upload "$tag_name" "$file" --clobber
-              fi
-            done
-          else
-            echo "Creating new release $tag_name..."
-
-            # Create minimal release notes for new release (preserves any manual notes that might be added later)
-            cat > release_notes.md << EOF
-          ## Release $tag_name
-
-          ### What's Changed
-
-          This release includes the latest improvements and bug fixes.
-
-          ### Downloads
-
-          - **Linux x86_64**: \`rustirc-linux-amd64.tar.gz\`
-          - **Linux ARM64**: \`rustirc-linux-arm64.tar.gz\`
-          - **Windows x86_64**: \`rustirc-windows-amd64.exe.zip\`
-
-          ### Verification
-
-          All binaries include SHA256 checksums for verification.
-
-          ### Installation
-
-          1. Download the appropriate binary for your platform
-          2. Extract the archive
-          3. Run the client: \`./rustirc\` (Unix) or \`rustirc.exe\` (Windows)
-
-          For detailed usage instructions, see the [README](https://github.com/doublegate/RustIRC#readme).
-          EOF
-          
-          # Append build info to new release notes
-          cat build_info.md >> release_notes.md
-
-          # Create the new release
-          gh release create "$tag_name" \
-            --title "RustIRC $tag_name" \
-            --notes-file release_notes.md \
-            release-assets/*
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          test "$(find release-assets -type f | wc -l)" -eq 6
+          (cd release-assets && sha256sum -c ./*.sha256)
+          gh release edit "$tag_name" --notes-file release_notes.md
+          gh release upload "$tag_name" release-assets/* --clobber
+          # Publication is the final mutation, after the complete asset set exists.
+          gh release edit "$tag_name" --draft=false
 
   # Status reporting job
   pipeline-status:
@@ -693,6 +669,7 @@ jobs:
     if: always()
     needs:
       - quick-checks
+      - msrv
       - test-matrix
       - security-audit
       - documentation
