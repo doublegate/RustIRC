@@ -11,9 +11,9 @@ The security vulnerability RUSTSEC-2026-0253 affecting `lru` crate versions < 0.
 ## Vulnerability Details
 
 - **Package**: `lru`
-- **Vulnerable Versions**: ≤ 0.16.3
+- **Vulnerable Versions**: < 0.18.2
 - **Fixed Version**: ≥ 0.18.2
-- **CVE**: CWE-416 (Use-After-Free), CWE-415 (Double Free)
+- **CWE**: CWE-416 (Use-After-Free), CWE-824 (Access of Resource Using Incompatible Type)
 - **Severity**: Unsound
 - **Advisory URL**: https://rustsec.org/advisories/RUSTSEC-2026-0253
 
@@ -22,12 +22,12 @@ The security vulnerability RUSTSEC-2026-0253 affecting `lru` crate versions < 0.
 ### Changes Applied
 
 1. **Vendored Dependency Patch**:
-   - Created vendored copy of `cryoglyph` at `/workspace/vendor/cryoglyph/`
+   - Created vendored copy of `cryoglyph` at `vendor/cryoglyph/`
    - Updated `lru` dependency from 0.16.4 to 0.18.5 in vendored cryoglyph
    - Applied Cargo.toml patch to use vendored version
 
 2. **Documentation**:
-   - Added comprehensive documentation in `/workspace/vendor/README.md`
+   - Added comprehensive documentation in `vendor/README.md`
    - Documented security advisory reference and fix details
    - Added inline comment in main `Cargo.toml` referencing RUSTSEC-2026-0253
 
@@ -71,7 +71,7 @@ cargo test --workspace --lib
 #### 4. Documentation Verification
 
 **Result**: ✅ PASS
-- Security fix documented in `/workspace/vendor/README.md`
+- Security fix documented in `vendor/README.md`
 - Main `Cargo.toml` includes patch section with clear reference to RUSTSEC-2026-0253
 - Inline comments explain the security patch purpose
 
@@ -89,7 +89,7 @@ The fix was committed in:
 - **Commit**: d06fc4d003c588199ba160668cfaa090d1ea1a12
 - **PR**: #147
 - **Title**: "chore(deps): consolidate dependency bumps to latest stable releases"
-- **Date**: Recent (current HEAD)
+- **Date**: 2026-10-09
 
 ## Recommendations
 
@@ -110,5 +110,5 @@ The RUSTSEC-2026-0253 security advisory has been fully addressed in the RustIRC 
 
 - RustSec Advisory: https://rustsec.org/advisories/RUSTSEC-2026-0253
 - Upstream Fix PR: https://github.com/jeromefroe/lru-rs/pull/238
-- Vendor Documentation: [/workspace/vendor/README.md](/workspace/vendor/README.md)
+- Vendor Documentation: [vendor/README.md](vendor/README.md)
 - Project Repository: https://github.com/doublegate/RustIRC
