@@ -16,7 +16,7 @@ The `rand` crate versions >= 0.7.0, < 0.8.6 and >= 0.9.0, < 0.9.3 and 0.10.0 con
 2. A custom logger is defined for the `log` crate
 3. The custom logger calls `rand::rng()` or `rand::thread_rng()`
 4. The `ThreadRng` attempts to reseed (every 64 kB of generated data)
-5. Trace or warn-level logging is enabled
+5. Logging triggers are met: trace-level logging is active, or warn-level logging is active when the OS entropy source (`getrandom`) repeatedly fails to supply new seed entropy and triggers emergency fallback re-seeding
 
 ## Affected Versions
 
@@ -49,7 +49,7 @@ The `rand` crate versions >= 0.7.0, < 0.8.6 and >= 0.9.0, < 0.9.3 and 0.10.0 con
 ```bash
 $ cargo tree -i rand@0.10.3
 rand v0.10.3
-└── rustirc-core v0.4.2 (/workspace/crates/rustirc-core)
+└── rustirc-core v0.4.2 (crates/rustirc-core)
 ```
 
 The project uses rand 0.10.3, which is >= 0.10.1 (patched version).
@@ -74,7 +74,7 @@ Enabled features:
 
 #### 3. Logging Framework
 
-The project uses `tracing` for structured logging, not the `log` crate. Confirmed in dependencies:
+The project uses `tracing` for structured application logging in core and TUI components:
 
 ```toml
 # workspace Cargo.toml
@@ -82,7 +82,7 @@ tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 ```
 
-No `log` crate dependency exists in the project.
+While `crates/rustirc-plugins` includes a direct dependency on `log = "0.4"`, no custom logger implementation calls `rand::rng()`, and `rand` itself is compiled without the `log` feature.
 
 #### 4. Custom Logger Check
 
@@ -125,8 +125,8 @@ The RustIRC project is **NOT VULNERABLE** to RUSTSEC-2026-0097 for multiple reas
 
 1. **Primary**: Uses patched version rand 0.10.3 (>= 0.10.1)
 2. **Secondary**: Does not enable the `log` feature for rand
-3. **Tertiary**: Uses `tracing` instead of `log` crate
-4. **Quaternary**: No custom `log` logger implementations exist
+3. **Tertiary**: Uses `tracing` for application logging, without custom logger implementations calling RNG
+4. **Quaternary**: No custom `log` logger implementations exist anywhere in the codebase
 
 ## Recommendations
 
