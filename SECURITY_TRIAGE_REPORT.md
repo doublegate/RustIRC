@@ -23,7 +23,7 @@ No actionable security vulnerabilities remain in the dependency tree.
 **GitHub Issue**: [#88](https://github.com/doublegate/RustIRC/issues/88)  
 **Linear Issue**: DOU-13  
 **Package**: aws-lc-sys  
-**Affected Versions**: < 0.39.0  
+**Affected Versions**: >= 0.15.0, < 0.39.0 (unaffected: < 0.15.0)  
 **Current Version**: 0.45.0  
 **Status**: ✅ **FIXED**
 
@@ -35,7 +35,7 @@ No actionable security vulnerabilities remain in the dependency tree.
 **GitHub Issue**: [#89](https://github.com/doublegate/RustIRC/issues/89)  
 **Linear Issue**: DOU-14  
 **Package**: aws-lc-sys  
-**Affected Versions**: 0.32.0 - 0.38.x  
+**Affected Versions**: >= 0.32.0, < 0.39.0 (unaffected: < 0.32.0)  
 **Current Version**: 0.45.0  
 **Status**: ✅ **FIXED**
 
@@ -59,14 +59,15 @@ No actionable security vulnerabilities remain in the dependency tree.
 **GitHub Issue**: [#95](https://github.com/doublegate/RustIRC/issues/95)  
 **Linear Issue**: DOU-16  
 **Package**: rand  
-**Affected Versions**: 0.7.0 - 0.9.2, 0.10.0  
-**Current Version**: 0.10.3 (only version in use)  
+**Affected Versions**: 0.7.0 - 0.8.5, 0.9.0 - 0.9.2, 0.10.0  
+**Current Versions in Cargo.lock**: 0.8.8 and 0.10.3  
 **Status**: ✅ **FIXED**
 
 **Evidence**: 
-- Cargo tree analysis shows only `rand 0.10.3` is actually used in the dependency graph
-- Version 0.10.3 is not affected (only 0.10.0 specifically was vulnerable)
-- While Cargo.lock contains rand 0.8.8 and 0.9.5, these are not in the active dependency tree
+- `Cargo.lock` resolves two active versions in the dependency graph:
+  - `rand 0.10.3` (used by `rustirc-core` via direct dependency), patched in 0.10.1 (>= 0.10.1)
+  - `rand 0.8.8` (used transitively by `ratatui` via `ratatui-termwiz -> termwiz -> phf -> phf_macros -> phf_generator -> rand 0.8.8`), patched in 0.8.6 (>= 0.8.6)
+- Neither active version falls into an affected range; furthermore, neither dependency enables the `log` feature or implements a custom logger calling RNG.
 
 ---
 
@@ -271,8 +272,9 @@ cargo audit
 # Check specific package versions
 grep -E "^name = \"(aws-lc-sys|lru|quick-xml|rand|rustls|rustls-webpki|memmap2|anyhow|crossbeam-epoch|event-listener|ttf-parser)\"" Cargo.lock -A 2
 
-# Verify rand usage (only 0.10.3 is in the active tree)
+# Verify rand usage (both 0.8.8 and 0.10.3 are patched)
 cargo tree -i rand:0.10.3
+cargo tree -i rand:0.8.8
 ```
 
 ---
@@ -288,9 +290,13 @@ No immediate security actions are required. All vulnerabilities have been addres
 3. **Advisory Monitoring**: Subscribe to RustSec advisory notifications
 
 ### GitHub Issue Management
-All 18 GitHub issues (#88-90, #95-96, #102-104, #114, #127-132, #136-137, #140) can be closed with:
+GitHub issues for vulnerabilities (#88-90, #95-96, #102-104, #114, #127-130, #132, #136-137, #140) can be closed with:
 - Label: "Needs verification" → "Resolved"
 - Comment: "Verified fixed in RustIRC v0.4.2. Current dependency versions include all necessary security patches."
+
+For Issue #131 (RUSTSEC-2026-0192 / ttf-parser unmaintained):
+- Label: "Needs verification" → "Accepted Risk"
+- Comment: "Informational advisory for unmaintained dependency tracked as accepted risk; awaiting upstream migration in iced-rs/sctk-adwaita."
 
 ---
 
@@ -298,12 +304,12 @@ All 18 GitHub issues (#88-90, #95-96, #102-104, #114, #127-132, #136-137, #140) 
 
 | Package | Advisory Version | Current Version | Status |
 |---------|-----------------|-----------------|--------|
-| aws-lc-sys | < 0.39.0 | 0.45.0 | ✅ Fixed |
+| aws-lc-sys | >= 0.15.0, < 0.39.0 | 0.45.0 | ✅ Fixed |
 | rustls-webpki | < 0.103.13 | 0.103.15 | ✅ Fixed |
-| rand | 0.7-0.9.2, 0.10.0 | 0.10.3 | ✅ Fixed |
+| rand | < 0.8.6, 0.9.0-0.9.2, 0.10.0 | 0.8.8, 0.10.3 | ✅ Fixed |
 | quick-xml | < 0.41.0 | 0.41.0 | ✅ Fixed |
 | memmap2 | < 0.9.11 | 0.9.11 | ✅ Fixed |
-| ttf-parser | N/A | 0.25.1 | ⚠️ Unmaintained |
+| ttf-parser | N/A | 0.25.1 | ⚠️ Accepted Risk |
 | anyhow | < 1.0.103 | 1.0.104 | ✅ Fixed |
 | crossbeam-epoch | < 0.9.20 | 0.9.21 | ✅ Fixed |
 | event-listener | < 5.4.2 | 5.4.2 | ✅ Fixed |
@@ -314,9 +320,9 @@ All 18 GitHub issues (#88-90, #95-96, #102-104, #114, #127-132, #136-137, #140) 
 
 ## Conclusion
 
-The RustIRC project is in excellent security posture. All 18 advisories from the initial import have been properly addressed through dependency updates to patched versions. The only remaining item is an informational "unmaintained" warning for ttf-parser, which poses minimal risk and is a transitive dependency through the iced GUI framework.
+The RustIRC project is in excellent security posture. 17 of the 18 advisories from the initial import have been properly addressed through dependency updates to patched versions. The remaining advisory (RUSTSEC-2026-0192 for ttf-parser) is an informational unmaintained notice tracked separately as an accepted risk due to transitive iced-rs/sctk-adwaita requirements.
 
-**Evidence-backed disposition**: ✅ **ALL ADVISORIES RESOLVED**
+**Evidence-backed disposition**: ✅ **17 ADVISORIES RESOLVED, 1 ACCEPTED RISK**
 
 **Generated**: 2026-10-10 19:05 UTC  
 **Tool**: cargo-audit v0.22.2, Cargo.lock analysis

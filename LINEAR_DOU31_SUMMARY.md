@@ -31,16 +31,16 @@ All 18 imported security advisories (DOU-13 through DOU-30) have been triaged ag
 
 | Advisory ID | Package | Affected | Current | Status |
 |-------------|---------|----------|---------|--------|
-| RUSTSEC-2026-0048 | aws-lc-sys | < 0.39.0 | 0.45.0 | ✅ Fixed |
-| RUSTSEC-2026-0044 | aws-lc-sys | < 0.39.0 | 0.45.0 | ✅ Fixed |
+| RUSTSEC-2026-0048 | aws-lc-sys | >= 0.15.0, < 0.39.0 | 0.45.0 | ✅ Fixed |
+| RUSTSEC-2026-0044 | aws-lc-sys | >= 0.32.0, < 0.39.0 | 0.45.0 | ✅ Fixed |
 | RUSTSEC-2026-0049 | rustls-webpki | < 0.103.10 | 0.103.15 | ✅ Fixed |
-| RUSTSEC-2026-0097 | rand | < 0.9.3, 0.10.0 | 0.10.3 | ✅ Fixed |
+| RUSTSEC-2026-0097 | rand | < 0.8.6, < 0.9.3, 0.10.0 | 0.8.8, 0.10.3 | ✅ Fixed |
 | RUSTSEC-2026-0098 | rustls-webpki | < 0.103.12 | 0.103.15 | ✅ Fixed |
 | RUSTSEC-2026-0099 | rustls-webpki | < 0.103.12 | 0.103.15 | ✅ Fixed |
 | RUSTSEC-2026-0104 | rustls-webpki | < 0.103.13 | 0.103.15 | ✅ Fixed |
 | RUSTSEC-2026-0186 | memmap2 | < 0.9.11 | 0.9.11 | ✅ Fixed |
 | RUSTSEC-2026-0190 | anyhow | < 1.0.103 | 1.0.104 | ✅ Fixed |
-| RUSTSEC-2026-0192 | ttf-parser | N/A | 0.25.1 | ⚠️ Unmaintained |
+| RUSTSEC-2026-0192 | ttf-parser | N/A | 0.25.1 | ⚠️ Accepted Risk |
 | RUSTSEC-2026-0194 | quick-xml | < 0.41.0 | 0.41.0 | ✅ Fixed |
 | RUSTSEC-2026-0195 | quick-xml | < 0.41.0 | 0.41.0 | ✅ Fixed |
 | RUSTSEC-2026-0204 | crossbeam-epoch | < 0.9.20 | 0.9.21 | ✅ Fixed |
@@ -67,7 +67,7 @@ All 18 imported security advisories (DOU-13 through DOU-30) have been triaged ag
 | DOU-23 | [#128](https://github.com/doublegate/RustIRC/issues/128) | RUSTSEC-2026-0195 | quick-xml | ✅ Fixed |
 | DOU-24 | [#129](https://github.com/doublegate/RustIRC/issues/129) | RUSTSEC-2026-0194 | quick-xml | ✅ Fixed (dup) |
 | DOU-25 | [#130](https://github.com/doublegate/RustIRC/issues/130) | RUSTSEC-2026-0195 | quick-xml | ✅ Fixed (dup) |
-| DOU-26 | [#131](https://github.com/doublegate/RustIRC/issues/131) | RUSTSEC-2026-0192 | ttf-parser | ⚠️ Unmaintained |
+| DOU-26 | [#131](https://github.com/doublegate/RustIRC/issues/131) | RUSTSEC-2026-0192 | ttf-parser | ⚠️ Accepted Risk |
 | DOU-27 | [#132](https://github.com/doublegate/RustIRC/issues/132) | RUSTSEC-2026-0190 | anyhow | ✅ Fixed |
 | DOU-28 | [#136](https://github.com/doublegate/RustIRC/issues/136) | RUSTSEC-2026-0204 | crossbeam-epoch | ✅ Fixed |
 | DOU-29 | [#137](https://github.com/doublegate/RustIRC/issues/137) | RUSTSEC-2026-0221 | event-listener | ✅ Fixed |
@@ -85,9 +85,9 @@ All 18 imported security advisories (DOU-13 through DOU-30) have been triaged ag
 - **Evidence**: `[patch.crates-io]` section in Cargo.toml explicitly patches cryoglyph to use lru 0.18.5
 
 ### 2. Rand Unsoundness (DOU-16/17)
-- **Fixed**: Only rand 0.10.3 in active use (verified via cargo tree)
+- **Fixed**: Both `rand 0.8.8` (patched in >= 0.8.6) and `rand 0.10.3` (patched in >= 0.10.1) in Cargo.lock are secure
 - **Impact**: Memory corruption via aliased mutable references
-- **Evidence**: `cargo tree -i rand:0.10.3` shows single version in dependency graph
+- **Evidence**: `cargo tree` shows rand 0.10.3 in core and rand 0.8.8 in ratatui-termwiz; neither enables `log` feature
 
 ### 3. Quick-XML DoS (DOU-22/23/24/25)
 - **Fixed**: quick-xml 0.41.0 resolves both O(N²) and unbounded allocation issues
@@ -123,9 +123,9 @@ No immediate security actions needed. All vulnerabilities are resolved.
 
 ### Short-term
 1. ✅ Merge PR #152 to document triage
-2. ✅ Close GitHub issues #88-140 (security advisories)
+2. ✅ Close GitHub issues #88-140 with appropriate dispositions (resolved for fixed vulnerabilities, accepted risk for #131)
 3. ✅ Mark Linear DOU-31 complete
-4. ✅ Close Linear DOU-13 through DOU-30 as resolved
+4. ✅ Close Linear DOU-13 through DOU-25, DOU-27 through DOU-30 as resolved; transition DOU-26 to Accepted Risk
 
 ### Long-term Monitoring
 1. **ttf-parser**: Monitor iced framework for migration to maintained alternatives
