@@ -282,7 +282,7 @@ jobs:
       security-events: write  # Required for security audit
     uses: ./.github/workflows/ci.yml
     with:
-      rust_version: ${{ inputs.rust_version || 'stable' }}
+      rust_version: ${{ inputs.rust_version || '' }}
       skip_tests: false
       cache_key: ${{ needs.quick-checks.outputs.cache_key }}
     secrets: inherit
@@ -478,6 +478,8 @@ jobs:
           #   target: aarch64-apple-darwin
           #   artifact_name: rustirc-macos-arm64.tar.gz
     runs-on: ${{ matrix.os }}
+    env:
+      RUSTUP_TOOLCHAIN: 1.99.0
     steps:
       - uses: actions/checkout@v7
         with:
@@ -486,6 +488,12 @@ jobs:
       - uses: dtolnay/rust-toolchain@1.99.0
         with:
           targets: ${{ matrix.target }}
+
+      - name: Verify release compiler selection
+        shell: bash
+        run: |
+          rustc --version --verbose
+          test "$(rustc --version | cut -d' ' -f2)" = "1.99.0"
 
       # Install cross for cross-compilation
       - name: Install cross
