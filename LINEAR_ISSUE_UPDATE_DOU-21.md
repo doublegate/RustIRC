@@ -23,10 +23,10 @@ After thorough investigation, **RustIRC is NOT vulnerable** to RUSTSEC-2026-0186
 
 ### Dependency Analysis
 `memmap2` is a **transitive dependency** (not directly declared in Cargo.toml) brought in through:
-1. `fontdb` → `cosmic-text` (iced GUI framework)
-2. `sctk-adwaita` → `winit` (window management)
-3. `smithay-client-toolkit` (Wayland support)
-4. `softbuffer` (rendering backend)
+1. `cosmic-text` → `fontdb` → `memmap2` (iced GUI framework)
+2. `winit` → `sctk-adwaita` → `memmap2` (and `winit` directly)
+3. `smithay-client-toolkit` → `memmap2` (Wayland support)
+4. `softbuffer` → `memmap2` (rendering backend)
 
 ### Verification Steps Completed
 
@@ -55,8 +55,7 @@ cargo build
 cargo test --workspace
 ```
 **Result**: ✅ All tests passing
-- 266 total tests passed (233 unit + 33 integration)
-- 59 doctests passed across all crates
+- 274 total tests passed across workspace (215 library/integration tests + 59 doctests)
 - Zero failures
 
 ---

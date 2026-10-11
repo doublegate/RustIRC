@@ -4,7 +4,7 @@
 **Advisory:** RUSTSEC-2026-0186  
 **Package:** memmap2  
 **Vulnerability:** Unchecked pointer offset  
-**Severity:** Unsound  
+**Classification:** Unsound (informational advisory)  
 **Date Reported:** 2026-06-20  
 **Fixed Version:** 0.9.11
 
@@ -29,10 +29,10 @@ The RustIRC project currently uses **memmap2 v0.9.11**, which is the fixed versi
 
 ### Dependency Chain
 `memmap2` is a transitive dependency brought in through:
-1. `fontdb` → `cosmic-text` (used by iced GUI framework)
-2. `sctk-adwaita` → `winit` (window management)
-3. `smithay-client-toolkit` (Wayland support)
-4. `softbuffer` (rendering backend)
+1. `cosmic-text` → `fontdb` → `memmap2` (used by iced GUI framework)
+2. `winit` → `sctk-adwaita` → `memmap2` (and `winit` directly)
+3. `smithay-client-toolkit` → `memmap2` (Wayland support)
+4. `softbuffer` → `memmap2` (rendering backend)
 
 ### Verification Steps Performed
 
@@ -52,8 +52,7 @@ The RustIRC project currently uses **memmap2 v0.9.11**, which is the fixed versi
 
 4. **Test Verification**
    - Ran full test suite with `cargo test --workspace`
-   - All 266 tests passed (233 unit + 33 integration tests)
-   - All doctests passed (59 total across all crates)
+   - All tests passed: 215 library and integration tests, 59 doctests (274 total passed across workspace; 0 failed)
 
 ### cargo audit Output
 ```
