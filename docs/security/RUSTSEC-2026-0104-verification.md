@@ -41,10 +41,14 @@ rustls-webpki v0.103.15
 1. **Cargo.lock Check**:
    `rustls-webpki` is locked at `0.103.15`, which exceeds the minimum patched threshold of `0.103.13`.
 2. **Automated Test**:
-   `tests/security_advisories_test.rs::test_rustls_webpki_root_store_and_server_names` validates webpki root certificates and TLS client configurations.
+   `test_rustls_webpki_root_store_and_server_names` is a configuration smoke test only; it does not validate chains, name constraints, or CRLs. `test_security_advisory_dependency_floors` rejects vulnerable resolved webpki versions. Advisory-specific certificate/CRL fixtures are not supplied by this PR.
 3. **Security Audit**:
    `cargo audit` passes cleanly with 0 vulnerabilities detected.
 
 ## Conclusion
 
 RustIRC is secure against RUSTSEC-2026-0104. Issue #104 is fully resolved.
+
+## Application applicability
+
+Not applicable to the current application CRL path: `crates/rustirc-core/src/connection.rs::create_tls_connector` configures trusted roots and no client authentication, with no CRL configuration or parsing. This does not mean RustIRC implements revocation checking. The dependency is patched independently. Invalid-DER smoke tests do not exercise the advisory-specific CRL extension or distribution-point matching.

@@ -32,7 +32,7 @@ Given a name constraint of `accept.example.com`, a wildcard certificate for `*.e
 2. **Workspace Requirement**:
    `rustls = "0.23.45"` is enforced in `Cargo.toml`.
 3. **Automated Test**:
-   `tests/security_advisories_test.rs::test_rustls_webpki_root_store_and_server_names` validates webpki root certificates and ServerName resolution.
+   `test_rustls_webpki_root_store_and_server_names` is a configuration smoke test only; it does not validate chains, name constraints, or CRLs. `test_security_advisory_dependency_floors` rejects vulnerable resolved webpki versions. Advisory-specific certificate/CRL fixtures are not supplied by this PR.
 4. **Security Audit**:
    `cargo audit` passes cleanly with 0 vulnerabilities detected.
 

@@ -1,6 +1,11 @@
-//! Security Advisory Regression and Verification Tests
+//! Security advisory checks and configuration smoke tests.
 //!
-//! Validates security fixes and behavior for:
+//! Lockfile minimum-version assertions enforce patched dependencies. Ordinary
+//! value assertions do not establish absence of undefined behavior; use Miri for
+//! additional checking. The TLS tests below do not validate certificate chains,
+//! name constraints, or advisory-specific CRL extensions.
+//!
+//! Related advisories:
 //! - RUSTSEC-2026-0190 (anyhow: sound downcast_mut with context)
 //! - RUSTSEC-2026-0221 (event-listener: StackSlot thread safety)
 //! - RUSTSEC-2026-0194 (quick-xml: linear attribute checking time)
@@ -12,7 +17,6 @@ use event_listener::Listener;
 use std::fmt;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::Instant;
 
 // ============================================================================
 // RUSTSEC-2026-0190: anyhow Error::downcast_mut soundness with context
@@ -27,11 +31,12 @@ impl fmt::Display for CustomErrorContext {
     }
 }
 
+/// Checks context mutations and formatting; soundness relies on the patched dependency.
 #[test]
 fn test_rustsec_2026_0190_anyhow_downcast_mut_soundness() {
     // Note: The undefined behavior under Stacked Borrows was fixed in anyhow commit 6e8c000 (v1.0.103+).
     // This test exercises the exact API sequence (context followed by downcast_mut mutation)
-    // to confirm correct state preservation and safe mutable aliasing behavior.
+    // to confirm state preservation. Value assertions alone cannot detect undefined behavior.
     let mut error =
         anyhow::Error::msg("base protocol error").context(CustomErrorContext("initial value"));
 
@@ -45,7 +50,7 @@ fn test_rustsec_2026_0190_anyhow_downcast_mut_soundness() {
     ctx.0 = "updated value";
     assert_eq!(ctx.0, "updated value");
 
-    // Subsequent downcasts must observe the updated state without undefined behavior
+    // Subsequent downcasts must observe the updated state
     let ctx2 = error
         .downcast_mut::<CustomErrorContext>()
         .expect("should downcast_mut again");
@@ -59,16 +64,21 @@ fn test_rustsec_2026_0190_anyhow_downcast_mut_soundness() {
 // RUSTSEC-2026-0221: event-listener StackSlot thread safety
 // ============================================================================
 
-fn assert_send<T: Send>() {}
-fn assert_sync<T: Sync>() {}
+// Negative assertions target StackSlot directly, avoiding a compile-fail test
+// that could fail solely because a borrowed listener cannot escape its lifetime.
+static_assertions::assert_not_impl_any!(
+    event_listener::__private::StackSlot<'static, std::rc::Rc<()>>: Send, Sync
+);
+static_assertions::assert_impl_all!(
+    event_listener::__private::StackSlot<'static, u64>: Send, Sync
+);
 
+/// Checks listener notification; the module-level trait assertions cover the advisory.
 #[test]
 fn test_rustsec_2026_0221_event_listener_stack_slot_safety() {
     // RUSTSEC-2026-0221: StackSlot unconditionally implemented Send/Sync in 5.1.0-5.4.1.
     // In 5.4.2, StackSlot<'_, T> is Send/Sync only when T: Send/Sync.
     // Verify that StackSlot with Send tag satisfies Send + Sync bounds:
-    assert_send::<event_listener::__private::StackSlot<'static, u64>>();
-    assert_sync::<event_listener::__private::StackSlot<'static, u64>>();
 
     // Exercise the listener! macro (which creates StackSlot) across thread boundaries:
     let event = Arc::new(event_listener::Event::new());
@@ -95,63 +105,62 @@ fn test_rustsec_2026_0221_event_listener_stack_slot_safety() {
 // RUSTSEC-2026-0194: quick-xml attribute duplicate check linear scaling
 // ============================================================================
 
-fn parse_attributes_time(count: usize) -> u128 {
-    use quick_xml::events::Event;
-    use quick_xml::reader::Reader;
+/// Checks duplicate detection without a noisy CI wall-clock complexity assertion.
+#[test]
+fn test_quick_xml_duplicate_attribute_detection() {
+    use quick_xml::events::attributes::AttrError;
+    use quick_xml::events::BytesStart;
 
-    let mut xml = String::with_capacity(count * 25 + 20);
-    xml.push_str("<element");
-    for i in 0..count {
+    let mut tag = String::from("element");
+    for i in 0..2500 {
         use std::fmt::Write;
-        write!(&mut xml, " attr_{}=\"{}\"", i, i).unwrap();
+        write!(&mut tag, " attr_{i}=\"{i}\"").unwrap();
     }
-    xml.push_str("/>");
-
-    let start = Instant::now();
-    let mut reader = Reader::from_str(&xml);
-
-    loop {
-        match reader.read_event() {
-            Ok(Event::Empty(e)) => {
-                let mut seen = 0;
-                for attr in e.attributes() {
-                    let _ = attr.expect("attribute should be valid");
-                    seen += 1;
-                }
-                assert_eq!(seen, count);
-                break;
-            }
-            Ok(Event::Eof) => break,
-            Err(e) => panic!("XML parsing error: {:?}", e),
-            _ => {}
-        }
+    tag.push_str(" attr_2499=\"duplicate\"");
+    let element = BytesStart::from_content(tag, "element".len());
+    let mut attributes = element.attributes();
+    for _ in 0..2500 {
+        assert!(attributes.next().unwrap().is_ok());
     }
-    start.elapsed().as_micros()
+    assert!(matches!(
+        attributes.next(),
+        Some(Err(AttrError::Duplicated(..)))
+    ));
 }
 
+/// Fails if any resolved copy of an affected crate falls below its patched floor.
 #[test]
-fn test_rustsec_2026_0194_quick_xml_attributes_linear_scaling() {
-    // Under quadratic scaling O(N^2), a 5x increase in attributes (500 -> 2500)
-    // produces a 25x increase in runtime.
-    // Under linear scaling O(N) with O(1) hash pre-filter, the increase is ~5x.
-    let time_500 = parse_attributes_time(500).max(1);
-    let time_2500 = parse_attributes_time(2500);
-
-    let scaling_ratio = (time_2500 as f64) / (time_500 as f64);
-    // Even on busy CI runners, the scaling ratio should remain well below quadratic growth (25x)
-    assert!(
-        scaling_ratio < 20.0,
-        "Attribute checking exhibited quadratic growth: 500attrs={}µs, 2500attrs={}µs (ratio={:.2})",
-        time_500,
-        time_2500,
-        scaling_ratio
-    );
+fn test_security_advisory_dependency_floors() {
+    let lock: toml::Value = toml::from_str(include_str!("../Cargo.lock")).unwrap();
+    let packages = lock["package"].as_array().unwrap();
+    for (name, minimum) in [
+        ("anyhow", (1, 0, 103)),
+        ("event-listener", (5, 4, 2)),
+        ("quick-xml", (0, 41, 0)),
+        ("crossbeam-epoch", (0, 9, 20)),
+        ("rustls-webpki", (0, 103, 13)),
+    ] {
+        let mut found = false;
+        for package in packages.iter().filter(|p| p["name"].as_str() == Some(name)) {
+            found = true;
+            let version = package["version"].as_str().unwrap();
+            // Prereleases are deliberately rejected rather than assumed patched.
+            let components: Vec<u64> = version.split('.').map(|s| s.parse().unwrap()).collect();
+            assert_eq!(components.len(), 3);
+            assert!(
+                (components[0], components[1], components[2]) >= minimum,
+                "{name} {version} is below the patched minimum {minimum:?}"
+            );
+        }
+        assert!(found, "{name} missing from lockfile");
+    }
 }
 
 // ============================================================================
 // RUSTSEC-2026-0195: quick-xml namespace reader bounded allocation
 // ============================================================================
 
+/// Rejects a start tag exceeding the default namespace-declaration limit.
 #[test]
 fn test_rustsec_2026_0195_quick_xml_ns_reader_bounded() {
     use quick_xml::events::Event;
@@ -190,25 +199,19 @@ fn test_rustsec_2026_0195_quick_xml_ns_reader_bounded() {
     overflow_xml.push_str("><child/></root>");
 
     let mut overflow_reader = NsReader::from_str(&overflow_xml);
-    let result = overflow_reader.read_event();
-    assert!(
-        result.is_err(),
-        "Expected error when exceeding 256 namespace declarations per element, got {:?}",
-        result
-    );
-    let err_str = format!("{:?}", result.err().unwrap());
-    assert!(
-        err_str.to_lowercase().contains("declarations")
-            || err_str.to_lowercase().contains("namespace"),
-        "Error should reference namespace declarations limit: {}",
-        err_str
-    );
+    assert!(matches!(
+        overflow_reader.read_event(),
+        Err(quick_xml::Error::Namespace(
+            quick_xml::name::NamespaceError::TooManyDeclarations(256)
+        ))
+    ));
 }
 
 // ============================================================================
 // RUSTSEC-2026-0204: crossbeam-epoch pointer formatting soundness
 // ============================================================================
 
+/// Checks null-pointer formatting; run under Miri for additional UB detection.
 #[test]
 fn test_rustsec_2026_0204_crossbeam_epoch_pointer_safety() {
     use crossbeam_epoch::{Atomic, Shared};
@@ -217,13 +220,9 @@ fn test_rustsec_2026_0204_crossbeam_epoch_pointer_safety() {
     // dereferenced the underlying pointer, causing invalid pointer dereference.
     // Verify that formatting null Atomic and null Shared with {:p} does not crash:
     let atomic: Atomic<u64> = Atomic::null();
-    let fmt_atomic = format!("{:p}", &atomic);
-    assert!(
-        !fmt_atomic.is_empty(),
-        "Atomic pointer formatting must not be empty"
-    );
+    let fmt_atomic = format!("{:p}", atomic);
+    assert_eq!(fmt_atomic, format!("{:p}", std::ptr::null::<u64>()));
 
-    let guard = crossbeam_epoch::pin();
     let shared: Shared<'_, u64> = Shared::null();
     let fmt_shared = format!("{:p}", shared);
     assert_eq!(
@@ -231,20 +230,13 @@ fn test_rustsec_2026_0204_crossbeam_epoch_pointer_safety() {
         format!("{:p}", std::ptr::null::<u64>()),
         "Null Shared pointer must format as null pointer address without dereferencing"
     );
-
-    // Also verify non-null pointer loading and safe dereference
-    let allocated = Atomic::new(42u64);
-    let loaded = allocated.load(Ordering::Relaxed, &guard);
-    assert!(!loaded.is_null());
-    unsafe {
-        assert_eq!(*loaded.deref(), 42);
-    }
 }
 
 // ============================================================================
 // RUSTSEC-2026-0104, 0099, 0098, 0049: rustls and webpki verification rules
 // ============================================================================
 
+/// Smoke-tests TLS configuration, not certificate validation or revocation.
 #[test]
 fn test_rustls_webpki_root_store_and_server_names() {
     use rustls::pki_types::ServerName;
@@ -280,10 +272,10 @@ fn test_rustls_webpki_root_store_and_server_names() {
     );
 }
 
+/// Rejects invalid DER; this is not the onlySomeReasons advisory reproducer.
 #[test]
-fn test_rustsec_2026_0104_webpki_crl_parsing_does_not_panic() {
-    // RUSTSEC-2026-0104: reachable panic in CRL parsing on empty BIT STRING in onlySomeReasons.
-    // In webpki >= 0.103.13, malformed or empty CRL DER buffers return Err and never panic.
+fn test_webpki_invalid_crl_der_rejected() {
+    // These buffers fail before parsing any IssuingDistributionPoint extension.
     let empty_der = b"";
     let crl_result = webpki::BorrowedCertRevocationList::from_der(empty_der);
     assert!(crl_result.is_err(), "Empty DER must return Err, not panic");

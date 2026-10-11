@@ -108,6 +108,8 @@ rustirc-scripting = { path = "crates/rustirc-scripting" }
 rustirc-plugins = { path = "crates/rustirc-plugins" }
 
 [dev-dependencies]
+static_assertions = "1.1"
+toml = { workspace = true }
 event-listener = { workspace = true }
 crossbeam-epoch = { workspace = true }
 quick-xml = { workspace = true }

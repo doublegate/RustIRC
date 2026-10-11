@@ -10,7 +10,7 @@ Verified that RustIRC is **NOT VULNERABLE** to RUSTSEC-2026-0194. The project us
 - **Affected Versions**: `< 0.41.0`
 - **Patched Versions**: `>= 0.41.0`
 - **Current Version in RustIRC**: `0.41.0` ✅
-- **Severity**: Medium (CPU exhaustion / Denial of Service)
+- **Severity**: High (CVSS 7.5; CPU exhaustion / Denial of Service)
 - **Date Verified**: 2026-10-11
 
 ## Vulnerability Details
@@ -48,7 +48,7 @@ quick-xml v0.41.0
 2. **Workspace Requirement**:
    `Cargo.toml` declares `quick-xml = "0.41.0"` in `[workspace.dependencies]` with an explicit advisory reference comment.
 3. **Automated Test**:
-   `tests/security_advisories_test.rs::test_rustsec_2026_0194_quick_xml_attributes_linear_time` generates a start tag with 1,500 distinct attributes and verifies that full parsing and attribute checking finishes in under 500ms (completing in under 5ms in practice).
+   `test_quick_xml_duplicate_attribute_detection` checks duplicate rejection after 2,500 distinct attributes. It does not prove linear complexity. `test_security_advisory_dependency_floors` rejects quick-xml versions below 0.41.0, where the upstream algorithm was fixed. Wall-clock scaling assertions were removed because short, single-run timings are sensitive to scheduler noise. See the [upstream advisory](https://rustsec.org/advisories/RUSTSEC-2026-0194.html) for algorithm and benchmark evidence.
 4. **Security Audit**:
    `cargo audit` returns 0 vulnerabilities.
 

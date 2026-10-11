@@ -32,10 +32,21 @@ The flaw was corrected in upstream commit `6e8c000` by revising how the mutable 
 2. **Workspace Requirement**:
    `Cargo.toml` explicitly sets `anyhow = "1.0.104"` in `[workspace.dependencies]`.
 3. **Automated Test**:
-   `tests/security_advisories_test.rs::test_rustsec_2026_0190_anyhow_downcast_mut_soundness` reproduces the exact pattern from advisory RUSTSEC-2026-0190 and verifies that mutating context through `downcast_mut` is sound and preserves state without memory corruption.
+   `tests/security_advisories_test.rs::test_rustsec_2026_0190_anyhow_downcast_mut_soundness` checks context mutation and formatted output as a behavioral smoke test. Ordinary assertions do not prove soundness or absence of memory corruption. Protection relies on the patched dependency and upstream fix; `test_security_advisory_dependency_floors` rejects vulnerable lockfile versions.
 4. **Security Audit**:
    `cargo audit` passes cleanly with zero vulnerabilities.
 
 ## Conclusion
 
 RustIRC is fully protected against RUSTSEC-2026-0190.
+
+## Optional interpreter checks
+
+Use a nightly toolchain with the Miri component installed for additional UB checking:
+
+```bash
+cargo +nightly miri test --test security_advisories_test test_rustsec_2026_0190_anyhow_downcast_mut_soundness
+cargo +nightly miri test --test security_advisories_test test_rustsec_2026_0204_crossbeam_epoch_pointer_safety
+```
+
+These commands supplement standard Cargo tests; they have not been run as part of this verification. Miri support for the full GUI dependency graph may require a reduced upstream reproducer.

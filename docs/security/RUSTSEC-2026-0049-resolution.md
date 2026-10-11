@@ -32,10 +32,14 @@ With `UnknownStatusPolicy::Allow`, this could lead to improper acceptance of rev
 2. **Workspace Requirement**:
    `rustls = "0.23.45"` is enforced in `Cargo.toml`.
 3. **Automated Test**:
-   `tests/security_advisories_test.rs::test_rustls_webpki_root_store_and_server_names` validates webpki root certificates and ServerName parsing.
+   `test_rustls_webpki_root_store_and_server_names` is a configuration smoke test only; it does not validate chains, name constraints, or CRLs. `test_security_advisory_dependency_floors` rejects vulnerable resolved webpki versions. Advisory-specific certificate/CRL fixtures are not supplied by this PR.
 4. **Security Audit**:
    `cargo audit` passes cleanly with 0 vulnerabilities detected.
 
 ## Conclusion
 
 RustIRC is secure against RUSTSEC-2026-0049. Issue #90 is fully resolved.
+
+## Application applicability
+
+Not applicable to the current application CRL path: `crates/rustirc-core/src/connection.rs::create_tls_connector` configures trusted roots and no client authentication, with no CRL configuration or parsing. This does not mean RustIRC implements revocation checking. The dependency is patched independently. Invalid-DER smoke tests do not exercise the advisory-specific CRL extension or distribution-point matching.

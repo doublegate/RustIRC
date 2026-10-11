@@ -42,7 +42,7 @@ event-listener v5.4.2
 2. **Workspace Requirement**:
    `Cargo.toml` declares `event-listener = "5.4.2"` under `[workspace.dependencies]` to prevent downgrades.
 3. **Automated Test**:
-   `tests/security_advisories_test.rs::test_rustsec_2026_0221_event_listener_synchronization` verifies concurrent listener notification across thread boundaries without data races.
+   `test_rustsec_2026_0221_event_listener_stack_slot_safety` checks notification using `listener!` as a synchronization smoke test. Module-level `static_assertions` separately verify that `StackSlot<Rc<()>>` is neither `Send` nor `Sync`, while `StackSlot<u64>` is both. The negative bounds target the affected type directly rather than relying on an unrelated listener lifetime error.
 4. **Security Audit**:
    `cargo audit` passes with 0 vulnerabilities detected.
 
