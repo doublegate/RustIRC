@@ -515,6 +515,18 @@ jobs:
           RUSTC_WRAPPER: ""  # Disable sccache for cross-platform builds
           CROSS_CONTAINER_OPTS: "--platform linux/amd64"  # Ensure consistent platform for cross
 
+      - name: Smoke-test native release executable
+        if: matrix.cross != true
+        shell: bash
+        run: |
+          set -euo pipefail
+          binary="target/${{ matrix.target }}/release/rustirc"
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            binary="$binary.exe"
+          fi
+          test "$("$binary" --version)" = "rustirc $(head -n 1 VERSION)"
+          "$binary" --help > /dev/null
+
       - name: Package artifact (Unix)
         if: "!contains(matrix.os, 'windows')"
         run: |
@@ -558,6 +570,7 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v8
         with:
+          pattern: rustirc-*
           path: artifacts
 
       - name: Prepare release assets

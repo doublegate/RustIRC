@@ -189,7 +189,7 @@ upgrade requirements, and remaining dependency maintenance warnings.
 - ✅ **266 Total Tests**: 233 unit + 33 integration, all passing
 - ✅ **Zero Clippy Warnings**: Clean lint pass with `-D warnings`
 
-**Status**: Phases 1-6 complete. All 6 crates compile successfully. 266 tests passing.
+**Status**: Phases 1-6 complete. All 6 crates compile successfully. 223 unit/integration tests and 59 doctests passing.
 
 ## 📚 Documentation
 
