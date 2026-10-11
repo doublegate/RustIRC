@@ -1,5 +1,6 @@
 # RUSTSEC-2026-0204 Security Verification
 
+**GitHub Issue**: [#136](https://github.com/doublegate/RustIRC/issues/136)  
 **Issue**: Invalid pointer dereference in `fmt::Pointer` impl for `Atomic` and `Shared` in `crossbeam-epoch`
 
 **Date Verified**: 2026-10-10

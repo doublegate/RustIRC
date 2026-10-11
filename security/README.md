@@ -28,9 +28,22 @@ cargo audit --deny warnings
 
 ## Security Verification Documents
 
-| Advisory | Status | Document | Date |
-|----------|--------|----------|------|
-| RUSTSEC-2026-0044 | ✅ Not Vulnerable | [RUSTSEC-2026-0044-verification.md](./RUSTSEC-2026-0044-verification.md) | 2026-10-10 |
+| Advisory | GitHub Issue | Status | Document | Date |
+|----------|--------------|--------|----------|------|
+| RUSTSEC-2026-0044 | - | ✅ Not Vulnerable | [RUSTSEC-2026-0044-verification.md](./RUSTSEC-2026-0044-verification.md) | 2026-10-10 |
+| RUSTSEC-2026-0048 | [#88](https://github.com/doublegate/RustIRC/issues/88) | ✅ Not Vulnerable | [SECURITY_VERIFICATION_RUSTSEC-2026-0048.md](../docs/security/SECURITY_VERIFICATION_RUSTSEC-2026-0048.md) | 2026-10-10 |
+| RUSTSEC-2026-0049 | [#90](https://github.com/doublegate/RustIRC/issues/90) | ✅ Resolved | [RUSTSEC-2026-0049-resolution.md](../docs/security/RUSTSEC-2026-0049-resolution.md) | 2026-10-11 |
+| RUSTSEC-2026-0097 | [#95](https://github.com/doublegate/RustIRC/issues/95) | ✅ Not Vulnerable | [RUSTSEC-2026-0097-verification.md](../docs/security/RUSTSEC-2026-0097-verification.md) | 2026-10-10 |
+| RUSTSEC-2026-0098 | [#102](https://github.com/doublegate/RustIRC/issues/102) | ✅ Resolved | [RUSTSEC-2026-0098-resolution.md](../docs/security/RUSTSEC-2026-0098-resolution.md) | 2026-10-11 |
+| RUSTSEC-2026-0099 | [#103](https://github.com/doublegate/RustIRC/issues/103) | ✅ Resolved | [RUSTSEC-2026-0099-resolution.md](../docs/security/RUSTSEC-2026-0099-resolution.md) | 2026-10-11 |
+| RUSTSEC-2026-0104 | [#104](https://github.com/doublegate/RustIRC/issues/104) | ✅ Not Vulnerable | [RUSTSEC-2026-0104-verification.md](../docs/security/RUSTSEC-2026-0104-verification.md) | 2026-10-11 |
+| RUSTSEC-2026-0186 | [#114](https://github.com/doublegate/RustIRC/issues/114) | ✅ Resolved | [SECURITY_AUDIT_RUSTSEC-2026-0186.md](../SECURITY_AUDIT_RUSTSEC-2026-0186.md) | 2026-10-10 |
+| RUSTSEC-2026-0190 | [#132](https://github.com/doublegate/RustIRC/issues/132) | ✅ Not Vulnerable | [RUSTSEC-2026-0190-verification.md](../docs/security/RUSTSEC-2026-0190-verification.md) | 2026-10-11 |
+| RUSTSEC-2026-0194 | [#127](https://github.com/doublegate/RustIRC/issues/127), [#129](https://github.com/doublegate/RustIRC/issues/129) | ✅ Not Vulnerable | [RUSTSEC-2026-0194-verification.md](../docs/security/RUSTSEC-2026-0194-verification.md) | 2026-10-11 |
+| RUSTSEC-2026-0195 | [#130](https://github.com/doublegate/RustIRC/issues/130) | ✅ Not Vulnerable | [RUSTSEC-2026-0195-verification.md](../docs/security/RUSTSEC-2026-0195-verification.md) | 2026-10-11 |
+| RUSTSEC-2026-0204 | [#136](https://github.com/doublegate/RustIRC/issues/136) | ✅ Not Vulnerable | [RUSTSEC-2026-0204-verification.md](../docs/security/RUSTSEC-2026-0204-verification.md) | 2026-10-11 |
+| RUSTSEC-2026-0221 | [#137](https://github.com/doublegate/RustIRC/issues/137) | ✅ Not Vulnerable | [RUSTSEC-2026-0221-verification.md](../docs/security/RUSTSEC-2026-0221-verification.md) | 2026-10-11 |
+| RUSTSEC-2026-0253 | [#140](https://github.com/doublegate/RustIRC/issues/140) | ✅ Resolved | [RUSTSEC-2026-0253-VERIFICATION.md](../RUSTSEC-2026-0253-VERIFICATION.md) | 2026-10-10 |
 
 ## Reporting Security Issues
 

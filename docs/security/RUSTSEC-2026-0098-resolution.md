@@ -4,6 +4,7 @@
 
 **Status**: ✅ **RESOLVED** - No action required
 
+**GitHub Issue**: [#102](https://github.com/doublegate/RustIRC/issues/102)  
 **Advisory**: RUSTSEC-2026-0098  
 **Title**: Name constraints for URI names were incorrectly accepted  
 **Package**: `rustls-webpki`  
