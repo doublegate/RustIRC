@@ -641,6 +641,13 @@ jobs:
           (cd release-assets && sha256sum -c ./*.sha256)
           gh release edit "$tag_name" --notes-file release_notes.md
           gh release upload "$tag_name" release-assets/* --clobber
+          # --clobber replaces matching names but leaves unrelated draft assets.
+          # Check GitHub's actual asset set; a partial draft remains retryable.
+          find release-assets -type f -printf '%f\n' | LC_ALL=C sort > expected-assets.txt
+          gh release view "$tag_name" --json isDraft,assets > uploaded-release.json
+          jq -e '.isDraft == true' uploaded-release.json
+          jq -r '.assets[].name' uploaded-release.json | LC_ALL=C sort > uploaded-assets.txt
+          diff -u expected-assets.txt uploaded-assets.txt
           # Publication is the final mutation, after the complete asset set exists.
           gh release edit "$tag_name" --draft=false
 
