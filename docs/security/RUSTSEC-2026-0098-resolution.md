@@ -15,7 +15,7 @@
 
 ### Affected Versions
 - Vulnerable: `rustls-webpki < 0.103.12` OR `>= 0.104.0-alpha.1, < 0.104.0-alpha.6`
-- Patched: `>=0.103.12, <0.104.0-alpha.1, >=0.104.0-alpha.6`
+- Patched: `>=0.103.12, <0.104.0-alpha.1` OR `>=0.104.0-alpha.6`
 
 ### Description
 Name constraints for URI names were ignored and therefore accepted in vulnerable versions. Since name constraints are restrictions on otherwise properly-issued certificates, this bug is reachable only after signature verification and requires certificate misissuance to exploit.
