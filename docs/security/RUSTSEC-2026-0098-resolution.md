@@ -14,7 +14,7 @@
 ## Vulnerability Details
 
 ### Affected Versions
-- Vulnerable: `rustls-webpki < 0.103.12`
+- Vulnerable: `rustls-webpki < 0.103.12` OR `>= 0.104.0-alpha.1, < 0.104.0-alpha.6`
 - Patched: `>=0.103.12, <0.104.0-alpha.1, >=0.104.0-alpha.6`
 
 ### Description
@@ -31,19 +31,17 @@ Name constraints for URI names were ignored and therefore accepted in vulnerable
 
 **Current Version in Use**: `rustls-webpki v0.103.15`
 
-```
-rustls-webpki v0.103.15
-└── rustls v0.23.45
-    ├── rustirc-core v0.4.2
-    ├── rustirc-gui v0.4.2
-    ├── rustirc-plugins v0.4.2
-    ├── rustirc-scripting v0.4.2
-    ├── rustirc-tui v0.4.2
-    └── tokio-rustls v0.26.6
+```text
+rustirc -> rustirc-core -> rustls v0.23.45 -> rustls-webpki v0.103.15
+rustirc -> rustirc-core -> tokio-rustls v0.26.6 -> rustls v0.23.45
 ```
 
+The GUI, plugins, scripting and TUI crates reach these dependencies through
+`rustirc-core`; they are not direct dependents of `rustls`. Verified with
+`cargo tree --locked -i rustls-webpki`.
+
 **Dependency Path**: `rustls-webpki` is a transitive dependency through:
-1. `rustls = "0.23"` (workspace dependency)
+1. `rustls = "0.23.45"` (workspace dependency)
 2. `tokio-rustls = "0.26"` (workspace dependency)
 
 ### Verification Results

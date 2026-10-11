@@ -7,7 +7,7 @@ Verified that RustIRC is **NOT VULNERABLE** to RUSTSEC-2026-0099. The project us
 - **GitHub Issue**: [#103](https://github.com/doublegate/RustIRC/issues/103)
 - **Advisory**: RUSTSEC-2026-0099
 - **Package**: `rustls-webpki`
-- **Affected Versions**: `< 0.103.12`
+- **Affected Versions**: `< 0.103.12` OR `>= 0.104.0-alpha.1, < 0.104.0-alpha.6`
 - **Patched Versions**: `>= 0.103.12, < 0.104.0-alpha.1` OR `>= 0.104.0-alpha.6`
 - **Current Version in RustIRC**: `0.103.15` ✅
 - **Severity**: Medium (Name Constraints Bypass)

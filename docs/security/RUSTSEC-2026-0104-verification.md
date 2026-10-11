@@ -7,7 +7,7 @@ Verified that RustIRC is **NOT VULNERABLE** to RUSTSEC-2026-0104. The project us
 - **GitHub Issue**: [#104](https://github.com/doublegate/RustIRC/issues/104)
 - **Advisory**: RUSTSEC-2026-0104
 - **Package**: `rustls-webpki`
-- **Affected Versions**: `< 0.103.13`
+- **Affected Versions**: `< 0.103.13` OR `>= 0.104.0-alpha.1, < 0.104.0-alpha.7`
 - **Patched Versions**: `>= 0.103.13, < 0.104.0-alpha.1` OR `>= 0.104.0-alpha.7`
 - **Current Version in RustIRC**: `0.103.15` ✅
 - **Severity**: Medium (Reachable Panic / Denial of Service)
@@ -25,16 +25,14 @@ This panic was reachable prior to a CRL's signature being verified.
 
 `rustls-webpki` is pulled in via `rustls` (version 0.23.45) and `tokio-rustls`:
 
+```text
+rustirc -> rustirc-core -> rustls v0.23.45 -> rustls-webpki v0.103.15
+rustirc -> rustirc-core -> tokio-rustls v0.26.6 -> rustls v0.23.45
 ```
-rustls-webpki v0.103.15
-└── rustls v0.23.45
-    ├── rustirc-core v0.4.2
-    ├── rustirc-gui v0.4.2
-    ├── rustirc-plugins v0.4.2
-    ├── rustirc-scripting v0.4.2
-    ├── rustirc-tui v0.4.2
-    └── tokio-rustls v0.26.6
-```
+
+The GUI, plugins, scripting and TUI crates reach these dependencies through
+`rustirc-core`; they are not direct dependents of `rustls`. Verified with
+`cargo tree --locked -i rustls-webpki`.
 
 ### Verification Evidence
 
