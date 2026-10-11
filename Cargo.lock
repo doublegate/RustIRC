@@ -3178,15 +3178,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ordered-float"
-version = "5.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c7c9e0d9b23589f26070720bac724174bfec1083e82f7854cdd0267518343c0"
-dependencies = [
- "num-traits",
-]
-
-[[package]]
 name = "ordered-stream"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3925,7 +3916,7 @@ dependencies = [
 
 [[package]]
 name = "rustirc"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "anyhow",
  "clap",
@@ -3951,7 +3942,7 @@ dependencies = [
 
 [[package]]
 name = "rustirc-core"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3980,7 +3971,7 @@ dependencies = [
 
 [[package]]
 name = "rustirc-gui"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4001,7 +3992,7 @@ dependencies = [
 
 [[package]]
 name = "rustirc-plugins"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4015,7 +4006,7 @@ dependencies = [
 
 [[package]]
 name = "rustirc-protocol"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "criterion",
  "pretty_assertions",
@@ -4028,7 +4019,7 @@ dependencies = [
 
 [[package]]
 name = "rustirc-scripting"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4042,7 +4033,7 @@ dependencies = [
 
 [[package]]
 name = "rustirc-tui"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4702,7 +4693,7 @@ dependencies = [
  "nix 0.29.0",
  "num-derive",
  "num-traits",
- "ordered-float 4.6.0",
+ "ordered-float",
  "pest",
  "pest_derive",
  "phf",
@@ -5470,7 +5461,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5f2ab60e120fd6eaa68d9567f3226e876684639d22a4219b313ff69ec0ccd5ac"
 dependencies = [
  "log",
- "ordered-float 4.6.0",
+ "ordered-float",
  "strsim",
  "thiserror 1.0.69",
  "wezterm-dynamic-derive",
@@ -5620,7 +5611,7 @@ dependencies = [
  "ndk-sys",
  "objc",
  "once_cell",
- "ordered-float 5.5.0",
+ "ordered-float",
  "parking_lot",
  "portable-atomic",
  "portable-atomic-util",

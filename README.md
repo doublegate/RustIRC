@@ -5,10 +5,10 @@
 
 ![RustIRC Logo](images/RustIRC_Logo.png)
 
-[![Version](https://img.shields.io/badge/version-0.4.2-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.4.3-blue.svg)](CHANGELOG.md)
 [![Rust Version](https://img.shields.io/badge/rust-1.89%2B-orange.svg)](https://www.rust-lang.org)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE-MIT)
-[![Tests](https://img.shields.io/badge/tests-266%20passing-success.svg)](.github/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-223%20passing-success.svg)](.github/workflows/ci.yml)
 [![Documentation](https://img.shields.io/badge/docs-rustdoc-blue.svg)](docs/api-reference.md)
 [![API Coverage](https://img.shields.io/badge/API%20docs-100%25-brightgreen.svg)](docs/api-reference.md)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://github.com/doublegate/RustIRC)
@@ -19,7 +19,7 @@
 
 A powerful, modern IRC client built in Rust with an enhanced Material Design 3 interface and comprehensive Lua scripting
 
-**Last Updated**: 2026-03-07 | **Branch**: main - v0.4.2 Dependency Maintenance & GitHub Cleanup
+**Last Updated**: 2026-10-11 | **Branch**: main - v0.4.3 Protocol Integration & Dependency Security
 
 [Features](#-features) • [Documentation](#-documentation) • [Development Plan](#-development-plan) • [Architecture](#️-architecture) • [Contributing](#-contributing)
 
@@ -64,10 +64,14 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 
 ## 📦 Latest Release
 
-[![Version](https://img.shields.io/badge/version-0.4.2-blue.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.4.2)
-[![Release Date](https://img.shields.io/badge/released-March%207%2C%202026-green.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.4.2)
+[![Version](https://img.shields.io/badge/version-0.4.3-blue.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.4.3)
+[![Release Date](https://img.shields.io/badge/released-October%2011%2C%202026-green.svg)](https://github.com/doublegate/RustIRC/releases/tag/v0.4.3)
 
-**Version 0.4.2** - Dependency Maintenance & GitHub Cleanup
+**Version 0.4.3** - Protocol Integration & Dependency Security
+
+See the [technical release notes](docs/releases/v0.4.3.md) for dependency security fixes,
+SCRAM-SHA-256, borrowed protocol parsing, integration changes, platform downloads,
+upgrade requirements, and remaining dependency maintenance warnings.
 
 ### 📜 Lua Scripting System Highlights
 
@@ -108,7 +112,7 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 
 ## 🏗️ Current Development Status
 
-**Last Updated**: March 7, 2026 - v0.4.2 Dependency Maintenance & GitHub Cleanup
+**Last Updated**: October 11, 2026 - v0.4.3 Protocol Integration & Dependency Security
 
 ### ✅ **Phase 1: Research & Setup** - **COMPLETE** (100%)
 
@@ -181,11 +185,11 @@ Built with Rust for memory safety, performance, and cross-platform reliability.
 
 ### ✅ **Phase 6: Testing & Integration** - **COMPLETE** (100%)
 
-- ✅ **Integration Test Suite**: 33 integration tests across 5 test files
-- ✅ **266 Total Tests**: 233 unit + 33 integration, all passing
+- ✅ **Integration Test Suite**: 41 integration tests across 6 test files
+- ✅ **223 Executable Tests**: 182 unit + 41 integration, plus 59 doctests; all passing
 - ✅ **Zero Clippy Warnings**: Clean lint pass with `-D warnings`
 
-**Status**: Phases 1-6 complete. All 6 crates compile successfully. 266 tests passing.
+**Status**: Phases 1-6 complete. All 6 crates compile successfully. 223 unit/integration tests and 59 doctests passing.
 
 ## 📚 Documentation
 
@@ -369,9 +373,9 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 
 ## 🚦 Current Status
 
-**Version**: 0.4.2 - Dependency Maintenance & GitHub Cleanup
+**Version**: 0.4.3 - Protocol Integration & Dependency Security
 **Phase**: Phases 1-6 Complete ✅ | Major Feature Release
-**Build Status**: All 6 crates compile successfully, 266 tests passing
+**Build Status**: All 6 crates compile successfully; 223 unit/integration tests and 59 doctests passing
 **Total Tasks**: 249+ across 7 phases | Phases 1-6 100% complete
 
 ### 🎉 Phase 1-6: COMPLETE ✅
@@ -381,7 +385,7 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 - ✅ **Phase 3: User Interface Enhanced** - Iced Material Design 3, TUI (ratatui), CLI prototype, advanced features
 - ✅ **Phase 4: Scripting & Plugins** - Lua scripting engine, plugin system, config I/O, built-in plugins
 - ✅ **Phase 5: Advanced Features** - DCC protocol, IRCv3 batch/chathistory, flood protection, proxy, search, notifications
-- ✅ **Phase 6: Testing & Integration** - 266 tests (233 unit + 33 integration), zero clippy warnings
+- ✅ **Phase 6: Testing & Integration** - 223 executable tests (182 unit + 41 integration) and 59 doctests, zero clippy warnings
 
 ### 🆕 v0.4.0 Scripting, Plugins, DCC & IRCv3 (March 7, 2026)
 
@@ -398,6 +402,13 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 - **Search Engine**: Full-text message search with channel, user, and date filters
 - **URL Preview**: Regex-based URL detection in messages
 - **Settings Persistence**: GUI AppSettings save/load with XDG paths
+
+### v0.4.3 Protocol Integration & Dependency Security (October 11, 2026)
+
+- SCRAM-SHA-256, borrowed message parsing, IRCv3 routing and scripting/plugin event integration.
+- Updated TLS, XML, font-cache and cryptography dependencies; zero audit vulnerabilities.
+- Three disclosed unmaintained dependency warnings; source-build MSRV 1.89.
+- Curated release notes, consistent version metadata and locked release builds.
 
 ### 🔧 v0.4.2 Dependency Maintenance & GitHub Cleanup (March 7, 2026)
 
@@ -527,7 +538,7 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 
 ```bash
 ✅ cargo build              # Successful compilation (zero errors)
-✅ cargo test --workspace   # 266 tests pass (233 unit + 33 integration)
+✅ cargo test --workspace   # 223 executable tests + 59 doctests pass
 ✅ cargo run                # Full-featured GUI with LIVE IRC connectivity
 ✅ cargo run -- --material-demo  # Material Design 3 component showcase
 ✅ cargo run -- --cli       # CLI prototype with multi-server support

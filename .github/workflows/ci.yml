@@ -24,7 +24,7 @@ on:
       rust_version:
         description: 'Rust version to test'
         required: false
-        default: 'stable'
+        default: ''
         type: string
       skip_tests:
         description: 'Skip running tests'
@@ -100,6 +100,8 @@ jobs:
           - os: windows-latest
             rust: beta
     runs-on: ${{ matrix.os }}
+    env:
+      RUSTUP_TOOLCHAIN: ${{ inputs.rust_version || matrix.rust }}
     steps:
     - uses: actions/checkout@v7
     
@@ -523,6 +525,8 @@ jobs:
   msrv:
     name: Minimum Supported Rust Version
     runs-on: ubuntu-latest
+    env:
+      RUSTUP_TOOLCHAIN: 1.89.0
     steps:
     - uses: actions/checkout@v7
     
@@ -554,6 +558,11 @@ jobs:
       with:
         toolchain: 1.89.0
     - uses: Swatinem/rust-cache@v2
+    - name: Verify minimum compiler selection
+      shell: bash
+      run: |
+        rustc --version --verbose
+        test "$(rustc --version | cut -d' ' -f2)" = "1.89.0"
     - name: Check MSRV with sccache fallback
       shell: bash
       run: |
@@ -571,14 +580,14 @@ jobs:
 
         if [ "$sccache_available" = "true" ]; then
           export RUSTC_WRAPPER="$rustc_wrapper"
-          if ! run_with_timeout 600s cargo check --all-features; then
+          if ! run_with_timeout 600s cargo check --workspace --all-targets --all-features --locked; then
             echo "MSRV check failed with sccache, retrying without sccache..."
             unset RUSTC_WRAPPER
             export RUSTC_WRAPPER=""
-            run_with_timeout 600s cargo check --all-features
+            run_with_timeout 600s cargo check --workspace --all-targets --all-features --locked
           fi
         else
           echo "Running MSRV check without sccache"
           export RUSTC_WRAPPER=""
-          run_with_timeout 600s cargo check --all-features
+          run_with_timeout 600s cargo check --workspace --all-targets --all-features --locked
         fi

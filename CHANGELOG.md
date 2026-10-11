@@ -7,15 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-10-11 (Protocol Integration & Dependency Security)
+
+See [detailed release notes](docs/releases/v0.4.3.md) for the complete changes,
+verification, downloads, compatibility notes and remaining maintenance warnings.
+
+### Added
+- SCRAM-SHA-256 authentication with RFC 7677 test vectors.
+- Borrowed `MessageRef`, `PrefixRef`, `TagRef` types and parser entry points.
+- Router batch tracking and CHATHISTORY requests; scripting/plugin event bridges.
+- DCC resume seeking, connection timeouts and protocol ACK handling.
+
+
 ### Changed
 
 #### Dependencies (consolidates Dependabot PRs #115-#139)
-- **mlua** 0.11.6 -> 0.12.1 (major; the scripting crate needed no source changes -- its
+- **mlua** 0.11.6 -> 0.12.2 (major; the scripting crate needed no source changes -- its
   `Lua`, `Table`, `Function`, `UserData` and hook APIs are unchanged in 0.12)
 - **dirs** 6 -> 7 (major; only `preference_dir` on Windows changed, which RustIRC does not call)
 - **base64** 0.22 -> 0.23 in `rustirc-core` (major; the `Engine`/`general_purpose::STANDARD` API is unchanged)
 - **mockall** workspace requirement 0.13 -> 0.15 (declared in `[workspace.dependencies]`, not currently used by any member)
-- Patch/minor refresh of the whole lock graph (215 packages), including tokio 1.53.1, rustls 0.23.45,
+- Patch/minor refresh of the whole lock graph (215 packages), including tokio 1.53.2, rustls 0.23.45,
   tokio-rustls 0.26.5, serde_json 1.0.151, toml 1.1.6, regex 1.13.1, open 5.4.4, ratatui 0.30.2,
   clap 4.6.7, rustls-pki-types 1.15.1, zeroize 1.9.0, chrono 0.4.45, tokio-socks 0.5.3, anyhow 1.0.104
 - `ordered-float` 5.x is not taken: 5.5.0 declares `rust-version = 1.90`, above the workspace MSRV
@@ -43,6 +55,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Two `clippy::useless_borrows_in_formatting` errors in `rustirc-gui/src/app.rs` that failed
   `cargo clippy -D warnings` on current stable (1.98)
 - README MSRV badge said 1.75; the workspace `rust-version` is 1.89
+- Release lock refresh reintroduced `ordered-float` 5.5 (requires Rust 1.90);
+  consolidated back to 4.6 to preserve the declared 1.89 source-build minimum
+- Release pipeline uses curated notes, a pinned Rust toolchain and `--locked` builds;
+  published releases are immutable rather than silently replacing their assets
+- Unified all seven manifests, lockfile packages and stale `VERSION` metadata at 0.4.3
 
 ## [0.4.2] - 2026-03-07 (Dependency Maintenance & GitHub Cleanup)
 

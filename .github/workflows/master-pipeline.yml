@@ -20,11 +20,6 @@ on:
         description: 'Skip code coverage'
         type: boolean
         default: false
-      release_type:
-        description: 'Release type (only for manual runs)'
-        type: choice
-        options: [none, patch, minor, major]
-        default: none
       rust_version:
         description: 'Rust version to test'
         type: choice
@@ -242,25 +237,7 @@ jobs:
             should_run_security="${{ !inputs.skip_security }}"
             should_run_coverage="${{ !inputs.skip_coverage }}"
 
-            if [ "${{ inputs.release_type }}" != "none" ]; then
-              should_run_release="true"
-              # Generate release tag based on type
-              latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-              case "${{ inputs.release_type }}" in
-                patch)
-                  new_tag=$(echo $latest_tag | awk -F. '{$NF = $NF + 1; print}' OFS=.)
-                  ;;
-                minor)
-                  new_tag=$(echo $latest_tag | \
-                    awk -F. '{$(NF-1) = $(NF-1) + 1; $NF = 0; print}' OFS=.)
-                  ;;
-                major)
-                  new_tag=$(echo $latest_tag | \
-                    awk -F. '{$1 = substr($1, 2) + 1; $2 = 0; $3 = 0; print "v" $0}' OFS=.)
-                  ;;
-              esac
-              release_tag="$new_tag"
-            fi
+
           fi
 
           # Tag push triggers release
@@ -305,7 +282,7 @@ jobs:
       security-events: write  # Required for security audit
     uses: ./.github/workflows/ci.yml
     with:
-      rust_version: ${{ inputs.rust_version || 'stable' }}
+      rust_version: ${{ inputs.rust_version || '' }}
       skip_tests: false
       cache_key: ${{ needs.quick-checks.outputs.cache_key }}
     secrets: inherit
@@ -476,7 +453,8 @@ jobs:
     needs: [quick-checks, test-matrix, security-audit]
     if: |
       always() &&
-      needs.quick-checks.outputs.should_run_release == 'true' &&
+      (needs.quick-checks.outputs.should_run_release == 'true' ||
+       (github.event_name == 'pull_request' && startsWith(github.head_ref, 'release/'))) &&
       needs.test-matrix.result == 'success' &&
       (needs.security-audit.result == 'success' || needs.security-audit.result == 'skipped')
     strategy:
@@ -501,14 +479,22 @@ jobs:
           #   target: aarch64-apple-darwin
           #   artifact_name: rustirc-macos-arm64.tar.gz
     runs-on: ${{ matrix.os }}
+    env:
+      RUSTUP_TOOLCHAIN: 1.99.0
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.99.0
         with:
           targets: ${{ matrix.target }}
+
+      - name: Verify release compiler selection
+        shell: bash
+        run: |
+          rustc --version --verbose
+          test "$(rustc --version | cut -d' ' -f2)" = "1.99.0"
 
       # Install cross for cross-compilation
       - name: Install cross
@@ -530,13 +516,25 @@ jobs:
         run: |
           if [ "${{ matrix.cross }}" = "true" ]; then
             # Use cross with proper configuration for ARM64 builds
-            cross build --release --target ${{ matrix.target }} --bin rustirc
+            cross build --locked --release --target ${{ matrix.target }} --bin rustirc
           else
-            cargo build --release --target ${{ matrix.target }} --bin rustirc
+            cargo build --locked --release --target ${{ matrix.target }} --bin rustirc
           fi
         env:
           RUSTC_WRAPPER: ""  # Disable sccache for cross-platform builds
           CROSS_CONTAINER_OPTS: "--platform linux/amd64"  # Ensure consistent platform for cross
+
+      - name: Smoke-test native release executable
+        if: matrix.cross != true
+        shell: bash
+        run: |
+          set -euo pipefail
+          binary="target/${{ matrix.target }}/release/rustirc"
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            binary="$binary.exe"
+          fi
+          test "$("$binary" --version)" = "rustirc $(head -n 1 VERSION)"
+          "$binary" --help > /dev/null
 
       - name: Package artifact (Unix)
         if: "!contains(matrix.os, 'windows')"
@@ -560,13 +558,14 @@ jobs:
   # Phase 5: Release (only after all checks pass)
   release:
     name: Create Release
-    needs: [quick-checks, test-matrix, security-audit, build-artifacts]
+    needs: [quick-checks, test-matrix, security-audit, documentation, coverage, build-artifacts]
     if: |
       always() &&
       needs.quick-checks.outputs.should_run_release == 'true' &&
       needs.test-matrix.result == 'success' &&
-      (needs.security-audit.result == 'success' ||
-       needs.security-audit.result == 'skipped') &&
+      needs.security-audit.result == 'success' &&
+      needs.documentation.result == 'success' &&
+      needs.coverage.result == 'success' &&
       needs.build-artifacts.result == 'success'
     runs-on: ubuntu-latest
     permissions:
@@ -580,13 +579,14 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v8
         with:
+          pattern: rustirc-*
           path: artifacts
 
       - name: Prepare release assets
         run: |
           mkdir -p release-assets
           # Find only files (not directories) with proper parentheses for OR condition
-          find artifacts -type f \( -name "*.tar.gz" -o -name "*.zip" \) | while read file; do
+          find artifacts -type f \( -name "*.tar.gz" -o -name "*.zip" \) | while read -r file; do
             echo "Processing: $file"
             cp "$file" release-assets/
             # Generate checksums
@@ -602,90 +602,55 @@ jobs:
           echo "Release assets prepared:"
           ls -la release-assets/
 
-      - name: Create or update release
+      - name: Publish immutable release with curated notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.quick-checks.outputs.release_tag }}
         run: |
-          tag_name="${{ needs.quick-checks.outputs.release_tag }}"
-
-          # Create build information section
-          cat > build_info.md << EOF
+          set -euo pipefail
+          tag_name="$RELEASE_TAG"
+          version="${tag_name#v}"
+          manifest_version=$(sed -n '/^\[package\]/,/^\[/s/^version = "\([^"]*\)"/\1/p' Cargo.toml)
+          test "$version" = "$manifest_version"
+          test "$(head -n 1 VERSION)" = "$version"
+          notes="docs/releases/$tag_name.md"
+          test -s "$notes"
+          git rev-parse --verify "refs/tags/$tag_name"
+          # A retry may reuse a draft, but must never replace a published version.
+          if gh release view "$tag_name" --json isDraft > existing-release.json 2> release-query.err; then
+            jq -e '.isDraft == true' existing-release.json
+          elif grep -qi 'release not found' release-query.err; then
+            gh release create "$tag_name" --verify-tag --draft \
+              --title "$(head -n 1 "$notes" | sed 's/^# //')" \
+              --notes-file "$notes"
+          else
+            cat release-query.err >&2
+            exit 1
+          fi
+          cp "$notes" release_notes.md
+          cat >> release_notes.md << EOF
 
           ---
 
           **Build Information:**
           - Pipeline Run: [${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           - Commit: [${{ github.sha }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
+          - Toolchain: Rust 1.99.0; locked Cargo dependency graph
           - Build Date: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
           EOF
-
-          # Check if release already exists
-          if gh release view "$tag_name" >/dev/null 2>&1; then
-            echo "Release $tag_name already exists. Checking if we need to append build info..."
-
-            # Get existing release notes
-            existing_notes=$(gh release view "$tag_name" --json body -q '.body')
-            
-            # Check if build info already exists in notes
-            if ! echo "$existing_notes" | grep -q "Build Information:"; then
-              echo "Appending build information to existing release notes..."
-              
-              # Append build info to existing notes
-              echo "$existing_notes" > existing_notes.md
-              cat build_info.md >> existing_notes.md
-              
-              # Update release with appended notes
-              gh release edit "$tag_name" --notes-file existing_notes.md
-            else
-              echo "Build information already exists in release notes."
-            fi
-
-            # Upload artifacts to existing release (will replace if they exist)
-            for file in release-assets/*; do
-              if [[ -f "$file" ]]; then
-                echo "Uploading $file to existing release..."
-                gh release upload "$tag_name" "$file" --clobber
-              fi
-            done
-          else
-            echo "Creating new release $tag_name..."
-
-            # Create minimal release notes for new release (preserves any manual notes that might be added later)
-            cat > release_notes.md << EOF
-          ## Release $tag_name
-
-          ### What's Changed
-
-          This release includes the latest improvements and bug fixes.
-
-          ### Downloads
-
-          - **Linux x86_64**: \`rustirc-linux-amd64.tar.gz\`
-          - **Linux ARM64**: \`rustirc-linux-arm64.tar.gz\`
-          - **Windows x86_64**: \`rustirc-windows-amd64.exe.zip\`
-
-          ### Verification
-
-          All binaries include SHA256 checksums for verification.
-
-          ### Installation
-
-          1. Download the appropriate binary for your platform
-          2. Extract the archive
-          3. Run the client: \`./rustirc\` (Unix) or \`rustirc.exe\` (Windows)
-
-          For detailed usage instructions, see the [README](https://github.com/doublegate/RustIRC#readme).
-          EOF
-          
-          # Append build info to new release notes
-          cat build_info.md >> release_notes.md
-
-          # Create the new release
-          gh release create "$tag_name" \
-            --title "RustIRC $tag_name" \
-            --notes-file release_notes.md \
-            release-assets/*
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          test "$(find release-assets -type f | wc -l)" -eq 6
+          (cd release-assets && sha256sum -c ./*.sha256)
+          gh release edit "$tag_name" --notes-file release_notes.md
+          gh release upload "$tag_name" release-assets/* --clobber
+          # --clobber replaces matching names but leaves unrelated draft assets.
+          # Check GitHub's actual asset set; a partial draft remains retryable.
+          find release-assets -type f -printf '%f\n' | LC_ALL=C sort > expected-assets.txt
+          gh release view "$tag_name" --json isDraft,assets > uploaded-release.json
+          jq -e '.isDraft == true' uploaded-release.json
+          jq -r '.assets[].name' uploaded-release.json | LC_ALL=C sort > uploaded-assets.txt
+          diff -u expected-assets.txt uploaded-assets.txt
+          # Publication is the final mutation, after the complete asset set exists.
+          gh release edit "$tag_name" --draft=false
 
   # Status reporting job
   pipeline-status:
@@ -716,18 +681,11 @@ jobs:
           echo "| Release | ${{ needs.release.result || 'skipped' }} | - |"
           echo ""
 
-          # Calculate overall status
-          overall_status="success"
-          if [[ "${{ needs.quick-checks.result }}" == "failure" ]]; then
-            overall_status="failure"
-          elif [[ "${{ needs.test-matrix.result }}" == "failure" ]]; then
-            overall_status="failure"
-          elif [[ "${{ needs.security-audit.result }}" == "failure" ]]; then
-            overall_status="failure"
-          fi
-
-          echo "Overall pipeline status: $overall_status"
-
-          if [ "$overall_status" = "failure" ]; then
+          # Include every prerequisite, including the reusable workflow's MSRV gate.
+          if ! jq -e 'all(.[]; .result == "success" or .result == "skipped")' <<< "$JOB_RESULTS"; then
+            echo "Overall pipeline status: failure"
             exit 1
           fi
+          echo "Overall pipeline status: success"
+        env:
+          JOB_RESULTS: ${{ toJSON(needs) }}
