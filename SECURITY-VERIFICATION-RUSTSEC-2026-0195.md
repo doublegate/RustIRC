@@ -30,8 +30,8 @@ rustirc v0.4.2
     └── iced v0.14.0
         └── iced_winit v0.14.1
             └── winit v0.30.13
-                └── smithay-client-toolkit v0.19.2
-                    └── sctk-adwaita v0.10.1
+                └── sctk-adwaita v0.10.1
+                    └── smithay-client-toolkit v0.19.2
                         └── wayland-scanner v0.31.11
                             └── quick-xml v0.41.0  ← PATCHED ✅
 ```
@@ -74,7 +74,7 @@ warning: 3 allowed warnings found (unmaintained packages: bincode, paste, ttf-pa
 $ cargo build
    Compiling quick-xml v0.41.0
    ...
-   Compiling rustirc v0.4.2 (/workspace)
+   Compiling rustirc v0.4.2 (.)
     Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 38s
 ```
 
