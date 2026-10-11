@@ -15,7 +15,8 @@ The project currently uses `aws-lc-sys v0.45.0`, which is well above the minimum
 ## Vulnerability Details
 
 - **Affected Package:** aws-lc-sys
-- **Vulnerable Versions:** < 0.39.0
+- **Vulnerable Versions:** >= 0.15.0, < 0.39.0
+- **Unaffected Versions:** < 0.15.0
 - **Patched Versions:** >= 0.39.0
 - **Current Version in RustIRC:** 0.45.0 ✅
 - **Advisory URL:** https://rustsec.org/advisories/RUSTSEC-2026-0048.html
@@ -62,10 +63,7 @@ RustIRC
    ```bash
    $ cargo test --workspace
    ```
-   - **233 unit tests:** All passed ✅
-   - **33 integration tests:** All passed ✅
-   - **59 doctests:** All passed ✅
-   - **Total: 325 tests passed, 0 failed** ✅
+   - All tests passed: 215 library/integration tests and 59 doctests (274 total passed, 0 failed) ✅
 
 ## Impact Assessment
 
@@ -95,12 +93,12 @@ The project is already using a patched version. No immediate action is needed.
 |------------|--------|---------|
 | Minimum patched version (>=0.39.0) | ✅ Met | 0.45.0 |
 | Build successful | ✅ Passed | - |
-| Tests passing | ✅ All passed | 325/325 |
+| Tests passing | ✅ All passed | 274/274 |
 | No security warnings | ✅ Clean | - |
 
 ## Additional Notes
 
-- The vulnerability was disclosed on 2026-03-19
+- Reported date: 2026-03-19 (published/issued by RustSec on 2026-03-20)
 - AWS Security Bulletin: https://aws.amazon.com/security/security-bulletins/2026-010-AWS
 - RustIRC's dependency on `aws-lc-sys` is indirect through `rustls`, which is the standard Rust TLS library
 - The project's current version (0.45.0) was released well after the vulnerability was patched (0.39.0)
