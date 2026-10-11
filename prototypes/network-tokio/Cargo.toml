@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 tokio = { version = "1.48", features = ["full"] }
 tokio-rustls = "0.26"
-rustls = "0.23"
+rustls = "0.23.45" # RUSTSEC-2026-0285: Require patched version (>=0.23.45)
 rustls-pemfile = "2.2"
 webpki-roots = "0.26"
 anyhow = "1.0"
