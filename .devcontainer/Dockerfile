@@ -1,5 +1,5 @@
-# The workspace MSRV is 1.89 (Cargo.toml rust-version); an older image cannot build it.
-FROM rust:1.98-trixie
+# The workspace MSRV is 1.99.1 (Cargo.toml rust-version); an older image cannot build it.
+FROM rust:1.99.1-trixie
 
 # Install development dependencies
 RUN apt-get update && apt-get install -y \
@@ -23,10 +23,10 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Rust components
-RUN rustup component add rustfmt clippy rust-analysis rust-src
+RUN rustup component add rustfmt clippy rust-docs rust-src
 
 # Install cargo tools
-RUN cargo install cargo-tarpaulin cargo-audit cargo-outdated cargo-edit
+RUN cargo install --locked cargo-tarpaulin cargo-audit cargo-outdated cargo-edit
 
 # Create non-root user
 ARG USERNAME=vscode
@@ -47,6 +47,8 @@ WORKDIR /workspaces/rustirc
 # Pre-build dependencies to speed up builds
 COPY Cargo.toml Cargo.lock ./
 COPY crates ./crates
-RUN cargo fetch
+COPY src ./src
+COPY vendor ./vendor
+RUN cargo fetch --locked
 
 CMD ["/bin/bash"]

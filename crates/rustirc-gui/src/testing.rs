@@ -73,7 +73,11 @@ pub enum TestKey {
 impl GuiTestHarness {
     /// Create a new test harness
     pub fn new() -> Self {
-        let app = RustIrcGui::new();
+        let mut app = RustIrcGui::new();
+        let _ = app.update(Message::JoinChannel(
+            "test_server".to_string(),
+            "#tab1".to_string(),
+        ));
 
         Self {
             app,
@@ -106,13 +110,13 @@ impl GuiTestHarness {
         // Create async communication channel for test events
         let (event_tx, mut event_rx) = mpsc::unbounded_channel();
 
-        // Run events with async coordination
-        let events_clone = self.events.clone();
-        let event_tx_clone = event_tx.clone();
+        // Run events with async coordination; move event_tx into the task so the
+        // channel closes once all queued events have been sent.
+        let events_clone = std::mem::take(&mut self.events);
 
         tokio::spawn(async move {
             for event in events_clone {
-                if event_tx_clone.send(event).is_err() {
+                if event_tx.send(event).is_err() {
                     break;
                 }
             }
@@ -124,6 +128,15 @@ impl GuiTestHarness {
                 Err(e) => {
                     result.failed_events += 1;
                     result.errors.push(e);
+                }
+            }
+            while let Some(follow_up) = self.events.pop_front() {
+                match self.execute_event(follow_up).await {
+                    Ok(()) => result.passed_events += 1,
+                    Err(e) => {
+                        result.failed_events += 1;
+                        result.errors.push(e);
+                    }
                 }
             }
         }
@@ -544,9 +557,10 @@ impl IntegrationTestRunner {
 mod tests {
     use super::*;
 
-    // Helper to check if we're in CI environment without display
+    // Helper to check if we're in CI environment without display.
+    // GuiTestHarness operates in-memory without a display server, so tests run everywhere.
     fn skip_in_ci() -> bool {
-        std::env::var("CI").is_ok() || std::env::var("GITHUB_ACTIONS").is_ok()
+        false
     }
 
     #[tokio::test]
@@ -680,11 +694,14 @@ mod tests {
         let result = harness.run().await;
 
         assert!(result.is_success(), "UI update tasks failed");
-        // Verify state changes were applied
         assert!(
-            harness.state().ui_state.show_userlist == false
-                || harness.state().ui_state.show_userlist == true,
-            "Toggle should work"
+            result.passed_events >= 4,
+            "All UI update task events should be processed"
+        );
+        assert_eq!(
+            harness.is_element_visible("userlist"),
+            harness.state().ui_state.show_userlist,
+            "Element visibility should reflect UI state"
         );
     }
 
@@ -738,7 +755,7 @@ mod tests {
         let result = harness.run().await;
 
         assert!(result.is_success(), "Batch task execution failed");
-        assert!(harness.state().tabs.len() >= 1, "Tabs should exist");
+        assert!(!harness.state().tabs.is_empty(), "Tabs should exist");
     }
 
     #[tokio::test]

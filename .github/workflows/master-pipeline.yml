@@ -480,21 +480,22 @@ jobs:
           #   artifact_name: rustirc-macos-arm64.tar.gz
     runs-on: ${{ matrix.os }}
     env:
-      RUSTUP_TOOLCHAIN: 1.99.0
+      RUSTUP_TOOLCHAIN: 1.99.1
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: dtolnay/rust-toolchain@1.99.0
+      - uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: 1.99.1
           targets: ${{ matrix.target }}
 
       - name: Verify release compiler selection
         shell: bash
         run: |
           rustc --version --verbose
-          test "$(rustc --version | cut -d' ' -f2)" = "1.99.0"
+          test "$(rustc --version | cut -d' ' -f2)" = "1.99.1"
 
       # Install cross for cross-compilation
       - name: Install cross
@@ -635,7 +636,7 @@ jobs:
           **Build Information:**
           - Pipeline Run: [${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           - Commit: [${{ github.sha }}](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
-          - Toolchain: Rust 1.99.0; locked Cargo dependency graph
+          - Toolchain: Rust 1.99.1; locked Cargo dependency graph
           - Build Date: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
           EOF
           test "$(find release-assets -type f | wc -l)" -eq 6

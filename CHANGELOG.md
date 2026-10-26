@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+#### Dependencies & Toolchain (consolidates Dependabot PRs #161, #163, #171, #172, #173, #174, #175)
+- **MSRV**: Raised minimum supported Rust version from `1.89.0` to `1.99.1` across `Cargo.toml`, `clippy.toml`, CI workflows, `.devcontainer/Dockerfile`, and documentation, allowing `ordered-float` to advance to `5.5.1`.
+- **hmac**: `0.12.1` -> `0.13.0` in `rustirc-core` (`KeyInit` trait import updated for SCRAM-SHA-256).
+- **sha2**: `0.10.9` -> `0.11.1` in `rustirc-core`.
+- **tokio**: `1.53.2` -> `1.54.1`.
+- **rustls**: `0.23.45` -> `0.23.46`, **rustls-webpki**: `0.103.15` -> `0.103.16`, **tokio-rustls**: `0.26.5` -> `0.26.6`, **webpki-roots**: `1.0.9` -> `1.0.11`.
+- **serde_json**: `1.0.151` -> `1.0.154`, **open**: `5.4.4` -> `5.4.5`, **proptest**: `1.11` -> `1.12`.
+- **GitHub Actions**: `taiki-e/install-action` `v2.87.22` -> `v2.87.31`; `dtolnay/rust-toolchain` in `master-pipeline.yml` aligned with `ci.yml` (`@master` with `toolchain: 1.99.1`).
+
+### Fixed
+- **GUI Test Harness (`rustirc-gui`)**: Fixed an unbounded channel sender leak in `GuiTestHarness::run()` (`crates/rustirc-gui/src/testing.rs`) that caused `event_rx.recv().await` to block indefinitely when `CI=true` was not set, and enabled all 12 `GuiTestHarness` unit tests unconditionally both locally and in CI.
+- **Devcontainer (`Dockerfile`)**: Replaced removed `rust-analysis` rustup component with `rust-docs`, added `--locked` to `cargo install`, and copied workspace source/vendor directories before `cargo fetch --locked`.
+- **Cleanup**: Removed stale `SECURITY-FIX-RUSTSEC-2026-0002.md` left behind after `vendor/iced_glyphon` was removed.
+
 ## [0.4.3] - 2026-10-11 (Protocol Integration & Dependency Security)
 
 See [detailed release notes](docs/releases/v0.4.3.md) for the complete changes,
