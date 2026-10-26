@@ -6,7 +6,7 @@
 ![RustIRC Logo](images/RustIRC_Logo.png)
 
 [![Version](https://img.shields.io/badge/version-0.4.3-blue.svg)](CHANGELOG.md)
-[![Rust Version](https://img.shields.io/badge/rust-1.89%2B-orange.svg)](https://www.rust-lang.org)
+[![Rust Version](https://img.shields.io/badge/rust-1.99.1%2B-orange.svg)](https://www.rust-lang.org)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE-MIT)
 [![Tests](https://img.shields.io/badge/tests-223%20passing-success.svg)](.github/workflows/ci.yml)
 [![Documentation](https://img.shields.io/badge/docs-rustdoc-blue.svg)](docs/api-reference.md)
@@ -341,7 +341,7 @@ RustIRC is being developed in 7 carefully planned phases over 24-26 weeks:
 
 ### Core Technologies
 
-- **Language**: Rust (Edition 2021, MSRV 1.89.0)
+- **Language**: Rust (Edition 2021, MSRV 1.99.1)
 - **Async Runtime**: Tokio (multi-threaded, work-stealing)
 - **GUI Framework**: Enhanced Iced 0.14.0 with Material Design 3
   - WGPU backend for GPU acceleration

@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Rust 1.89.0 or later
+- Rust 1.99.1 or later
 - Git
 - C compiler (for some dependencies)
 - pkg-config (Linux/macOS)
@@ -265,7 +265,7 @@ cargo doc --document-private-items --open
 ### Common Issues
 
 #### Compilation Errors
-- Ensure Rust version is 1.89.0+: `rustup update`
+- Ensure Rust version is 1.99.1+: `rustup update`
 - Clean build: `cargo clean && cargo build`
 - Update dependencies: `cargo update`
 

@@ -217,7 +217,7 @@
 ## Version Policy
 
 ### Rust Version
-- **MSRV**: 1.89.0
+- **MSRV**: 1.99.1
   - Stable channel primary
   - Beta channel for testing
   - Feature flags for newer features
